@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace PolyglotAI\Routing;
 
 use PolyglotAI\Database\SlugRepository;
+use PolyglotAI\Jobs\SlugTranslator;
 use PolyglotAI\Languages\LanguageRegistry;
 use WP_Post;
 use WP_Term;
@@ -75,7 +76,9 @@ final class SlugSync {
 		}
 
 		foreach ( $this->languages->translatable() as $language ) {
-			$this->slugs->track( 'post', (string) $post->post_type, (int) $post->ID, $language->locale, (string) $post->post_name );
+			if ( $this->slugs->track( 'post', (string) $post->post_type, (int) $post->ID, $language->locale, (string) $post->post_name ) ) {
+				$this->schedule( $language->locale );
+			}
 		}
 	}
 
@@ -96,7 +99,9 @@ final class SlugSync {
 		}
 
 		foreach ( $this->languages->translatable() as $language ) {
-			$this->slugs->track( 'term', (string) $taxonomy, (int) $term->term_id, $language->locale, (string) $term->slug );
+			if ( $this->slugs->track( 'term', (string) $taxonomy, (int) $term->term_id, $language->locale, (string) $term->slug ) ) {
+				$this->schedule( $language->locale );
+			}
 		}
 	}
 
@@ -133,11 +138,33 @@ final class SlugSync {
 
 		foreach ( $bases as $subtype => $slug ) {
 			foreach ( $this->languages->translatable() as $language ) {
-				$this->slugs->track( 'base', (string) $subtype, 0, $language->locale, (string) $slug );
+				if ( $this->slugs->track( 'base', (string) $subtype, 0, $language->locale, (string) $slug ) ) {
+					$this->schedule( $language->locale );
+				}
 			}
 		}
 
 		update_option( self::BASES_SIGNATURE_OPTION, $signature, true );
+	}
+
+	/**
+	 * Pide una pasada de traducción de slugs para un idioma.
+	 *
+	 * Anotar es lo que hace esta clase; traducir cuesta dinero y espera, así
+	 * que ocurre fuera de la petición que guardó la entrada.
+	 *
+	 * @param string $language Locale.
+	 */
+	private function schedule( string $language ): void {
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			return;
+		}
+
+		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( SlugTranslator::HOOK, array( $language ), 'polyglot-ai' ) ) {
+			return;
+		}
+
+		as_enqueue_async_action( SlugTranslator::HOOK, array( $language ), 'polyglot-ai' );
 	}
 
 	/**

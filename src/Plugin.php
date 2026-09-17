@@ -39,7 +39,10 @@ use PolyglotAI\Html\OutputBuffer;
 use PolyglotAI\Html\SafetyCheck;
 use PolyglotAI\Html\Splicer;
 use PolyglotAI\Html\TagScanner;
+use PolyglotAI\Jobs\Budget;
+use PolyglotAI\Jobs\ContextFactory;
 use PolyglotAI\Jobs\PendingTranslator;
+use PolyglotAI\Jobs\SlugTranslator;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Languages\UserLanguage;
@@ -181,6 +184,7 @@ final class Plugin {
 		// La traducción en segundo plano se registra siempre, también cuando no
 		// hay driver: puede haber cadenas pendientes de una visita anterior.
 		$this->pending_translator()->register();
+		$this->slug_translator()->register();
 
 		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( \WP_CLI::class ) ) {
 			$this->commands()->register();
@@ -684,8 +688,48 @@ final class Plugin {
 				$this->translations(),
 				$this->api_log(),
 				$this->languages(),
-				$this->options()
+				$this->options(),
+				$this->budget(),
+				$this->engine_contexts()
 			)
+		);
+	}
+
+	/**
+	 * Traductor de los slugs pendientes en segundo plano.
+	 */
+	public function slug_translator(): SlugTranslator {
+		return $this->service(
+			'slug_translator',
+			fn(): SlugTranslator => new SlugTranslator(
+				$this->engine(),
+				$this->slugs(),
+				$this->api_log(),
+				$this->languages(),
+				$this->options(),
+				$this->budget(),
+				$this->engine_contexts()
+			)
+		);
+	}
+
+	/**
+	 * Tope mensual de consumo.
+	 */
+	public function budget(): Budget {
+		return $this->service(
+			'budget',
+			fn(): Budget => new Budget( $this->api_log(), $this->options() )
+		);
+	}
+
+	/**
+	 * Contexto lingüístico de los lotes.
+	 */
+	public function engine_contexts(): ContextFactory {
+		return $this->service(
+			'engine_contexts',
+			fn(): ContextFactory => new ContextFactory( $this->languages(), $this->options() )
 		);
 	}
 

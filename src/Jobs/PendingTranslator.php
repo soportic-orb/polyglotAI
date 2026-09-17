@@ -43,13 +43,17 @@ final class PendingTranslator {
 	 * @param ApiLogRepository           $log          Registro de consumo.
 	 * @param LanguageRegistry           $languages    Idiomas del sitio.
 	 * @param Options                    $options      Ajustes.
+	 * @param Budget                     $budget       Tope mensual de consumo.
+	 * @param ContextFactory             $contexts     Contexto lingüístico.
 	 */
 	public function __construct(
 		private readonly TranslationEngineInterface $engine,
 		private readonly TranslationRepository $translations,
 		private readonly ApiLogRepository $log,
 		private readonly LanguageRegistry $languages,
-		private readonly Options $options
+		private readonly Options $options,
+		private readonly Budget $budget,
+		private readonly ContextFactory $contexts
 	) {}
 
 	/**
@@ -178,22 +182,9 @@ final class PendingTranslator {
 
 	/**
 	 * Si se ha alcanzado el tope mensual de tokens.
-	 *
-	 * El tope corta también el gasto que provoca el tráfico de visitantes, no
-	 * solo el de las traducciones lanzadas a mano.
 	 */
 	public function over_budget(): bool {
-		$limit = (int) $this->options->get( 'monthly_token_limit', 0 );
-
-		if ( $limit <= 0 ) {
-			return false;
-		}
-
-		$usage = $this->log->usage_since( gmdate( 'Y-m-01 00:00:00' ) );
-
-		// La lectura de caché no se suma: su precio es una fracción del token de
-		// entrada normal y contarla como tal falsearía el tope.
-		return ( $usage['input'] + $usage['output'] + $usage['cache_creation'] ) >= $limit;
+		return $this->budget->exhausted();
 	}
 
 	/**
@@ -202,18 +193,6 @@ final class PendingTranslator {
 	 * @param string $language Locale.
 	 */
 	private function context( string $language ): EngineContext {
-		$source = $this->languages->default_language();
-		$target = $this->languages->by_locale( $language ) ?? $source;
-
-		return new EngineContext(
-			$source->locale,
-			$target->locale,
-			$source->label,
-			$target->label,
-			$target->formality,
-			(string) $this->options->get( 'site_context', '' ),
-			$this->options->glossary( $language ),
-			$this->options->do_not_translate()
-		);
+		return $this->contexts->for_language( $language );
 	}
 }

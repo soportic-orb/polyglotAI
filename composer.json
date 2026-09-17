@@ -23,7 +23,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "PolyglotAI\\Tests\\": "tests/unit/"
+            "PolyglotAI\\Tests\\": "tests/unit/",
+            "PolyglotAI\\Tests\\Doubles\\": "tests/doubles/"
         }
     },
     "config": {

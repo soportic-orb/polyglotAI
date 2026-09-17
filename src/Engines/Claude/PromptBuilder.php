@@ -161,6 +161,7 @@ final class PromptBuilder {
 				'5. Conserva el espaciado inicial y final del original.',
 				'6. Traduce el sentido, no palabra por palabra. Adapta lo que sea idiomático.',
 				'7. Si una cadena no necesita traducción (un nombre propio, una marca), devuélvela idéntica.',
+				'8. Las cadenas de tipo "slug" son la parte legible de una URL, entregada como texto normal. Tradúcelas breves, en minúsculas y sin puntuación ni artículos innecesarios. Devuelve texto, nunca una URL.',
 				'',
 				'Devuelve una entrada por cada cadena recibida, con su identificador exacto. No añadas comentarios ni explicaciones.',
 			)
