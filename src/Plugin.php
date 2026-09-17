@@ -49,6 +49,7 @@ use PolyglotAI\Rest\DynamicController;
 use PolyglotAI\Rest\MergesController;
 use PolyglotAI\Rest\SlugsController;
 use PolyglotAI\Seo\HeadUrls;
+use PolyglotAI\Seo\Sitemaps;
 use PolyglotAI\Seo\StructuredData;
 use PolyglotAI\Rest\StringsController;
 use PolyglotAI\Rest\SuggestController;
@@ -152,6 +153,10 @@ final class Plugin {
 		// Y quien anota qué slugs quedan por traducir. Va tanto en el escritorio
 		// como en el frente: las entradas se guardan en el escritorio.
 		$this->slug_sync()->register();
+
+		// Y el sitemap, para que un buscador descubra las URLs traducidas sin
+		// tener que rastrear enlaces.
+		( new Sitemaps( $this->languages(), $this->url_converter(), $this->slug_resolver() ) )->register();
 
 		if ( is_admin() ) {
 			$this->settings_page()->register();

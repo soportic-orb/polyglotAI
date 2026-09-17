@@ -468,6 +468,43 @@ mira el `rel` y no habría forma de distinguir un canónico de un `hreflang`.
 Tampoco se toca `og:image`: es un archivo, no una página, y no tiene versión por
 idioma.
 
+### ADR-16 — Sitemaps: el del núcleo ahora; los de los plugins de SEO, en la fase 8
+
+El sitemap del núcleo solo conoce las URLs del idioma por defecto, así que un
+buscador no tenía por dónde descubrir `/en/contact-us/` salvo rastreando
+enlaces. `Seo\TranslatedSitemapProvider` publica un sitemap por idioma dentro
+del de WordPress.
+
+**El idioma va en el subtipo, no en el nombre del proveedor.** La regla de
+reescritura del núcleo captura el nombre con `[a-z]+`, de modo que un proveedor
+llamado `pgai-en` no encajaría con ninguna ruta y su sitemap devolvería un 404.
+El subtipo sí admite cifras y guiones (`[a-z\d_-]+`), que es lo que necesitan
+slugs como `pt-br`. Queda `/wp-sitemap-pgai-en-1.xml`.
+
+Entradas y términos van en subtipos distintos (`en` y `en-tax`) porque paginar
+una lista que mezcla dos consultas obliga a repartir desplazamientos entre
+ellas, y eso se descuadra en cuanto una de las dos cambia de tamaño entre dos
+peticiones.
+
+**Sin `xhtml:link` alternates**, porque el renderizador del núcleo no los
+admite: `WP_Sitemaps_Renderer` solo escribe `loc`, `lastmod`, `changefreq` y
+`priority`, y avisa con `_doing_it_wrong` de cualquier otra clave. Reemplazar el
+renderizador entero para añadirlos no compensa: el `hreflang` de cada página ya
+da esa señal, y lo que faltaba —que las URLs traducidas fueran descubribles— sí
+queda resuelto.
+
+**La integración con los sitemaps de Yoast, Rank Math, SEOPress y All in One
+SEO se aplaza a la fase 8**, junto con el resto de pruebas de compatibilidad.
+Cada uno sustituye el sitemap del núcleo por el suyo y lo amplía a su manera, y
+no tengo forma de comprobar esos hooks hasta tenerlos instalados en `wp-env`.
+Escribir cuatro juegos de `add_filter` sin poder ejecutarlos daría código que
+parece hecho y puede no hacer nada, que es peor que no tenerlo: esto queda
+anotado como pendiente y no como resuelto.
+
+Lo que **sí** funciona ya con los cuatro es lo demás del SEO Pack: el texto que
+emiten lo traduce el barrido de la salida y sus URLs las corrige `Seo\HeadUrls`
+(ADR-15).
+
 ---
 
 ## 4. Estructura del repositorio
