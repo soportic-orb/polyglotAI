@@ -491,6 +491,16 @@ final class SlugRepository {
 	 */
 	private function bump_version(): void {
 		update_option( self::VERSION_OPTION, $this->version() + 1, true );
+
+		/**
+		 * Se dispara cuando cambia algún slug traducido.
+		 *
+		 * Cambiar un slug cambia la URL de la página, así que lo que haya
+		 * cacheado en la anterior deja de valer.
+		 *
+		 * @since 0.1.0
+		 */
+		do_action( 'pgai_slugs_changed' );
 	}
 
 	/**

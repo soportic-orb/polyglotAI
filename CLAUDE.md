@@ -306,6 +306,19 @@ encargo, no un detalle: cualquier ruta de escritura pasa por
   recorrer y borrar claves.
 - Bloqueo con `wp_cache_add()` (atómico) para no traducir la misma cadena en paralelo
   desde dos peticiones.
+- **La caché de página es de otro y hay que avisarle.** Todo lo anterior es caché de
+  objeto, dentro de la petición de WordPress; en producción casi siempre hay delante un
+  plugin que guarda el HTML entero. Sin avisarle, la promesa del ADR-13 —«la traducción
+  aparece en la visita siguiente»— es falsa: la tarea de fondo traduce y el visitante
+  sigue recibiendo la copia que se guardó sin traducir. `Compat\CachePlugins` vacía la
+  caché de WP Rocket, W3 Total Cache, WP Super Cache, LiteSpeed, Cache Enabler, WP
+  Fastest Cache y SiteGround Optimizer (nombres comprobados en el código de cada uno,
+  salvo el de WP Rocket, que es de pago), y deja la acción `pgai_page_cache_purged` para
+  las demás. **Una vez por petición**, porque una traducción de sitio completo guarda
+  miles de cadenas de golpe y vaciar en cada una dejaría el sitio sin caché durante
+  horas, y **entera**, porque una misma cadena puede salir en cualquier página y
+  averiguar en cuáles costaría más que regenerarlas.
+
 **Rendimiento medido** (no estimado; `tests/unit/PerformanceTest.php`):
 
 | HTML | Extraer | Traducir entero |

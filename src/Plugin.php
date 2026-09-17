@@ -40,6 +40,7 @@ use PolyglotAI\Engines\Claude\RetryPolicy;
 use PolyglotAI\Engines\EngineRegistry;
 use PolyglotAI\Frontend\DynamicScript;
 use PolyglotAI\Gettext\GettextTranslator;
+use PolyglotAI\Compat\CachePlugins;
 use PolyglotAI\Compat\PrivacyExclusions;
 use PolyglotAI\Html\BailConditions;
 use PolyglotAI\Html\DocumentProcessor;
@@ -188,6 +189,10 @@ final class Plugin {
 		// Y las exclusiones de privacidad, que deciden qué páginas no salen
 		// nunca hacia la API (ADR-12).
 		( new PrivacyExclusions() )->register();
+
+		// Y el aviso al plugin de caché: sin esto la traducción que acaba de
+		// guardarse no la vería nadie hasta que caducara la copia (ADR-13).
+		( new CachePlugins() )->register();
 
 		if ( is_admin() ) {
 			$this->settings_page()->register();

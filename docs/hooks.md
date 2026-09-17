@@ -114,6 +114,16 @@ add_filter( 'pgai_is_bot', function ( bool $is_bot, string $agent ): bool {
 }, 10, 2 );
 ```
 
+### `pgai_purge_page_cache`
+
+Si se vacía la caché de página cuando cambia una traducción o un slug. Activado
+por defecto: sin él, la traducción que acaba de guardarse no la ve nadie hasta
+que caduca la copia guardada.
+
+```php
+add_filter( 'pgai_purge_page_cache', '__return_false' );
+```
+
 ## Acciones
 
 | Acción | Argumentos | Cuándo se dispara |
@@ -127,6 +137,8 @@ add_filter( 'pgai_is_bot', function ( bool $is_bot, string $agent ): bool {
 | `pgai_no_driver_available` | — | No hay driver de análisis viable; el plugin deja de traducir. |
 | `pgai_budget_exhausted` | `string $language` | El tope mensual de tokens ha detenido la traducción. |
 | `pgai_translated_mail` | `array $mail, string $language` | Tras traducir un correo saliente. |
+| `pgai_slugs_changed` | — | Ha cambiado algún slug traducido, así que las URLs ya no son las mismas. |
+| `pgai_page_cache_purged` | — | Tras pedir el vaciado de la caché de página. Es donde enganchar la caché de un alojamiento, un CDN o un proxy inverso. |
 
 ## Endpoints REST
 
@@ -385,6 +397,18 @@ Sin escribir una línea de PHP:
 
 También quedan fuera por defecto `<script>`, `<style>`, `<code>`, `<pre>`,
 `<template>`, `<svg>`, `<math>`, `<canvas>` y `<object>`.
+
+## Caché de página
+
+Al guardar una traducción o cambiar un slug se le pide al plugin de caché que
+vacíe lo que tiene guardado, **una sola vez por petición** —una traducción de
+sitio completo guarda miles de cadenas de golpe— y **entero**, porque una misma
+cadena puede salir en cualquier página.
+
+Se reconocen WP Rocket, W3 Total Cache, WP Super Cache, LiteSpeed Cache, Cache
+Enabler, WP Fastest Cache y SiteGround Optimizer. Para cualquier otra caché
+—la de un alojamiento, un CDN, un proxy inverso— está la acción
+`pgai_page_cache_purged`.
 
 ## Privacidad
 
