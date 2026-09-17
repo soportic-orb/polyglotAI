@@ -19,7 +19,7 @@ namespace PolyglotAI\Database;
 final class Schema {
 
 	/** Versión del esquema. Súbela al cambiar cualquier tabla. */
-	public const VERSION = 2;
+	public const VERSION = 3;
 
 	/** Opción donde se guarda la versión instalada. */
 	private const VERSION_OPTION = 'pgai_schema_version';
@@ -184,6 +184,7 @@ final class Schema {
 			"CREATE TABLE {$sources} (
 	id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 	hash char(32) NOT NULL,
+	text_hash char(32) NOT NULL DEFAULT '',
 	type varchar(20) NOT NULL,
 	domain varchar(100) DEFAULT NULL,
 	context varchar(190) DEFAULT NULL,
@@ -192,6 +193,7 @@ final class Schema {
 	last_seen datetime NOT NULL,
 	PRIMARY KEY  (id),
 	UNIQUE KEY hash (hash),
+	KEY text_hash (text_hash),
 	KEY type_domain (type,domain),
 	KEY last_seen (last_seen)
 ) {$collate};",

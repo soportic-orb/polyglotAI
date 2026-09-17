@@ -50,4 +50,18 @@ final class Hasher {
 
 		return md5( $payload );
 	}
+
+	/**
+	 * Hash solo del texto normalizado, sin tipo ni contexto.
+	 *
+	 * Es lo que permite reconocer que «Añadir al carrito» como texto de un
+	 * botón y como atributo `title` son la misma frase, aunque su hash completo
+	 * sea distinto a propósito. Lo usa la memoria de traducción.
+	 *
+	 * @param string $original Texto original.
+	 * @return string Hash de 32 caracteres hexadecimales.
+	 */
+	public function text_hash( string $original ): string {
+		return md5( $this->normalizer->normalize( $original ) );
+	}
 }

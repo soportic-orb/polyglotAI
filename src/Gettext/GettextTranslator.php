@@ -274,7 +274,8 @@ final class GettextTranslator {
 				$entry['text'],
 				StringType::Gettext,
 				$entry['context'],
-				$entry['domain']
+				$entry['domain'],
+				$this->hasher->text_hash( $entry['text'] )
 			);
 		}
 

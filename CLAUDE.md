@@ -142,7 +142,8 @@ Se descarta la tabla-por-idioma (el modelo de TranslatePress):
 
 Esquema (todas con prefijo `{$wpdb->prefix}pgai_`):
 
-- **`pgai_sources`** — `id`, `hash` CHAR(32) ascii_bin UNIQUE, `type` (text, block,
+- **`pgai_sources`** — `id`, `hash` CHAR(32) UNIQUE, `text_hash` CHAR(32) KEY (hash
+  solo del texto normalizado, para la memoria de traducción), `type` (text, block,
   attribute, meta, slug, gettext), `domain` (dominio gettext, NULL si no aplica),
   `context`, `original` LONGTEXT, `first_seen`, `last_seen`.
 - **`pgai_translations`** — `id`, `source_id`, `language`, `translation` LONGTEXT,
@@ -262,8 +263,13 @@ Implementación principal `Claude\ClaudeEngine`. Detalles fijados:
   porque tienen precio distinto). Se registra todo en `pgai_api_log`.
 - **Reintentos:** *backoff* exponencial con *jitter* ante 429 y 529, respetando la
   cabecera `retry-after`. Máximo 5 intentos, luego se marca `error` y se registra.
-- **Memoria de traducción:** antes de llamar a la API se busca por hash exacto y, en
-  segundo lugar, por similitud sobre el texto normalizado.
+- **Memoria de traducción:** antes de llamar a la API se busca por `text_hash`, el
+  hash solo del texto normalizado, de modo que la misma frase ya traducida en otro
+  tipo o contexto se copia en vez de volver a pagarse. **No hay búsqueda por
+  similitud**: encontrar «Añadir al carrito ahora» a partir de «Añadir al carrito»
+  exigiría un índice de trigramas o FULLTEXT sobre un LONGTEXT, y el ahorro no
+  compensa ni el coste de escritura ni el riesgo de reutilizar una traducción que no
+  era. Es una limitación conocida, no un olvido.
 - **Contexto de vecindad:** se envían las cadenas vecinas de la misma página como
   contexto de solo lectura para mejorar la coherencia.
 

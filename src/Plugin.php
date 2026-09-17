@@ -92,6 +92,7 @@ use PolyglotAI\Switcher\NavMenuMetaBox;
 use PolyglotAI\Switcher\Shortcode;
 use PolyglotAI\Switcher\SwitcherRenderer;
 use PolyglotAI\Translation\DictionaryFactory;
+use PolyglotAI\Translation\Memory;
 use PolyglotAI\Translation\Hasher;
 use PolyglotAI\Html\MergingDriver;
 use PolyglotAI\Translation\MergeRegistry;
@@ -767,7 +768,8 @@ final class Plugin {
 				$this->sources(),
 				$this->translations(),
 				new BotDetector(),
-				$this->options()
+				$this->options(),
+				$this->hasher()
 			)
 		);
 	}
@@ -857,7 +859,8 @@ final class Plugin {
 					$this->languages(),
 					$this->options(),
 					$this->budget(),
-					$this->engine_contexts()
+					$this->engine_contexts(),
+					new Memory()
 				);
 			}
 		);

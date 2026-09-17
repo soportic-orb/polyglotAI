@@ -31,12 +31,14 @@ final class MissingQueue {
 	 * @param TranslationRepository $translations Repositorio de traducciones.
 	 * @param BotDetector           $bots         Detector de robots.
 	 * @param Options               $options      Ajustes.
+	 * @param Hasher                $hasher       Calculador de hashes.
 	 */
 	public function __construct(
 		private readonly SourceRepository $sources,
 		private readonly TranslationRepository $translations,
 		private readonly BotDetector $bots,
-		private readonly Options $options
+		private readonly Options $options,
+		private readonly Hasher $hasher
 	) {}
 
 	/**
@@ -102,7 +104,9 @@ final class MissingQueue {
 				$hash,
 				$unit->value,
 				$unit->type,
-				$unit->context
+				$unit->context,
+				null,
+				$this->hasher->text_hash( $unit->value )
 			);
 		}
 

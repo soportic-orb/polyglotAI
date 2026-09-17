@@ -90,7 +90,7 @@ final class TranslationLookup implements TextLookupInterface {
 			}
 
 			$result[ $text ] = $text;
-			$new[]           = $this->sources->remember( $hash, $text, StringType::Text, null );
+			$new[]           = $this->sources->remember( $hash, $text, StringType::Text, null, null, $this->hasher->text_hash( $text ) );
 		}
 
 		if ( array() !== $new ) {
@@ -136,7 +136,7 @@ final class TranslationLookup implements TextLookupInterface {
 
 		// La cadena queda anotada para que aparezca en el gestor y se traduzca
 		// en segundo plano: la próxima vez que se envíe ya irá traducida.
-		$id = $this->sources->remember( $hash, $value, $type, $context );
+		$id = $this->sources->remember( $hash, $value, $type, $context, null, $this->hasher->text_hash( $value ) );
 
 		$this->translations->mark_pending( array( $id ), $language );
 

@@ -19,6 +19,9 @@ use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Support\Options;
 use PolyglotAI\Tests\Doubles\FakeAsyncEngine;
+use PolyglotAI\Translation\Hasher;
+use PolyglotAI\Translation\Memory;
+use PolyglotAI\Translation\Normalizer;
 use PolyglotAI\Translation\Status;
 use PolyglotAI\Translation\StatusPrecedence;
 use PolyglotAI\Translation\StringType;
@@ -34,6 +37,7 @@ final class SiteTranslatorTest extends WP_UnitTestCase {
 	private TranslationRepository $translations;
 	private FakeAsyncEngine $engine;
 	private SiteTranslator $translator;
+	private Hasher $hasher;
 
 	/**
 	 * Tablas limpias y un traductor con motor de mentira.
@@ -73,17 +77,28 @@ final class SiteTranslatorTest extends WP_UnitTestCase {
 			$languages,
 			$options,
 			new Budget( $log, $options ),
-			new ContextFactory( $languages, $options )
+			new ContextFactory( $languages, $options ),
+			new Memory()
 		);
+
+		$this->hasher = new Hasher( new Normalizer() );
 	}
 
 	/**
 	 * Registra una cadena pendiente.
 	 *
-	 * @param string $text Original.
+	 * @param string     $text Original.
+	 * @param StringType $type Tipo de cadena.
 	 */
-	private function pending( string $text ): int {
-		$id = $this->sources->remember( md5( $text ), $text, StringType::Text );
+	private function pending( string $text, StringType $type = StringType::Text ): int {
+		$id = $this->sources->remember(
+			md5( $text . $type->value ),
+			$text,
+			$type,
+			null,
+			null,
+			$this->hasher->text_hash( $text )
+		);
 
 		$this->translations->mark_pending( array( $id ), 'en_US' );
 
@@ -354,6 +369,71 @@ final class SiteTranslatorTest extends WP_UnitTestCase {
 			),
 			$this->translator->estimate( 'en_US' )
 		);
+	}
+
+	public function test_reaprovecha_una_traduccion_ya_hecha_del_mismo_texto(): void {
+		// La misma frase como texto y como atributo son dos cadenas distintas a
+		// propósito, pero no hay razón para pagar dos veces por ella.
+		$boton    = $this->pending( 'Añadir al carrito' );
+		$atributo = $this->pending( 'Añadir al carrito', StringType::Attribute );
+
+		$this->translations->save( $boton, 'en_US', 'Add to cart', Status::Manual );
+
+		$this->translator->start( 'en_US' );
+		$this->translator->run( 'en_US' );
+
+		$this->assertSame( 0, $this->engine->created, 'No hacía falta llamar a la API.' );
+		$this->assertSame(
+			array( md5( 'Añadir al carritoattribute' ) => 'Add to cart' ),
+			$this->translations->lookup( array( md5( 'Añadir al carritoattribute' ) ), 'en_US' )
+		);
+
+		unset( $atributo );
+	}
+
+	public function test_la_memoria_prefiere_lo_que_ha_escrito_una_persona(): void {
+		$manual    = $this->pending( 'Guardar' );
+		$automatic = $this->pending( 'Guardar', StringType::Attribute );
+		$nuevo     = $this->pending( 'Guardar', StringType::Meta );
+
+		$this->translations->save( $automatic, 'en_US', 'Store', Status::Automatic );
+		$this->translations->save( $manual, 'en_US', 'Save', Status::Manual );
+
+		$this->translator->start( 'en_US' );
+		$this->translator->run( 'en_US' );
+
+		$hash = md5( 'Guardarmeta' );
+
+		$this->assertSame( array( $hash => 'Save' ), $this->translations->lookup( array( $hash ), 'en_US' ) );
+
+		unset( $nuevo );
+	}
+
+	public function test_lo_que_no_esta_en_la_memoria_si_se_envia(): void {
+		$conocida = $this->pending( 'Guardar' );
+		$this->pending( 'Una frase que no se ha visto nunca' );
+
+		$this->translations->save( $conocida, 'en_US', 'Save', Status::Manual );
+
+		$this->translator->start( 'en_US' );
+		$this->translator->run( 'en_US' );
+
+		$run = $this->translator->status( 'en_US' );
+
+		$this->assertNotNull( $run );
+		$this->assertNotNull( $run->batch_id );
+
+		// Solo ha ido al lote la que no estaba en la memoria.
+		$chunks = $this->engine->sent[ $run->batch_id ];
+		$sent   = array();
+
+		foreach ( $chunks as $chunk ) {
+			foreach ( $chunk as $request ) {
+				$sent[] = $request->text;
+			}
+		}
+
+		$this->assertSame( array( 'Una frase que no se ha visto nunca' ), $sent );
 	}
 
 	public function test_no_pisa_lo_que_ha_escrito_una_persona(): void {

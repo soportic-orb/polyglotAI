@@ -153,10 +153,11 @@ final class SourceRepository {
 	 * @param string      $original Texto original.
 	 * @param StringType  $type     Tipo.
 	 * @param string|null $context  Contexto.
-	 * @param string|null $domain   Dominio de gettext.
+	 * @param string|null $domain    Dominio de gettext.
+	 * @param string      $text_hash Hash solo del texto, para la memoria de traducción.
 	 * @return int Identificador de la cadena.
 	 */
-	public function remember( string $hash, string $original, StringType $type, ?string $context = null, ?string $domain = null ): int {
+	public function remember( string $hash, string $original, StringType $type, ?string $context = null, ?string $domain = null, string $text_hash = '' ): int {
 		global $wpdb;
 
 		$table = Schema::table( 'sources' );
@@ -167,10 +168,14 @@ final class SourceRepository {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$wpdb->query(
 			$wpdb->prepare(
-				"INSERT INTO {$table} (hash, type, domain, context, original, first_seen, last_seen)
-				VALUES (%s, %s, %s, %s, %s, %s, %s)
-				ON DUPLICATE KEY UPDATE last_seen = VALUES(last_seen)",
+				// El text_hash se actualiza también al reencontrar la cadena:
+				// así las filas guardadas antes de que existiera la memoria de
+				// traducción lo reciben solas, sin migración ni backfill.
+				"INSERT INTO {$table} (hash, text_hash, type, domain, context, original, first_seen, last_seen)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+				ON DUPLICATE KEY UPDATE last_seen = VALUES(last_seen), text_hash = VALUES(text_hash)",
 				$hash,
+				$text_hash,
 				$type->value,
 				$domain,
 				$context,

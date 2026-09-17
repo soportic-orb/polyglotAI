@@ -19,6 +19,7 @@ use PolyglotAI\Engines\Usage;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Support\Options;
 use PolyglotAI\Translation\DictionaryFactory;
+use PolyglotAI\Translation\Memory;
 use PolyglotAI\Translation\Status;
 use PolyglotAI\Translation\StringType;
 
@@ -65,6 +66,7 @@ final class SiteTranslator {
 	 * @param Options                   $options      Ajustes.
 	 * @param Budget                    $budget       Tope mensual de consumo.
 	 * @param ContextFactory            $contexts     Contexto lingüístico.
+	 * @param Memory                    $memory       Memoria de traducción.
 	 */
 	public function __construct(
 		private readonly AsyncBatchEngineInterface $engine,
@@ -74,7 +76,8 @@ final class SiteTranslator {
 		private readonly LanguageRegistry $languages,
 		private readonly Options $options,
 		private readonly Budget $budget,
-		private readonly ContextFactory $contexts
+		private readonly ContextFactory $contexts,
+		private readonly Memory $memory
 	) {}
 
 	/**
@@ -316,15 +319,34 @@ final class SiteTranslator {
 			return;
 		}
 
+		// Antes de pagar por nada: lo que ya está traducido en otro sitio del
+		// mismo texto se copia y no entra en el lote (ADR-05).
+		$reused = $this->reuse( $pending, $run->language );
+
 		$requests = array();
 
 		foreach ( $pending as $row ) {
+			$source_id = (int) $row['source_id'];
+
+			if ( isset( $reused[ $source_id ] ) ) {
+				continue;
+			}
+
 			$requests[] = new TranslationRequest(
-				(string) $row['source_id'],
+				(string) $source_id,
 				(string) $row['original'],
 				StringType::tryFrom( (string) $row['type'] ) ?? StringType::Text,
 				isset( $row['context'] ) ? (string) $row['context'] : null
 			);
+		}
+
+		if ( array() === $requests ) {
+			// Todo lo de esta tanda salió de la memoria: se sigue con la
+			// siguiente sin llamar a la API.
+			$run->with( array( 'done' => $run->done + count( $reused ) ) )->save();
+			$this->schedule( $run->language, 0 );
+
+			return;
 		}
 
 		$chunks = array();
@@ -347,10 +369,50 @@ final class SiteTranslator {
 				'status'   => SiteRun::WAITING,
 				'batch_id' => $batch_id,
 				'chunks'   => $map,
+				'done'     => $run->done + count( $reused ),
 			)
 		)->save();
 
 		$this->schedule( $run->language, self::POLL_INTERVAL );
+	}
+
+	/**
+	 * Copia las traducciones que ya existan del mismo texto.
+	 *
+	 * @param array<int, array<string, mixed>> $pending  Filas pendientes.
+	 * @param string                           $language Locale.
+	 * @return array<int, string> Identificador => traducción copiada.
+	 */
+	private function reuse( array $pending, string $language ): array {
+		$ids = array_map(
+			static fn ( array $row ): int => (int) $row['source_id'],
+			$pending
+		);
+
+		$found = $this->memory->lookup( $ids, $language );
+		$saved = array();
+
+		foreach ( $found as $source_id => $translation ) {
+			// Entra como automática: es una traducción de máquina, aunque esta
+			// vez no haya habido que pedirla.
+			if ( $this->translations->save(
+				$source_id,
+				$language,
+				$translation,
+				Status::Automatic,
+				false,
+				$this->engine->id(),
+				'memoria'
+			) ) {
+				$saved[ $source_id ] = $translation;
+			}
+		}
+
+		if ( array() !== $saved ) {
+			DictionaryFactory::invalidate();
+		}
+
+		return $saved;
 	}
 
 	/**
