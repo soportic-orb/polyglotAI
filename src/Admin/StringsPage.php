@@ -13,6 +13,7 @@ use PolyglotAI\Languages\Language;
 use PolyglotAI\Rest\Controller;
 use PolyglotAI\Support\Capabilities;
 use PolyglotAI\Support\TranslatorLanguages;
+use PolyglotAI\Translation\Status;
 
 /**
  * Pantalla que lista todas las cadenas del sitio.
@@ -106,6 +107,8 @@ final class StringsPage {
 
 		echo '<div class="wrap"><h1>' . esc_html__( 'Cadenas', 'polyglot-ai' ) . '</h1>';
 
+		$this->render_transfer();
+
 		if ( is_readable( PGAI_DIR . 'assets/build/manager.js' ) ) {
 			echo '<div id="pgai-manager-root"></div>';
 		} else {
@@ -119,6 +122,130 @@ final class StringsPage {
 		}
 
 		echo '</div>';
+	}
+
+	/**
+	 * Caja de importación y exportación.
+	 *
+	 * Va en PHP y no en la aplicación de React porque lleva una subida de
+	 * archivo y una descarga: las dos cosas que un formulario de toda la vida
+	 * hace bien y que por fetch obligan a inventar un camino de vuelta.
+	 */
+	private function render_transfer(): void {
+		$languages = $this->access->for_user( get_current_user_id() );
+
+		if ( array() === $languages ) {
+			return;
+		}
+
+		$this->render_import_result();
+
+		?>
+		<div class="pgai-transfer">
+			<h2><?php esc_html_e( 'Importar y exportar', 'polyglot-ai' ); ?></h2>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="pgai-transfer__form">
+				<input type="hidden" name="action" value="pgai_export">
+				<?php wp_nonce_field( 'pgai_export' ); ?>
+
+				<label for="pgai-export-language"><?php esc_html_e( 'Exportar a CSV', 'polyglot-ai' ); ?></label>
+
+				<select name="language" id="pgai-export-language">
+					<?php foreach ( $languages as $language ) : ?>
+						<option value="<?php echo esc_attr( $language->locale ); ?>">
+							<?php echo esc_html( $language->label ); ?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+
+				<select name="status">
+					<option value=""><?php esc_html_e( 'Todos los estados', 'polyglot-ai' ); ?></option>
+					<?php foreach ( Status::cases() as $status ) : ?>
+						<option value="<?php echo esc_attr( $status->value ); ?>">
+							<?php echo esc_html( $status->label() ); ?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+
+				<?php submit_button( __( 'Descargar', 'polyglot-ai' ), 'secondary', 'submit', false ); ?>
+			</form>
+
+			<form
+				method="post"
+				action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
+				enctype="multipart/form-data"
+				class="pgai-transfer__form"
+			>
+				<input type="hidden" name="action" value="pgai_import">
+				<?php wp_nonce_field( 'pgai_import' ); ?>
+
+				<label for="pgai-import-language"><?php esc_html_e( 'Importar un CSV', 'polyglot-ai' ); ?></label>
+
+				<select name="language" id="pgai-import-language">
+					<?php foreach ( $languages as $language ) : ?>
+						<option value="<?php echo esc_attr( $language->locale ); ?>">
+							<?php echo esc_html( $language->label ); ?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+
+				<input type="file" name="pgai_file" accept=".csv,text/csv" required>
+
+				<label>
+					<input type="checkbox" name="pgai_overwrite">
+					<?php esc_html_e( 'Sobrescribir también lo revisado y lo escrito a mano', 'polyglot-ai' ); ?>
+				</label>
+
+				<?php submit_button( __( 'Importar', 'polyglot-ai' ), 'secondary', 'submit', false ); ?>
+			</form>
+
+			<p class="description">
+				<?php
+				esc_html_e(
+					'El archivo se empareja por la columna «hash». Cambiar el texto original en la hoja de cálculo no rompe nada, pero tampoco sirve para nada: lo que se guarda es la columna «translation».',
+					'polyglot-ai'
+				);
+				?>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Avisa de cómo ha ido la última importación.
+	 */
+	private function render_import_result(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['error'] ) ) {
+			printf(
+				'<div class="notice notice-error"><p>%s</p></div>',
+				esc_html__( 'No se ha podido leer el archivo.', 'polyglot-ai' )
+			);
+
+			return;
+		}
+
+		if ( ! isset( $_GET['saved'] ) ) {
+			return;
+		}
+
+		$saved   = absint( wp_unslash( (string) $_GET['saved'] ) );
+		$skipped = absint( wp_unslash( (string) ( $_GET['skipped'] ?? 0 ) ) );
+		$unknown = absint( wp_unslash( (string) ( $_GET['unknown'] ?? 0 ) ) );
+		// phpcs:enable
+
+		printf(
+			'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+			esc_html(
+				sprintf(
+					/* translators: 1: guardadas, 2: omitidas, 3: desconocidas. */
+					__( 'Importación terminada: %1$d guardadas, %2$d omitidas y %3$d que ya no existen en el sitio.', 'polyglot-ai' ),
+					$saved,
+					$skipped,
+					$unknown
+				)
+			)
+		);
 	}
 
 	/**
