@@ -4,10 +4,13 @@ Plugin de WordPress que traduce el sitio entero a los idiomas que configures,
 con motor de inteligencia artificial, URLs por idioma y corrección manual que la
 traducción automática no pisa nunca.
 
-> Estado: **fase 3 de 8**. Están la base de traducción, el enrutado por idioma,
-> el motor, el selector, el editor visual, las cadenas de temas y plugins, el
-> contenido dinámico y los correos. El SEO Pack y el resto llegan en las fases
-> siguientes (ver `CLAUDE.md`).
+> Estado: **fase 8 de 8, en curso**. Están la base de traducción, el enrutado por
+> idioma, el motor, el editor visual, las cadenas de temas y plugins, el
+> contenido dinámico, los correos, el paquete de SEO, el selector en todas sus
+> formas, la detección del visitante, los roles de traductor, el gestor de
+> cadenas, el glosario, las estadísticas y la traducción del sitio completo por
+> lotes. La fase 8 —compatibilidad, rendimiento, seguridad, pruebas de extremo a
+> extremo y documentación— está en marcha (ver `CLAUDE.md`).
 
 ## Cómo funciona
 
@@ -109,6 +112,34 @@ gasto.
 
 Puede desactivarse en los ajustes para traducir solo desde el panel.
 
+### Traducción del sitio completo
+
+Desde el panel se lanza la traducción de todo el sitio a un idioma. Antes de
+enviar nada estima lo que va a costar en tokens; después usa los lotes
+asíncronos de la API, que cuestan la mitad, y va informando del progreso. Se
+puede pausar y reanudar: lo ya enviado no se tira, porque se cobra igual.
+
+### SEO
+
+El título, la meta descripción, las Open Graph, las Twitter Cards y los datos
+estructurados se traducen como cualquier otro texto de la página, y las URLs
+canónicas y de paginación reciben su prefijo de idioma. Funciona con Yoast SEO,
+Rank Math, SEOPress y All in One SEO sin configurar nada, porque se trabaja
+sobre el HTML que emiten y no sobre los hooks de cada uno.
+
+Hay además un sitemap por idioma: dentro del sitemap de WordPress si está en
+pie, y dentro del índice del plugin de SEO activo si lo ha sustituido.
+
+### El equipo
+
+El rol **Traductor** tiene capacidades propias, se le pueden asignar solo
+algunos idiomas y no entra en el escritorio. El gestor de cadenas permite
+buscar, filtrar por estado y editar en masa, y hay importación y exportación en
+CSV que por defecto no pisa lo revisado ni lo escrito a mano.
+
+El **glosario** fija traducciones obligatorias y la lista de términos que no se
+traducen nunca; ambos viajan dentro del prompt.
+
 ## Preguntas frecuentes
 
 **¿Se pierden mis correcciones manuales al retraducir?**
@@ -121,11 +152,18 @@ reversible. El borrado solo ocurre al desinstalar, y solo si lo has marcado en
 los ajustes.
 
 **¿Se envían datos personales a la API?**
-No. Las rutas de cuenta, carrito y finalización de compra están excluidas por
-defecto, y la lista es ampliable en los ajustes.
+No. Quedan fuera las páginas de carrito, pago, cuenta y pedidos —se le preguntan
+a WooCommerce, así que la exclusión acierta con el slug traducido de cada idioma
+y no depende de cómo se llamen—, las respuestas a cualquier formulario enviado
+por POST, el contenido de los `<textarea>` y las vistas previas de borradores.
+La lista de rutas excluidas es ampliable en los ajustes.
 
 **¿Funciona con caché de página?**
-Sí. Cada idioma tiene su propia URL, así que cada uno se cachea por separado.
+Sí. Cada idioma tiene su propia URL, así que cada uno se cachea por separado, y
+al guardar una traducción o cambiar un slug se le pide al plugin de caché que
+vacíe lo suyo para que el cambio se vea enseguida. Se reconocen WP Rocket, W3
+Total Cache, WP Super Cache, LiteSpeed Cache, Cache Enabler, WP Fastest Cache y
+SiteGround Optimizer; para las demás hay una acción donde engancharse.
 
 **¿Qué pasa si la traducción rompe el diseño?**
 No llega a publicarse. Toda traducción se compara con el original: si pierde una
