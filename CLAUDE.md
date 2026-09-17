@@ -586,7 +586,9 @@ src/
                          MenuLocations, FloatingSwitcher
   Detection/             BotDetector, BrowserLanguage, VisitorRedirect
   Content/               Conditional (shortcodes por idioma)
-  Gettext/  Editor/  Rest/  Admin/
+  Admin/                 SettingsPage, StringsPage, GlossaryPage, StatsPage,
+                         ImportExport, TranslatorProfile, TranslatorAccess
+  Gettext/  Editor/  Rest/
   Compat/                WooCommerce, Forms, Cache, Builders, SeoPlugins
   Jobs/                  PendingTranslator, SlugTranslator, Budget, ContextFactory
   Support/               Options, Capabilities, Logger, Lock, Cache
@@ -652,14 +654,16 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 | 3. Gettext, contenido dinámico y correos | Completa |
 | 4. SEO Pack | Completa, salvo los sitemaps de los plugins de SEO (ADR-16) |
 | 5. Selector, navegación y detección | Completa |
-| 6–8 | Sin empezar |
+| 6. Roles, gestor de cadenas, glosario y estadísticas | Completa |
+| 7–8 | Sin empezar |
 
-Dos puntos del encargo que caen en la fase 3 pertenecen en realidad a fases
-posteriores y se dejan ahí a propósito:
+Un punto del encargo que caía en la fase 3 sigue pendiente, y otro ya está
+resuelto:
 
-- **Editar desde el panel las cadenas de gettext que nunca llegan a una
-  página.** Las que sí aparecen ya se editan desde el editor visual; el resto
-  quedan anotadas y esperan al gestor de cadenas de la fase 6.
+- ~~**Editar desde el panel las cadenas de gettext que nunca llegan a una
+  página.**~~ Resuelto en la fase 6: se registran en cuanto se llama a `__()`,
+  aunque su texto no acabe en el HTML, y el gestor de cadenas las encuentra
+  filtrando por tipo «Cadena del tema o de un plugin».
 - **Idioma del pedido y respuestas de `admin-ajax.php`.** El observador de
   mutaciones ya traduce el resultado visible de esas respuestas, y el filtro
   `pgai_recipient_language` es el punto de entrada para el idioma del pedido.
