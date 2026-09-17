@@ -31,6 +31,14 @@ enum StringType: string {
 	/** Slug de URL. */
 	case Slug = 'slug';
 
+	/**
+	 * Imagen: el valor es una URL o un srcset, no texto.
+	 *
+	 * Nunca se envía al motor de traducción. Una URL no se traduce: se
+	 * sustituye a mano por otra imagen desde la mediateca.
+	 */
+	case Image = 'image';
+
 	/** Cadena de gettext capturada de un tema o plugin. */
 	case Gettext = 'gettext';
 
@@ -39,5 +47,16 @@ enum StringType: string {
 	 */
 	public function is_html(): bool {
 		return self::Block === $this;
+	}
+
+	/**
+	 * Si el contenido es texto que tiene sentido enviar a un motor de
+	 * traducción automática.
+	 *
+	 * Una URL de imagen no lo es, y mandarla solo conseguiría que el motor la
+	 * «tradujera» y rompiera la imagen.
+	 */
+	public function is_machine_translatable(): bool {
+		return self::Image !== $this;
 	}
 }

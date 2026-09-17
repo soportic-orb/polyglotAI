@@ -45,6 +45,8 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 		'aria-roledescription' => true,
 		'content'              => true,
 		'placeholder'          => true,
+		'src'                  => true,
+		'srcset'               => true,
 		'title'                => true,
 		'value'                => true,
 	);
@@ -488,6 +490,24 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 				return in_array( $tag, array( 'INPUT', 'TEXTAREA' ), true )
 					? array( StringType::Attribute, 'placeholder' )
 					: null;
+
+			case 'src':
+				// Solo las imágenes: el src de un script o un iframe no se
+				// cambia por idioma.
+				return 'IMG' === $tag ? array( StringType::Image, 'src' ) : null;
+
+			case 'srcset':
+				// El srcset se enlaza con su imagen por el contexto: así el
+				// editor sabe que, al cambiar la imagen, tiene que cambiar
+				// también sus variantes responsive. Sin esto, la imagen
+				// traducida solo se vería en algunos tamaños de pantalla.
+				if ( 'IMG' !== $tag ) {
+					return null;
+				}
+
+				$source = $processor->get_attribute( 'src' );
+
+				return array( StringType::Image, is_string( $source ) ? 'srcset:' . $source : 'srcset' );
 
 			case 'value':
 				// El value de un input solo es texto visible en los botones. En

@@ -29,6 +29,17 @@ final class Validator {
 	 */
 	private const TRANSLATABLE_ATTRIBUTES = array( 'alt', 'title', 'placeholder', 'aria-label', 'aria-placeholder', 'value' );
 
+	/**
+	 * Atributos de medios que una persona sí puede cambiar dentro de un bloque.
+	 *
+	 * Sirve para sustituir la imagen de un párrafo por su versión en otro
+	 * idioma. Un motor automático no los puede tocar: para él siguen siendo
+	 * intocables.
+	 *
+	 * @var string[]
+	 */
+	private const MEDIA_ATTRIBUTES = array( 'src', 'srcset', 'sizes', 'width', 'height' );
+
 	/** Placeholders de printf y de plantillas habituales. */
 	private const PLACEHOLDER_PATTERN = '/%(?:\d+\$)?[sdfu]|%%|\{\{?\w+\}?\}|###[A-Z0-9_]+###/u';
 
@@ -47,17 +58,29 @@ final class Validator {
 	 * @param string     $original    Texto original.
 	 * @param string     $translation Traducción propuesta.
 	 * @param StringType $type        Tipo de cadena.
+	 * @param bool       $manual      Si el cambio lo escribe una persona. En ese
+	 *                                caso se admite sustituir la imagen de un
+	 *                                bloque, que es una decisión deliberada; a un
+	 *                                motor automático no se le consiente.
 	 * @return ValidationResult Resultado con los motivos de fallo, si los hay.
 	 */
-	public function validate( string $original, string $translation, StringType $type ): ValidationResult {
+	public function validate( string $original, string $translation, StringType $type, bool $manual = false ): ValidationResult {
 		$problems = array();
 
 		if ( '' === trim( $translation ) && '' !== trim( $original ) ) {
 			return ValidationResult::invalid( array( 'empty_translation' ) );
 		}
 
+		if ( StringType::Image === $type ) {
+			// Una imagen es una URL: no hay estructura que conservar, solo que
+			// no esté vacía y que siga siendo una ruta.
+			return str_contains( $translation, '<' )
+				? ValidationResult::invalid( array( 'unexpected_markup' ) )
+				: ValidationResult::valid();
+		}
+
 		if ( $type->is_html() ) {
-			$problems = array_merge( $problems, $this->compare_markup( $original, $translation ) );
+			$problems = array_merge( $problems, $this->compare_markup( $original, $translation, $manual ) );
 		} elseif ( str_contains( $translation, '<' ) && ! str_contains( $original, '<' ) ) {
 			// El motor ha introducido marcado en una cadena que era texto plano.
 			$problems[] = 'unexpected_markup';
@@ -67,9 +90,14 @@ final class Validator {
 			$problems,
 			$this->compare_tokens( $original, $translation, self::PLACEHOLDER_PATTERN, 'placeholders' ),
 			$this->compare_tokens( $original, $translation, self::SHORTCODE_PATTERN, 'shortcodes' ),
-			$this->compare_tokens( $original, $translation, self::URL_PATTERN, 'urls' ),
 			$this->compare_tokens( $original, $translation, self::EMAIL_PATTERN, 'emails' )
 		);
+
+		// Las URLs solo se comparan cuando no es un cambio manual: sustituir la
+		// imagen de un bloque cambia su URL a propósito.
+		if ( ! $manual ) {
+			$problems = array_merge( $problems, $this->compare_tokens( $original, $translation, self::URL_PATTERN, 'urls' ) );
+		}
 
 		return array() === $problems ? ValidationResult::valid() : ValidationResult::invalid( $problems );
 	}
@@ -79,9 +107,10 @@ final class Validator {
 	 *
 	 * @param string $original    HTML original.
 	 * @param string $translation HTML traducido.
+	 * @param bool   $manual      Si el cambio lo escribe una persona.
 	 * @return string[] Motivos de fallo.
 	 */
-	private function compare_markup( string $original, string $translation ): array {
+	private function compare_markup( string $original, string $translation, bool $manual = false ): array {
 		$expected = $this->tag_signature( $original );
 		$actual   = $this->tag_signature( $translation );
 
@@ -98,8 +127,12 @@ final class Validator {
 				return array( 'attribute_set_mismatch' );
 			}
 
+			$may_change = $manual
+				? array_merge( self::TRANSLATABLE_ATTRIBUTES, self::MEDIA_ATTRIBUTES )
+				: self::TRANSLATABLE_ATTRIBUTES;
+
 			foreach ( $tag['attributes'] as $name => $value ) {
-				if ( in_array( $name, self::TRANSLATABLE_ATTRIBUTES, true ) ) {
+				if ( in_array( $name, $may_change, true ) ) {
 					continue;
 				}
 

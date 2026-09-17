@@ -131,13 +131,25 @@ final class SuggestController extends Controller {
 		$by_hash  = array();
 
 		foreach ( $details as $hash => $detail ) {
+			$type = StringType::tryFrom( (string) $detail['type'] ) ?? StringType::Text;
+
+			// Una imagen no se traduce: se sustituye a mano desde la mediateca.
+			// Mandar su URL al motor solo conseguiría romperla.
+			if ( ! $type->is_machine_translatable() ) {
+				continue;
+			}
+
 			$id             = (string) $detail['source_id'];
 			$by_hash[ $id ] = $hash;
-			$requests[]     = new TranslationRequest(
-				$id,
-				(string) $detail['original'],
-				StringType::tryFrom( (string) $detail['type'] ) ?? StringType::Text,
-				$detail['context']
+			$requests[]     = new TranslationRequest( $id, (string) $detail['original'], $type, $detail['context'] );
+		}
+
+		if ( array() === $requests ) {
+			return new WP_REST_Response(
+				array(
+					'suggestions' => array(),
+					'failures'    => array(),
+				)
 			);
 		}
 

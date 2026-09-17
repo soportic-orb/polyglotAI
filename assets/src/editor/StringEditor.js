@@ -34,18 +34,19 @@ function statusLabel( status ) {
 /**
  * Panel de edición de la cadena seleccionada.
  *
- * @param {Object}   props            Propiedades.
- * @param {Object}   props.string     Cadena seleccionada.
- * @param {boolean}  props.canReview  Si el usuario puede marcar como revisada.
- * @param {boolean}  props.canSuggest Si el usuario puede pedir traducción automática.
- * @param {boolean}  props.busy       Si hay una operación en curso.
- * @param {string}   props.error      Error a mostrar.
- * @param {Function} props.onSave     Guardar.
- * @param {Function} props.onSuggest  Sugerir con IA.
- * @param {Function} props.onPrevious Cadena anterior.
- * @param {Function} props.onNext     Cadena siguiente.
- * @param {Function} props.onDraft    Cambio en el borrador.
- * @param {string}   props.draft      Texto en edición.
+ * @param {Object}   props             Propiedades.
+ * @param {Object}   props.string      Cadena seleccionada.
+ * @param {boolean}  props.canReview   Si el usuario puede marcar como revisada.
+ * @param {boolean}  props.canSuggest  Si el usuario puede pedir traducción automática.
+ * @param {boolean}  props.busy        Si hay una operación en curso.
+ * @param {string}   props.error       Error a mostrar.
+ * @param {Function} props.onSave      Guardar.
+ * @param {Function} props.onSuggest   Sugerir con IA.
+ * @param {Function} props.onPrevious  Cadena anterior.
+ * @param {Function} props.onNext      Cadena siguiente.
+ * @param {Function} props.onDraft     Cambio en el borrador.
+ * @param {Function} props.onPickImage Abrir la mediateca.
+ * @param {string}   props.draft       Texto en edición.
  * @return {JSX.Element} Formulario.
  */
 export default function StringEditor( {
@@ -59,6 +60,7 @@ export default function StringEditor( {
 	onPrevious,
 	onNext,
 	onDraft,
+	onPickImage,
 	draft,
 } ) {
 	const [ reviewed, setReviewed ] = useState( false );
@@ -119,29 +121,76 @@ export default function StringEditor( {
 				) }
 			</div>
 
-			<TextareaControl
-				__nextHasNoMarginBottom
-				label={ __( 'Original', 'polyglot-ai' ) }
-				value={ string.original }
-				readOnly
-				rows={ 3 }
-				className="pgai-editor__original"
-				onChange={ () => {} }
-			/>
+			{ string.type === 'image' ? (
+				<div className="pgai-editor__image">
+					<p className="pgai-editor__label">
+						{ __( 'Imagen original', 'polyglot-ai' ) }
+					</p>
+					<img
+						src={ string.original }
+						alt=""
+						className="pgai-editor__thumb"
+					/>
 
-			<TextareaControl
-				__nextHasNoMarginBottom
-				ref={ textarea }
-				label={ __( 'Traducción', 'polyglot-ai' ) }
-				value={ draft }
-				rows={ 5 }
-				onChange={ onDraft }
-				onKeyDown={ onKeyDown }
-				help={ __(
-					'Ctrl+S guarda. Ctrl+Intro guarda y pasa a la siguiente.',
-					'polyglot-ai'
-				) }
-			/>
+					<p className="pgai-editor__label">
+						{ draft && draft !== string.original
+							? __( 'Imagen de este idioma', 'polyglot-ai' )
+							: __(
+									'Este idioma usa la imagen original',
+									'polyglot-ai'
+							  ) }
+					</p>
+
+					{ draft && draft !== string.original && (
+						<img
+							src={ draft }
+							alt=""
+							className="pgai-editor__thumb"
+						/>
+					) }
+
+					<Flex justify="flex-start" wrap>
+						<Button variant="secondary" onClick={ onPickImage }>
+							{ __( 'Elegir imagen…', 'polyglot-ai' ) }
+						</Button>
+
+						{ draft && draft !== string.original && (
+							<Button
+								variant="tertiary"
+								onClick={ () => onDraft( string.original ) }
+							>
+								{ __( 'Usar la original', 'polyglot-ai' ) }
+							</Button>
+						) }
+					</Flex>
+				</div>
+			) : (
+				<>
+					<TextareaControl
+						__nextHasNoMarginBottom
+						label={ __( 'Original', 'polyglot-ai' ) }
+						value={ string.original }
+						readOnly
+						rows={ 3 }
+						className="pgai-editor__original"
+						onChange={ () => {} }
+					/>
+
+					<TextareaControl
+						__nextHasNoMarginBottom
+						ref={ textarea }
+						label={ __( 'Traducción', 'polyglot-ai' ) }
+						value={ draft }
+						rows={ 5 }
+						onChange={ onDraft }
+						onKeyDown={ onKeyDown }
+						help={ __(
+							'Ctrl+S guarda. Ctrl+Intro guarda y pasa a la siguiente.',
+							'polyglot-ai'
+						) }
+					/>
+				</>
+			) }
 
 			{ canReview && (
 				<ToggleControl
@@ -175,7 +224,7 @@ export default function StringEditor( {
 					{ __( 'Guardar', 'polyglot-ai' ) }
 				</Button>
 
-				{ canSuggest && (
+				{ canSuggest && string.type !== 'image' && (
 					<Button
 						variant="secondary"
 						onClick={ onSuggest }

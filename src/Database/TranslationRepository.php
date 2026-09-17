@@ -297,10 +297,12 @@ final class TranslationRepository {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
+				// Las imágenes quedan fuera: su valor es una URL y mandarla a un
+				// motor de traducción solo conseguiría romper la imagen.
 				"SELECT t.source_id, s.hash, s.original, s.type, s.context
 				FROM {$translations} t
 				INNER JOIN {$sources} s ON s.id = t.source_id
-				WHERE t.language = %s AND t.status = %s
+				WHERE t.language = %s AND t.status = %s AND s.type <> 'image'
 				ORDER BY t.source_id ASC
 				LIMIT %d",
 				$language,

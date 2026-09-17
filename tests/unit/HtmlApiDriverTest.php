@@ -116,7 +116,7 @@ final class HtmlApiDriverTest extends TestCase {
 
 	public function test_extrae_los_atributos_traducibles(): void {
 		$html = '<div>'
-			. '<img alt="Un gat" src="gat.png" title="Foto">'
+			. '<img alt="Un gat" title="Foto">'
 			. '<input type="text" placeholder="El teu nom" value="no-tocar">'
 			. '<input type="submit" value="Enviar">'
 			. '<span aria-label="Tanca"></span>'
@@ -132,6 +132,50 @@ final class HtmlApiDriverTest extends TestCase {
 			),
 			$this->extract( $html )
 		);
+	}
+
+	public function test_extrae_la_imagen_como_un_tipo_propio(): void {
+		// Una URL no es texto: tiene su propio tipo para que nunca llegue al
+		// motor de traducción automática.
+		$units = $this->driver->extract( '<div><img src="/gat.png" alt="Un gat"></div>' );
+
+		$imagen = array_values( array_filter( $units, static fn( $u ) => StringType::Image === $u->type ) );
+
+		$this->assertCount( 1, $imagen );
+		$this->assertSame( '/gat.png', $imagen[0]->value );
+		$this->assertSame( 'src', $imagen[0]->context );
+		$this->assertFalse( $imagen[0]->type->is_machine_translatable() );
+	}
+
+	public function test_el_srcset_se_enlaza_con_su_imagen_por_el_contexto(): void {
+		// Sin ese enlace, cambiar la imagen dejaría las variantes responsive
+		// apuntando a la original y la traducción solo se vería en algunos
+		// tamaños de pantalla.
+		$units = $this->driver->extract(
+			'<div><img src="/gat.png" srcset="/gat-480.png 480w, /gat-960.png 960w" alt="Un gat"></div>'
+		);
+
+		$imagenes = array_values( array_filter( $units, static fn( $u ) => StringType::Image === $u->type ) );
+
+		$this->assertCount( 2, $imagenes );
+
+		$contextos = array_column(
+			array_map( static fn( $u ) => array( 'context' => $u->context ), $imagenes ),
+			'context'
+		);
+
+		$this->assertContains( 'src', $contextos );
+		$this->assertContains( 'srcset:/gat.png', $contextos );
+	}
+
+	public function test_no_trata_como_imagen_el_src_de_otras_etiquetas(): void {
+		$units = $this->driver->extract(
+			'<div><iframe src="/video" title="Vídeo"></iframe><source src="/a.mp4"></div>'
+		);
+
+		foreach ( $units as $unit ) {
+			$this->assertNotSame( StringType::Image, $unit->type, 'No debe tratarse como imagen: ' . $unit->value );
+		}
 	}
 
 	public function test_extrae_las_metas_traducibles_y_no_las_demas(): void {

@@ -47,9 +47,10 @@ final class DocumentProcessorTest extends TestCase {
 	 */
 	private function traductor(): callable {
 		return static function ( ExtractedString $unit ): ?string {
-			if ( StringType::Block === $unit->type ) {
-				// Un bloque debe conservar su marcado; solo se marca el inicio.
-				return '«' . $unit->value . '»';
+			// Las imágenes no pasan por el motor: su valor es una URL, no texto.
+			// Se sustituyen a mano desde la mediateca.
+			if ( StringType::Image === $unit->type ) {
+				return null;
 			}
 
 			return '«' . $unit->value . '»';
@@ -71,8 +72,11 @@ final class DocumentProcessorTest extends TestCase {
 
 		// Las URLs y los atributos no traducibles no se tocan.
 		$this->assertStringContainsString( 'href="/wp-content/themes/x/style.css"', $result );
-		$this->assertStringContainsString( 'src="/logo.png"', $result );
 		$this->assertStringContainsString( 'action="/carrito/" method="post"', $result );
+
+		// El src de una imagen SÍ es sustituible, pero solo a mano: el motor no
+		// lo ve, así que aquí sale intacto.
+		$this->assertStringContainsString( 'src="/logo.png"', $result );
 
 		// El contenido excluido sigue igual.
 		$this->assertStringContainsString( '<p class="notranslate">ACME Corporation&reg;</p>', $result );
@@ -115,7 +119,9 @@ final class DocumentProcessorTest extends TestCase {
 	public function test_escapa_las_comillas_en_los_atributos(): void {
 		$result = $this->processor->translate(
 			'<img alt=sencillo src="a.png">',
-			static fn( ExtractedString $u ): string => 'diu "hola" & adéu'
+			static fn( ExtractedString $u ): ?string => StringType::Attribute === $u->type
+				? 'diu "hola" & adéu'
+				: null
 		);
 
 		$this->assertSame( '<img alt="diu &quot;hola&quot; &amp; adéu" src="a.png">', $result );

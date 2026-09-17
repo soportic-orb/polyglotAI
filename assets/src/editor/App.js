@@ -14,6 +14,7 @@ import {
 
 import StringEditor from './StringEditor';
 import StringList from './StringList';
+import { buildSrcset, openMediaLibrary } from './media';
 import { saveStrings, suggestStrings } from './api';
 
 const boot = window.pgaiEditor || {};
@@ -33,6 +34,10 @@ export default function App() {
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( '' );
 	const [ message, setMessage ] = useState( '' );
+
+	// Al cambiar una imagen hay que cambiar también su srcset, o la traducción
+	// solo se vería en algunos tamaños de pantalla.
+	const [ companion, setCompanion ] = useState( null );
 
 	const iframe = useRef( null );
 
@@ -97,8 +102,39 @@ export default function App() {
 	// Al cambiar de cadena, el borrador parte de su traducción actual.
 	useEffect( () => {
 		setDraft( current ? current.translation || '' : '' );
+		setCompanion( null );
 		setError( '' );
 	}, [ current ] );
+
+	/**
+	 * Abre la mediateca para sustituir la imagen seleccionada.
+	 */
+	const pickImage = useCallback( () => {
+		if ( ! current ) {
+			return;
+		}
+
+		openMediaLibrary( ( attachment ) => {
+			setDraft( attachment.url );
+
+			// El srcset de esta imagen viaja como cadena aparte, enlazada por
+			// su contexto; se prepara para guardarse junto con ella.
+			const srcset = strings.find(
+				( string ) =>
+					string.type === 'image' &&
+					string.context === `srcset:${ current.original }`
+			);
+
+			setCompanion(
+				srcset
+					? {
+							hash: srcset.hash,
+							translation: buildSrcset( attachment ),
+					  }
+					: null
+			);
+		} );
+	}, [ current, strings ] );
 
 	/**
 	 * Selecciona una cadena y la resalta en la vista previa.
@@ -151,16 +187,16 @@ export default function App() {
 			setError( '' );
 
 			try {
-				const response = await saveStrings(
-					[
-						{
-							hash: current.hash,
-							translation: draft,
-							status: reviewed ? 'reviewed' : 'manual',
-						},
-					],
-					language
-				);
+				const status = reviewed ? 'reviewed' : 'manual';
+				const payload = [
+					{ hash: current.hash, translation: draft, status },
+				];
+
+				if ( companion ) {
+					payload.push( { ...companion, status } );
+				}
+
+				const response = await saveStrings( payload, language );
 
 				if ( response.rejected && response.rejected[ current.hash ] ) {
 					// El servidor aplica a lo escrito a mano la misma validación
@@ -202,6 +238,24 @@ export default function App() {
 					} );
 				}
 
+				// El srcset se aplica en la vista previa igual que la imagen.
+				if ( companion && response.saved[ companion.hash ] ) {
+					setStrings( ( previous ) =>
+						previous.map( ( string ) =>
+							string.hash === companion.hash
+								? {
+										...string,
+										translation:
+											response.saved[ companion.hash ]
+												.translation,
+								  }
+								: string
+						)
+					);
+				}
+
+				setCompanion( null );
+
 				if ( advance ) {
 					move( 1 );
 				}
@@ -214,7 +268,7 @@ export default function App() {
 
 			setBusy( false );
 		},
-		[ current, draft, language, move, toPreview ]
+		[ current, draft, language, move, toPreview, companion ]
 	);
 
 	/**
@@ -428,6 +482,7 @@ export default function App() {
 								error={ error }
 								onSave={ save }
 								onSuggest={ suggest }
+								onPickImage={ pickImage }
 								onPrevious={ () => move( -1 ) }
 								onNext={ () => move( 1 ) }
 							/>

@@ -106,6 +106,9 @@ final class EditorPage {
 			true
 		);
 
+		// El selector de medios del editor usa la mediateca de WordPress.
+		wp_enqueue_media();
+
 		wp_enqueue_style( 'wp-components' );
 		wp_enqueue_style( 'pgai-editor', PGAI_URL . 'assets/build/style-editor.css', array( 'wp-components' ), $asset['version'] );
 

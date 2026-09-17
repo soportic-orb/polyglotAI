@@ -207,7 +207,7 @@ final class StringsController extends Controller {
 
 			// La misma validación estructural que se aplica a lo que devuelve el
 			// motor: una persona también puede perder una etiqueta sin querer.
-			$validation = $this->validator->validate( (string) $detail['original'], $translation, $type );
+			$validation = $this->validator->validate( (string) $detail['original'], $translation, $type, true );
 
 			if ( ! $validation->is_valid ) {
 				$rejected[ $hash ] = $validation->summary();
@@ -245,6 +245,11 @@ final class StringsController extends Controller {
 	 * @param StringType $type        Tipo de cadena.
 	 */
 	private function sanitize( string $translation, StringType $type ): string {
+		if ( StringType::Image === $type ) {
+			// Una imagen es una URL y se valida como tal.
+			return esc_url_raw( $translation );
+		}
+
 		if ( $type->is_html() ) {
 			return wp_kses( $translation, self::allowed_html() );
 		}
