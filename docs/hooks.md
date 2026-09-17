@@ -54,6 +54,21 @@ Número de cadenas por llamada. Por defecto 40.
 Clases CSS que excluyen un elemento y todo su contenido. Por defecto
 `['notranslate']`.
 
+### `pgai_allowed_html`
+
+Etiquetas y atributos admitidos en una traducción escrita a mano. La lista por
+defecto es corta a propósito: en una traducción solo caben marcas de estilo en
+línea, enlaces e imágenes. No se usa `wp_kses_post`, que admite bastante más de
+lo que un traductor necesita.
+
+```php
+add_filter( 'pgai_allowed_html', function ( array $allowed ): array {
+    $allowed['abbr'] = array( 'title' => true );
+
+    return $allowed;
+} );
+```
+
 ### `pgai_is_bot`
 
 Afina la detección de tráfico automatizado. Devolver `true` impide que esa
@@ -76,6 +91,78 @@ add_filter( 'pgai_is_bot', function ( bool $is_bot, string $agent ): bool {
 | `pgai_document_processing_failed` | `Throwable $error` | La traducción de una página ha fallado y se sirve el original. |
 | `pgai_document_safety_check_failed` | `string $driver` | La comprobación de integridad ha rechazado el resultado. |
 | `pgai_no_driver_available` | — | No hay driver de análisis viable; el plugin deja de traducir. |
+| `pgai_budget_exhausted` | `string $language` | El tope mensual de tokens ha detenido la traducción. |
+
+## Endpoints REST
+
+Espacio de nombres `pgai/v1`. Todos exigen un nonce `wp_rest` y una capacidad
+concreta; ninguno usa `__return_true` como comprobación de permiso.
+
+### `GET /wp-json/pgai/v1/strings`
+
+Devuelve cadenas con su original, su traducción y su estado.
+Capacidad: `pgai_translate`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `language` | string | Locale de destino. Obligatorio. |
+| `hashes[]` | string[] | Hashes a recuperar. Máximo 500 por petición. |
+
+### `POST /wp-json/pgai/v1/strings`
+
+Guarda traducciones escritas a mano. Capacidad: `pgai_translate`; marcar como
+revisada exige además `pgai_review`.
+
+```json
+{
+  "language": "en_US",
+  "translations": [
+    { "hash": "…", "translation": "Add to cart", "status": "manual" }
+  ]
+}
+```
+
+La respuesta separa lo guardado de lo rechazado. Una traducción se rechaza si no
+conserva la estructura del original: se aplica la misma validación que a lo que
+devuelve el motor, porque una persona también puede perder una etiqueta sin
+querer.
+
+```json
+{
+  "saved": { "…": { "translation": "Add to cart", "status": "manual" } },
+  "rejected": { "…": "tag_count_mismatch" }
+}
+```
+
+### `POST /wp-json/pgai/v1/suggest`
+
+Traduce cadenas con el motor automático. Capacidad: **`pgai_run_auto_translate`**,
+no `pgai_translate`: esto gasta presupuesto de API.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `language` | string | Locale de destino. Obligatorio. |
+| `hashes[]` | string[] | Hashes a traducir. Máximo 60 por petición. |
+| `save` | bool | Si además se guardan. Por defecto `false`: la sugerencia solo rellena el campo hasta que el traductor la acepta. |
+
+Con `save` activo, el guardado respeta la precedencia de estados: una sugerencia
+automática no pisa una corrección manual ni aunque se pulse «traducir todo».
+
+Devuelve `429` si se ha alcanzado el tope mensual de tokens, `502` si el motor
+falla y `503` si el fallo admite reintento.
+
+## Mensajes entre el editor y la vista previa
+
+El panel del editor y el iframe se comunican con `postMessage`, siempre
+comprobando el origen.
+
+| Origen | Tipo | Datos |
+|---|---|---|
+| vista previa | `ready` | `strings`, `language`, `url`, `path` |
+| vista previa | `select` | `hash` |
+| vista previa | `navigate` | `url` |
+| editor | `update` | `hash`, `translation`, `status` |
+| editor | `highlight` | `hash` |
 
 ## Exclusiones en el marcado
 

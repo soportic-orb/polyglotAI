@@ -1,0 +1,235 @@
+/**
+ * Estilos del editor visual.
+ *
+ * El editor ocupa la pantalla completa dentro del escritorio de WordPress, así
+ * que hay que neutralizar el relleno que este añade a sus páginas.
+ */
+
+#wpcontent {
+	padding-left: 0;
+}
+
+.pgai-editor-root {
+	margin: 0 0 0 -20px;
+}
+
+.pgai-editor {
+	display: flex;
+	flex-direction: column;
+
+	/* Alto de la ventana menos la barra de administración. */
+	height: calc(100vh - 32px);
+	background: #f0f0f1;
+
+	&__bar {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 8px 16px;
+		background: #fff;
+		border-bottom: 1px solid #dcdcde;
+		flex: 0 0 auto;
+	}
+
+	&__brand {
+		font-size: 14px;
+		margin-right: auto;
+	}
+
+	&__exit {
+		margin-left: 8px;
+		text-decoration: none;
+	}
+
+	&__body {
+		display: flex;
+		flex: 1 1 auto;
+		min-height: 0;
+	}
+
+	&__panel {
+		display: flex;
+		flex-direction: column;
+		width: 380px;
+		flex: 0 0 380px;
+		background: #fff;
+		border-right: 1px solid #dcdcde;
+		overflow-y: auto;
+		padding: 16px;
+		gap: 16px;
+	}
+
+	&__preview {
+		flex: 1 1 auto;
+		min-width: 0;
+		background: #fff;
+	}
+
+	&__iframe {
+		width: 100%;
+		height: 100%;
+		border: 0;
+		display: block;
+	}
+
+	&__loading,
+	&__empty {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+		padding: 32px 8px;
+		color: #646970;
+		text-align: center;
+	}
+
+	&__form {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	&__meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	&__context {
+		font-size: 11px;
+		color: #646970;
+		font-family: monospace;
+	}
+
+	&__original textarea {
+		background: #f6f7f7;
+		color: #3c434a;
+	}
+
+	&__actions,
+	&__nav {
+		gap: 8px;
+	}
+
+	&__notice {
+		margin: 0;
+	}
+}
+
+.pgai-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 9px;
+	font-size: 11px;
+	line-height: 1.6;
+	background: #f0f0f1;
+	color: #3c434a;
+
+	&--pending {
+		background: #fcf9e8;
+		color: #8a6d00;
+	}
+
+	&--error {
+		background: #fcf0f1;
+		color: #b32d2e;
+	}
+
+	&--automatic {
+		background: #f0f6fc;
+		color: #2271b1;
+	}
+
+	&--reviewed,
+	&--manual {
+		background: #edfaef;
+		color: #007017;
+	}
+}
+
+.pgai-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	border-top: 1px solid #dcdcde;
+	padding-top: 12px;
+
+	&__count,
+	&__empty {
+		margin: 0;
+		font-size: 12px;
+		color: #646970;
+	}
+
+	&__title {
+		font-size: 11px;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: #646970;
+		margin: 12px 0 4px;
+	}
+
+	&__items {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	/* Va antes que las variantes de estado que lo referencian: stylelint exige
+	   que el selector simple preceda al compuesto. */
+	&__text {
+		display: block;
+		overflow-wrap: anywhere;
+	}
+
+	&__item {
+		display: block;
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: 0;
+		border-left: 3px solid transparent;
+		padding: 6px 8px;
+		cursor: pointer;
+		font-size: 13px;
+		line-height: 1.4;
+		color: #1d2327;
+
+		&:hover {
+			background: #f6f7f7;
+		}
+
+		&.is-selected {
+			background: #f0f6fc;
+			border-left-color: #2271b1;
+		}
+
+		/* El estado se ve en la lista sin depender solo del color: el borde
+		   izquierdo cambia de grosor y el texto de opacidad. */
+		&--pending .pgai-list__text {
+			color: #646970;
+			font-style: italic;
+		}
+
+		&--error {
+			border-left-color: #d63638;
+		}
+	}
+
+}
+
+@media (max-width: 960px) {
+
+	.pgai-editor__body {
+		flex-direction: column;
+	}
+
+	.pgai-editor__panel {
+		width: 100%;
+		flex: 0 0 auto;
+		max-height: 45vh;
+		border-right: 0;
+		border-bottom: 1px solid #dcdcde;
+	}
+}

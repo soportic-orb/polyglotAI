@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace PolyglotAI\Html;
 
+use PolyglotAI\Editor\PreviewRenderer;
 use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Translation\DictionaryFactory;
@@ -32,6 +33,7 @@ final class OutputBuffer {
 	 * @param DictionaryFactory       $dictionary Constructor de diccionarios.
 	 * @param MissingQueue            $queue      Cola de cadenas sin traducir.
 	 * @param LinkRewriter            $links      Reescritor de enlaces internos.
+	 * @param PreviewRenderer|null    $preview    Vista previa del editor visual.
 	 */
 	public function __construct(
 		private readonly BailConditions $bail,
@@ -40,7 +42,8 @@ final class OutputBuffer {
 		private readonly DocumentDriverInterface $driver,
 		private readonly DictionaryFactory $dictionary,
 		private readonly MissingQueue $queue,
-		private readonly LinkRewriter $links
+		private readonly LinkRewriter $links,
+		private readonly ?PreviewRenderer $preview = null
 	) {}
 
 	/**
@@ -54,6 +57,15 @@ final class OutputBuffer {
 	 * Arranca el buffer si procede.
 	 */
 	public function start(): void {
+		// La vista previa del editor fija su propio idioma, así que se comprueba
+		// antes que nada: sin esto, editar una página cuya URL es la del idioma
+		// por defecto abriría un iframe sin marcar.
+		if ( null !== $this->preview && $this->preview->is_active() ) {
+			ob_start( array( $this, 'filter' ) );
+
+			return;
+		}
+
 		// En el idioma por defecto el contenido ya está en su idioma: ni se
 		// arranca el buffer, para no pagar la copia del HTML.
 		if ( $this->request->is_default() || ! $this->bail->should_process() ) {
@@ -74,22 +86,35 @@ final class OutputBuffer {
 			return $html;
 		}
 
+		$editing  = null !== $this->preview && $this->preview->is_active();
 		$language = $this->request->language();
 		$units    = $this->driver->extract( $html );
 
 		if ( array() !== $units ) {
-			$dictionary = $this->dictionary->build( $units, $language->locale );
+			$dictionary = $this->dictionary->build( $units, $language->locale, $editing );
 
-			// Las cadenas que faltan se anotan para traducirlas en segundo plano.
-			// Aquí NO se llama a la API: la carga del visitante no se bloquea nunca.
-			if ( $dictionary->has_missing() ) {
-				$this->queue->enqueue( $dictionary->missing(), $language->locale );
+			if ( $editing && null !== $this->preview ) {
+				$preview = $this->preview;
+
+				$html = $preview->inject(
+					$this->processor->translate(
+						$html,
+						static fn( ExtractedString $unit ) => $preview->decorate( $unit, $dictionary )
+					)
+				);
+			} else {
+				// Las cadenas que faltan se anotan para traducirlas en segundo
+				// plano. Aquí NO se llama a la API: la carga del visitante no se
+				// bloquea nunca.
+				if ( $dictionary->has_missing() ) {
+					$this->queue->enqueue( $dictionary->missing(), $language->locale );
+				}
+
+				$html = $this->processor->translate(
+					$html,
+					static fn( ExtractedString $unit ): ?string => $dictionary->get( $unit )
+				);
 			}
-
-			$html = $this->processor->translate(
-				$html,
-				static fn( ExtractedString $unit ): ?string => $dictionary->get( $unit )
-			);
 		}
 
 		// Segunda pasada, independiente: un enlace puede vivir dentro de una

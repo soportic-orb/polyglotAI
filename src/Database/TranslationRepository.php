@@ -75,6 +75,53 @@ final class TranslationRepository {
 	}
 
 	/**
+	 * Traducciones con su estado, para el editor visual.
+	 *
+	 * A diferencia de lookup(), incluye también lo pendiente y lo erróneo: el
+	 * editor necesita ver y corregir precisamente eso.
+	 *
+	 * @param string[] $hashes   Hashes de las cadenas.
+	 * @param string   $language Locale de destino.
+	 * @return array<string, array{translation:string, status:string}>
+	 */
+	public function lookup_detailed( array $hashes, string $language ): array {
+		global $wpdb;
+
+		if ( array() === $hashes ) {
+			return array();
+		}
+
+		$sources      = Schema::table( 'sources' );
+		$translations = Schema::table( 'translations' );
+		$placeholders = implode( ',', array_fill( 0, count( $hashes ), '%s' ) );
+		$arguments    = array_merge( array( $language ), $hashes );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT s.hash, t.translation, t.status
+				FROM {$translations} t
+				INNER JOIN {$sources} s ON s.id = t.source_id
+				WHERE t.language = %s AND s.hash IN ({$placeholders})",
+				$arguments
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$map = array();
+
+		foreach ( (array) $rows as $row ) {
+			$map[ (string) $row['hash'] ] = array(
+				'translation' => (string) $row['translation'],
+				'status'      => (string) $row['status'],
+			);
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Estado actual de una traducción.
 	 *
 	 * @param int    $source_id Identificador de la cadena original.

@@ -4,20 +4,23 @@
     "private": true,
     "license": "UNLICENSED",
     "scripts": {
-        "build": "wp-scripts build",
-        "start": "wp-scripts start",
-        "lint:js": "wp-scripts lint-js",
-        "lint:css": "wp-scripts lint-style",
+        "build": "wp-scripts build editor=./assets/src/editor/index.js preview=./assets/src/preview/index.js --output-path=assets/build",
+        "start": "wp-scripts start editor=./assets/src/editor/index.js preview=./assets/src/preview/index.js --output-path=assets/build",
+        "lint:js": "wp-scripts lint-js assets/src",
+        "lint:css": "wp-scripts lint-style \"assets/src/**/*.scss\"",
         "format": "wp-scripts format",
         "env:start": "wp-env start",
         "env:stop": "wp-env stop",
         "env:clean": "wp-env clean all",
         "test:e2e": "playwright test",
-        "makepot": "wp-cli i18n make-pot . languages/polyglot-ai.pot --domain=polyglot-ai --exclude=vendor,node_modules,tests"
+        "makepot": "wp-cli i18n make-pot . languages/polyglot-ai.pot --domain=polyglot-ai --exclude=vendor,node_modules,tests",
+        "test:js": "wp-scripts test-unit-js"
     },
     "devDependencies": {
+        "@babel/runtime": "^8.0.5",
         "@playwright/test": "^1.45.0",
         "@wordpress/env": "^10.2.0",
-        "@wordpress/scripts": "^28.1.0"
+        "@wordpress/scripts": "^28.1.0",
+        "typescript": "^5.9.3"
     }
 }

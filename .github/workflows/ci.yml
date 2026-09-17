@@ -75,3 +75,31 @@ jobs:
 
       - name: Tests de integración
         run: composer test:integration
+
+  assets:
+    runs-on: ubuntu-latest
+    name: Recursos
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Estándares de JavaScript
+        run: npm run lint:js
+
+      - name: Estándares de estilos
+        run: npm run lint:css
+
+      - name: Tests de JavaScript
+        run: npm run test:js
+
+      - name: Compilar
+        run: npm run build

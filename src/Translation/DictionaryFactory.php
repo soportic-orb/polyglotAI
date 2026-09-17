@@ -40,10 +40,14 @@ final class DictionaryFactory {
 	/**
 	 * Construye el diccionario de un conjunto de unidades.
 	 *
-	 * @param ExtractedString[] $units    Unidades extraídas del HTML.
-	 * @param string            $language Locale de destino.
+	 * @param ExtractedString[] $units      Unidades extraídas del HTML.
+	 * @param string            $language   Locale de destino.
+	 * @param bool              $with_status Si se necesita también el estado de
+	 *                                       cada traducción. Lo pide el editor
+	 *                                       visual; una visita normal no, y por
+	 *                                       eso no se paga en el camino caliente.
 	 */
-	public function build( array $units, string $language ): PageDictionary {
+	public function build( array $units, string $language, bool $with_status = false ): PageDictionary {
 		$wanted = array();
 
 		foreach ( $units as $unit ) {
@@ -59,8 +63,24 @@ final class DictionaryFactory {
 			return new PageDictionary( array(), array(), $this->hasher );
 		}
 
-		$hashes = array_keys( $wanted );
-		$found  = $this->lookup_cached( $hashes, $language );
+		$hashes   = array_keys( $wanted );
+		$statuses = array();
+
+		if ( $with_status ) {
+			// Sin caché: el editor tiene que ver lo que hay ahora mismo, no lo
+			// que había la última vez que se pintó la página.
+			$found = array();
+
+			foreach ( $this->translations->lookup_detailed( $hashes, $language ) as $hash => $row ) {
+				$statuses[ $hash ] = $row['status'];
+
+				if ( '' !== $row['translation'] ) {
+					$found[ $hash ] = $row['translation'];
+				}
+			}
+		} else {
+			$found = $this->lookup_cached( $hashes, $language );
+		}
 
 		$missing = array();
 
@@ -73,7 +93,7 @@ final class DictionaryFactory {
 			}
 		}
 
-		return new PageDictionary( $found, $missing, $this->hasher );
+		return new PageDictionary( $found, $missing, $this->hasher, $statuses );
 	}
 
 	/**

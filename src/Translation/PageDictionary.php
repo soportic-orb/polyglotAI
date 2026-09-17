@@ -26,11 +26,13 @@ final class PageDictionary {
 	 * @param array<string, string>                                   $translations Hash => traducción.
 	 * @param array<string, array{unit:ExtractedString, hash:string}> $missing      Cadenas sin traducir, por hash.
 	 * @param Hasher                                                  $hasher       Calculador de hashes.
+	 * @param array<string, string>                                   $statuses     Hash => estado. Solo lo necesita el editor.
 	 */
 	public function __construct(
 		private readonly array $translations,
 		private readonly array $missing,
-		private readonly Hasher $hasher
+		private readonly Hasher $hasher,
+		private readonly array $statuses = array()
 	) {}
 
 	/**
@@ -40,6 +42,27 @@ final class PageDictionary {
 	 */
 	public function get( ExtractedString $unit ): ?string {
 		return $this->translations[ $this->hasher->hash( $unit->value, $unit->type, $unit->context ) ] ?? null;
+	}
+
+	/**
+	 * Hash de una unidad.
+	 *
+	 * Lo expone el diccionario para que nadie más tenga que saber cómo se
+	 * calcula ni volver a construir un Hasher para averiguarlo.
+	 *
+	 * @param ExtractedString $unit Unidad extraída del HTML.
+	 */
+	public function hash_of( ExtractedString $unit ): string {
+		return $this->hasher->hash( $unit->value, $unit->type, $unit->context );
+	}
+
+	/**
+	 * Estado de la traducción de una unidad.
+	 *
+	 * @param ExtractedString $unit Unidad extraída del HTML.
+	 */
+	public function status_of( ExtractedString $unit ): string {
+		return $this->statuses[ $this->hash_of( $unit ) ] ?? 'pending';
 	}
 
 	/**

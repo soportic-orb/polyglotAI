@@ -1,0 +1,44 @@
+/**
+ * Estilos de la vista previa del editor.
+ *
+ * Solo se cargan en el iframe del editor, nunca en una visita normal.
+ */
+
+.pgai-preview {
+
+	.pgai-string {
+		outline: 1px dashed rgba(34, 113, 177, 0.45);
+		outline-offset: 2px;
+		cursor: pointer;
+		transition: outline-color 120ms ease, background-color 120ms ease;
+
+		&:hover {
+			outline: 2px solid #2271b1;
+			background-color: rgba(34, 113, 177, 0.08);
+		}
+
+		/* La cadena seleccionada se ve sin ambigüedad aunque el tema tenga
+		   colores fuertes. */
+		&--active {
+			outline: 2px solid #d63638;
+			background-color: rgba(214, 54, 56, 0.1);
+		}
+
+		/* Lo pendiente y lo que ha fallado se distinguen de un vistazo. */
+		&[data-pgai-status="pending"] {
+			outline-color: rgba(219, 166, 23, 0.7);
+		}
+
+		&[data-pgai-status="error"] {
+			outline-color: rgba(214, 54, 56, 0.8);
+			outline-style: dotted;
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.pgai-preview .pgai-string {
+		transition: none;
+	}
+}

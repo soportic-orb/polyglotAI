@@ -59,9 +59,27 @@ final class MissingQueue {
 		$limit   = max( 1, (int) $this->options->get( 'realtime_max_queued', 50 ) );
 		$missing = array_slice( $missing, 0, $limit, true );
 
+		$this->record( $missing, $language );
+		$this->schedule( $language );
+	}
+
+	/**
+	 * Registra unas cadenas como pendientes, sin programar nada.
+	 *
+	 * Lo usa el editor visual: un traductor tiene que poder corregir cualquier
+	 * cadena de la página, incluida una que nadie ha visto todavía, y eso exige
+	 * que exista en el diccionario. A diferencia de enqueue(), esto no depende
+	 * del interruptor de traducción en segundo plano ni del filtro de bots:
+	 * aquí no se gasta nada, solo se anota.
+	 *
+	 * @param array<string, array{unit:\PolyglotAI\Html\ExtractedString, hash:string}> $strings  Cadenas.
+	 * @param string                                                                   $language Locale de destino.
+	 * @return int[] Identificadores de las cadenas registradas.
+	 */
+	public function record( array $strings, string $language ): array {
 		$source_ids = array();
 
-		foreach ( $missing as $hash => $entry ) {
+		foreach ( $strings as $hash => $entry ) {
 			$unit = $entry['unit'];
 
 			$source_ids[] = $this->sources->remember(
@@ -74,7 +92,7 @@ final class MissingQueue {
 
 		$this->translations->mark_pending( $source_ids, $language );
 
-		$this->schedule( $language );
+		return $source_ids;
 	}
 
 	/**

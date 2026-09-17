@@ -16,6 +16,11 @@ use PolyglotAI\Database\ApiLogRepository;
 use PolyglotAI\Database\SourceRepository;
 use PolyglotAI\Database\TranslationRepository;
 use PolyglotAI\Detection\BotDetector;
+use PolyglotAI\Editor\AdminBar;
+use PolyglotAI\Editor\EditMode;
+use PolyglotAI\Editor\EditorPage;
+use PolyglotAI\Editor\MarkerDecorator;
+use PolyglotAI\Editor\PreviewRenderer;
 use PolyglotAI\Engines\Claude\ClaudeClient;
 use PolyglotAI\Engines\Claude\ClaudeEngine;
 use PolyglotAI\Engines\Claude\PromptBuilder;
@@ -34,6 +39,8 @@ use PolyglotAI\Html\TagScanner;
 use PolyglotAI\Jobs\PendingTranslator;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
+use PolyglotAI\Rest\StringsController;
+use PolyglotAI\Rest\SuggestController;
 use PolyglotAI\Routing\HeadTags;
 use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Routing\RequestContext;
@@ -116,9 +123,13 @@ final class Plugin {
 	public function register_services(): void {
 		if ( is_admin() ) {
 			$this->settings_page()->register();
+			$this->editor_page()->register();
 		}
 
 		$this->switcher()->register();
+		$this->admin_bar()->register();
+
+		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 
 		// La traducción en segundo plano se registra siempre, también cuando no
 		// hay driver: puede haber cadenas pendientes de una visita anterior.
@@ -134,8 +145,35 @@ final class Plugin {
 			return;
 		}
 
+		// La vista previa del editor fija el idioma que se está traduciendo
+		// antes de que nada resuelva la URL.
+		add_action( 'template_redirect', array( $this->edit_mode(), 'apply_language' ), 0 );
+		add_action( 'wp_enqueue_scripts', array( $this->preview(), 'enqueue' ) );
+
 		$this->head_tags()->register();
 		$this->output_buffer()->register();
+	}
+
+	/**
+	 * Registra los endpoints REST.
+	 */
+	public function register_rest_routes(): void {
+		( new StringsController(
+			$this->languages(),
+			$this->sources(),
+			$this->translations(),
+			new Validator()
+		) )->register_routes();
+
+		( new SuggestController(
+			$this->languages(),
+			$this->engine(),
+			$this->sources(),
+			$this->translations(),
+			$this->api_log(),
+			$this->pending_translator(),
+			$this->options()
+		) )->register_routes();
 	}
 
 	/**
@@ -338,14 +376,74 @@ final class Plugin {
 				new DocumentProcessor( $driver, new Splicer(), new Escaper(), new SafetyCheck() ),
 				$driver,
 				$this->dictionary(),
-				new MissingQueue( $this->sources(), $this->translations(), new BotDetector(), $this->options() ),
+				$this->missing_queue(),
 				new LinkRewriter(
 					$this->url_converter(),
 					new TagScanner(),
 					new Splicer(),
 					(string) wp_parse_url( home_url(), PHP_URL_HOST )
-				)
+				),
+				$this->preview()
 			)
+		);
+	}
+
+	/**
+	 * Detector del modo de edición.
+	 */
+	public function edit_mode(): EditMode {
+		return $this->service(
+			'edit_mode',
+			fn(): EditMode => new EditMode( $this->languages(), $this->request() )
+		);
+	}
+
+	/**
+	 * Vista previa del editor visual.
+	 */
+	public function preview(): PreviewRenderer {
+		return $this->service(
+			'preview',
+			fn(): PreviewRenderer => new PreviewRenderer(
+				$this->edit_mode(),
+				new MarkerDecorator( $this->hasher() ),
+				$this->missing_queue()
+			)
+		);
+	}
+
+	/**
+	 * Registro de cadenas pendientes.
+	 */
+	private function missing_queue(): MissingQueue {
+		return $this->service(
+			'missing_queue',
+			fn(): MissingQueue => new MissingQueue(
+				$this->sources(),
+				$this->translations(),
+				new BotDetector(),
+				$this->options()
+			)
+		);
+	}
+
+	/**
+	 * Pantalla del editor visual.
+	 */
+	private function editor_page(): EditorPage {
+		return $this->service(
+			'editor_page',
+			fn(): EditorPage => new EditorPage( $this->languages(), $this->edit_mode() )
+		);
+	}
+
+	/**
+	 * Botón del editor en la barra de administración.
+	 */
+	private function admin_bar(): AdminBar {
+		return $this->service(
+			'admin_bar',
+			fn(): AdminBar => new AdminBar( $this->languages(), $this->url_converter(), $this->edit_mode() )
 		);
 	}
 
