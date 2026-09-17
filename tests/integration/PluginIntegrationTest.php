@@ -68,7 +68,7 @@ final class PluginIntegrationTest extends WP_UnitTestCase {
 		$this->assertSame( 'wp-html-api', $driver->name() );
 	}
 
-	public function test_el_diccionario_de_una_pagina_se_resuelve_en_una_consulta(): void {
+	public function test_el_diccionario_no_consulta_una_vez_por_cadena(): void {
 		global $wpdb;
 
 		$sources      = new SourceRepository();
@@ -78,23 +78,70 @@ final class PluginIntegrationTest extends WP_UnitTestCase {
 		$driver = ( new DriverFactory() )->create( new TagScanner(), new ExclusionRules() );
 		$this->assertNotNull( $driver );
 
-		$html  = '<div><p>Hola</p><p>Adiós</p><p>Gracias</p></div>';
-		$units = $driver->extract( $html );
-
-		foreach ( $units as $unit ) {
-			$id = $sources->remember( $hasher->hash( $unit->value, $unit->type, $unit->context ), $unit->value, $unit->type, $unit->context );
-			$translations->save( $id, 'en_US', strtoupper( $unit->value ), Status::Automatic );
-		}
-
 		$factory = new DictionaryFactory( $translations, $hasher, new Normalizer() );
 
-		$before     = $wpdb->num_queries;
-		$dictionary = $factory->build( $units, 'en_US' );
-		$queries    = $wpdb->num_queries - $before;
+		/**
+		 * Prepara una página con N párrafos ya traducidos y devuelve sus unidades.
+		 *
+		 * @param int $count Número de párrafos.
+		 * @return \PolyglotAI\Html\ExtractedString[]
+		 */
+		$prepare = function ( int $count ) use ( $driver, $sources, $translations, $hasher ): array {
+			$html = '<div>';
+
+			for ( $i = 0; $i < $count; $i++ ) {
+				$html .= '<p>Cadena número ' . $i . '</p>';
+			}
+
+			$html .= '</div>';
+
+			$units = $driver->extract( $html );
+
+			foreach ( $units as $unit ) {
+				$id = $sources->remember(
+					$hasher->hash( $unit->value, $unit->type, $unit->context ),
+					$unit->value,
+					$unit->type,
+					$unit->context
+				);
+
+				$translations->save( $id, 'en_US', strtoupper( $unit->value ), Status::Automatic );
+			}
+
+			return $units;
+		};
+
+		$few  = $prepare( 3 );
+		$many = $prepare( 40 );
+
+		// Primera construcción sin medir: deja en caché las opciones que
+		// WordPress consulta una sola vez por petición.
+		$factory->build( $prepare( 2 ), 'en_US' );
+
+		$before      = $wpdb->num_queries;
+		$dictionary  = $factory->build( $few, 'en_US' );
+		$few_queries = $wpdb->num_queries - $before;
 
 		$this->assertSame( 3, $dictionary->count() );
-		$this->assertFalse( $dictionary->has_missing() );
-		$this->assertLessThanOrEqual( 1, $queries, "El diccionario ha necesitado {$queries} consultas; debe bastar una." );
+
+		$before       = $wpdb->num_queries;
+		$dictionary   = $factory->build( $many, 'en_US' );
+		$many_queries = $wpdb->num_queries - $before;
+
+		$this->assertSame( 40, $dictionary->count() );
+
+		// Es la propiedad que importa: el coste en consultas no depende del
+		// número de cadenas de la página. Una consulta por cadena sería la
+		// diferencia entre una web que responde y una que no.
+		$this->assertSame(
+			$few_queries,
+			$many_queries,
+			sprintf(
+				'3 cadenas han costado %d consultas y 40 han costado %d: el diccionario escala con el número de cadenas.',
+				$few_queries,
+				$many_queries
+			)
+		);
 	}
 
 	public function test_el_diccionario_indica_lo_que_falta_por_traducir(): void {
