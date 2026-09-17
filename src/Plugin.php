@@ -53,6 +53,7 @@ use PolyglotAI\Languages\UserLanguage;
 use PolyglotAI\Mail\LanguageResolver;
 use PolyglotAI\Mail\MailTranslator;
 use PolyglotAI\Rest\DynamicController;
+use PolyglotAI\Rest\ManagerController;
 use PolyglotAI\Rest\MergesController;
 use PolyglotAI\Rest\SlugsController;
 use PolyglotAI\Seo\HeadUrls;
@@ -66,6 +67,7 @@ use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Content\Conditional;
 use PolyglotAI\Database\SlugRepository;
+use PolyglotAI\Database\StringManagerRepository;
 use PolyglotAI\Routing\PermalinkTranslator;
 use PolyglotAI\Routing\RequestRouter;
 use PolyglotAI\Routing\SlugSync;
@@ -266,6 +268,12 @@ final class Plugin {
 		) )->register_routes();
 
 		( new MergesController( $this->languages(), $this->merges() ) )->register_routes();
+
+		( new ManagerController(
+			$this->languages(),
+			$this->string_manager(),
+			$this->translations()
+		) )->register_routes();
 
 		( new SlugsController(
 			$this->languages(),
@@ -481,6 +489,16 @@ final class Plugin {
 		return $this->service(
 			'slug_resolver',
 			fn(): SlugResolver => new SlugResolver( $this->slugs() )
+		);
+	}
+
+	/**
+	 * Consultas del gestor de cadenas.
+	 */
+	public function string_manager(): StringManagerRepository {
+		return $this->service(
+			'string_manager',
+			static fn(): StringManagerRepository => new StringManagerRepository()
 		);
 	}
 

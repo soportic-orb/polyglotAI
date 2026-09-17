@@ -43,6 +43,22 @@ enum StringType: string {
 	case Gettext = 'gettext';
 
 	/**
+	 * Nombre traducible para la interfaz.
+	 */
+	public function label(): string {
+		return match ( $this ) {
+			self::Text      => __( 'Texto', 'polyglot-ai' ),
+			self::Block     => __( 'Bloque', 'polyglot-ai' ),
+			self::Attribute => __( 'Atributo', 'polyglot-ai' ),
+			self::Rcdata    => __( 'Título o área de texto', 'polyglot-ai' ),
+			self::Meta      => __( 'Metaetiqueta', 'polyglot-ai' ),
+			self::Slug      => __( 'Slug', 'polyglot-ai' ),
+			self::Image     => __( 'Imagen', 'polyglot-ai' ),
+			self::Gettext   => __( 'Cadena del tema o de un plugin', 'polyglot-ai' ),
+		};
+	}
+
+	/**
 	 * Si el valor almacenado es HTML (y por tanto no se escapa al escribirlo).
 	 */
 	public function is_html(): bool {

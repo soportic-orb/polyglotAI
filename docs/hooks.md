@@ -192,6 +192,33 @@ Crea y deshace bloques de traducción fusionados. Capacidad: `pgai_translate`.
 Una fusión cambia cómo se trocea la página para todos los idiomas, así que no
 recibe un idioma.
 
+### `GET /wp-json/pgai/v1/manager`
+
+Busca entre **todas** las cadenas del sitio, no solo las de una página.
+Capacidad: `pgai_translate`.
+
+| Parámetro | Por defecto | Qué es |
+|---|---|---|
+| `language` | — | Locale. Obligatorio. |
+| `search` | `''` | Texto a buscar en el original, la traducción y el contexto. |
+| `status` | todos | `pending`, `error`, `automatic`, `reviewed` o `manual`. |
+| `type` | todos | `text`, `block`, `attribute`, `rcdata`, `meta`, `slug`, `image`, `gettext`. |
+| `page` | 1 | Página. |
+| `per_page` | 50 | Cadenas por página, máximo 200. |
+
+Filtrar por `pending` incluye las cadenas que aún no tienen fila de traducción.
+
+### `POST /wp-json/pgai/v1/manager/bulk`
+
+Acción sobre varias cadenas a la vez. Capacidad: `pgai_translate`, y además
+`pgai_review` para `review`.
+
+| `action` | Qué hace |
+|---|---|
+| `review` | Pasa a «revisada» lo que sea automático. No toca lo pendiente ni lo manual. |
+| `retranslate` | Devuelve a pendiente lo automático y lo que quedó en error, para que el trabajo en segundo plano lo vuelva a traducir. **Nunca** toca lo revisado ni lo manual. |
+| `delete` | Borra la traducción en ese idioma. La cadena original se conserva. |
+
 ### `GET /wp-json/pgai/v1/slugs`
 
 Slugs traducibles de una página: el de la entrada, los de sus ascendientes y los
