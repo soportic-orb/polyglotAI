@@ -27,6 +27,15 @@ use PolyglotAI\Translation\StatusPrecedence;
 final class SlugRepository {
 
 	/**
+	 * Opción con la versión del conjunto de slugs.
+	 *
+	 * Se incrementa en cada escritura. Las cachés la incluyen en su clave, de
+	 * modo que invalidar todo es sumar uno a un entero en vez de recorrer y
+	 * borrar claves que ni siquiera se pueden enumerar.
+	 */
+	public const VERSION_OPTION = 'pgai_slug_version';
+
+	/**
 	 * @param StatusPrecedence $precedence Reglas de sobrescritura.
 	 */
 	public function __construct( private readonly StatusPrecedence $precedence ) {}
@@ -192,6 +201,59 @@ final class SlugRepository {
 	}
 
 	/**
+	 * Devuelve los slugs traducidos de unos slugs originales.
+	 *
+	 * Es la cara opuesta de originals(): la usa la reescritura de enlaces para
+	 * pedir de una vez toda la cadena de slugs de un enlace jerárquico.
+	 *
+	 * @param string   $language Locale.
+	 * @param string[] $slugs    Slugs originales.
+	 * @return array<string, string> Slug original => slug traducido.
+	 */
+	public function translations( string $language, array $slugs ): array {
+		global $wpdb;
+
+		$slugs = array_values(
+			array_unique(
+				array_filter( array_map( 'strval', $slugs ), static fn ( string $slug ): bool => '' !== $slug )
+			)
+		);
+
+		if ( array() === $slugs ) {
+			return array();
+		}
+
+		$table        = Schema::table( 'slugs' );
+		$placeholders = implode( ',', array_fill( 0, count( $slugs ), '%s' ) );
+		$arguments    = array_merge( array( $language ), $slugs );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT original_slug, translated_slug FROM {$table}
+				WHERE language = %s AND original_slug IN ({$placeholders})
+				AND translated_slug <> ''
+				ORDER BY id ASC",
+				$arguments
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$map = array();
+
+		foreach ( (array) $rows as $row ) {
+			$original = (string) $row['original_slug'];
+
+			if ( ! isset( $map[ $original ] ) ) {
+				$map[ $original ] = (string) $row['translated_slug'];
+			}
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Estado del slug de un objeto.
 	 *
 	 * @param string $object_type    post, term o base.
@@ -259,7 +321,27 @@ final class SlugRepository {
 			)
 		);
 
-		return false !== $written;
+		if ( false === $written ) {
+			return false;
+		}
+
+		$this->bump_version();
+
+		return true;
+	}
+
+	/**
+	 * Versión actual del conjunto de slugs.
+	 */
+	public function version(): int {
+		return (int) get_option( self::VERSION_OPTION, 1 );
+	}
+
+	/**
+	 * Invalida todo lo cacheado sobre slugs.
+	 */
+	private function bump_version(): void {
+		update_option( self::VERSION_OPTION, $this->version() + 1, true );
 	}
 
 	/**
@@ -329,7 +411,13 @@ final class SlugRepository {
 			array( '%s', '%d' )
 		);
 
-		return false === $deleted ? 0 : (int) $deleted;
+		if ( false === $deleted || 0 === (int) $deleted ) {
+			return 0;
+		}
+
+		$this->bump_version();
+
+		return (int) $deleted;
 	}
 
 	/**

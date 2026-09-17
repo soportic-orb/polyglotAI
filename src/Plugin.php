@@ -52,7 +52,9 @@ use PolyglotAI\Rest\SuggestController;
 use PolyglotAI\Routing\HeadTags;
 use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Routing\RequestContext;
+use PolyglotAI\Database\SlugRepository;
 use PolyglotAI\Routing\RequestRouter;
+use PolyglotAI\Routing\SlugResolver;
 use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Options;
@@ -135,7 +137,7 @@ final class Plugin {
 	public function register_services(): void {
 		// Lo primero de todo: WordPress no sabe nada de /en/, así que hay que
 		// quitarle el prefijo a la petición antes de que la analice.
-		( new RequestRouter( $this->languages(), $this->url_converter(), $this->request() ) )->register();
+		( new RequestRouter( $this->languages(), $this->url_converter(), $this->request(), $this->slug_resolver() ) )->register();
 
 		if ( is_admin() ) {
 			$this->settings_page()->register();
@@ -391,6 +393,26 @@ final class Plugin {
 		return $this->service(
 			'translations',
 			static fn(): TranslationRepository => new TranslationRepository( new StatusPrecedence() )
+		);
+	}
+
+	/**
+	 * Repositorio de slugs traducidos.
+	 */
+	public function slugs(): SlugRepository {
+		return $this->service(
+			'slugs',
+			static fn(): SlugRepository => new SlugRepository( new StatusPrecedence() )
+		);
+	}
+
+	/**
+	 * Enrutado de slugs traducidos.
+	 */
+	public function slug_resolver(): SlugResolver {
+		return $this->service(
+			'slug_resolver',
+			fn(): SlugResolver => new SlugResolver( $this->slugs() )
 		);
 	}
 

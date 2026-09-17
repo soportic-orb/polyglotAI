@@ -7,11 +7,14 @@ declare(strict_types=1);
 
 namespace PolyglotAI\Tests\Integration;
 
+use PolyglotAI\Database\SlugRepository;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Routing\RequestRouter;
+use PolyglotAI\Routing\SlugResolver;
 use PolyglotAI\Routing\UrlConverter;
+use PolyglotAI\Translation\StatusPrecedence;
 use WP_UnitTestCase;
 
 /**
@@ -54,7 +57,12 @@ final class RequestRouterTest extends WP_UnitTestCase {
 	}
 
 	private function router(): RequestRouter {
-		return new RequestRouter( $this->languages, $this->converter(), $this->request );
+		return new RequestRouter(
+			$this->languages,
+			$this->converter(),
+			$this->request,
+			new SlugResolver( new SlugRepository( new StatusPrecedence() ) )
+		);
 	}
 
 	/**
