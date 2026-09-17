@@ -19,6 +19,7 @@ use PolyglotAI\Support\Capabilities;
 use PolyglotAI\Translation\Status;
 use PolyglotAI\Translation\StatusPrecedence;
 use WP_REST_Request;
+use WP_REST_Server;
 use WP_UnitTestCase;
 
 /**
@@ -35,7 +36,7 @@ final class SlugsControllerTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		global $wpdb;
+		global $wpdb, $wp_rest_server; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
 		$table = Schema::table( 'slugs' );
 
@@ -64,10 +65,25 @@ final class SlugsControllerTest extends WP_UnitTestCase {
 			$converter
 		);
 
-		// rest_get_server() arranca el servidor la primera vez; las rutas se
-		// añaden después y vuelven a registrarse en cada test sin efectos.
-		rest_get_server();
-		$controller->register_routes();
+		// El plugin, que la suite carga entero, registra esta misma ruta con su
+		// propio registro de idiomas, que en un WordPress recién instalado está
+		// vacío. Se deja solo el controlador del test para que la ruta que se
+		// prueba sea la que se acaba de construir.
+		remove_all_actions( 'rest_api_init' );
+
+		add_action(
+			'rest_api_init',
+			static function () use ( $controller ): void {
+				$controller->register_routes();
+			}
+		);
+
+		// Servidor nuevo en cada test: la suite restaura el registro de acciones
+		// entre tests, así que un servidor heredado deja did_action(
+		// 'rest_api_init' ) a cero y register_rest_route() avisa, con razón, de
+		// que se está registrando fuera de su momento.
+		$wp_rest_server = new WP_REST_Server(); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+		do_action( 'rest_api_init', $wp_rest_server ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 
 		$this->page_id = self::factory()->post->create(
 			array(
@@ -147,7 +163,7 @@ final class SlugsControllerTest extends WP_UnitTestCase {
 			)
 		);
 
-		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 200, $response->get_status(), wp_json_encode( $response->get_data() ) );
 
 		$items = $response->get_data()['items'];
 

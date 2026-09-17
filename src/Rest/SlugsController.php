@@ -69,7 +69,12 @@ final class SlugsController extends Controller {
 						'url'      => array(
 							'type'              => 'string',
 							'required'          => true,
-							'sanitize_callback' => 'esc_url_raw',
+							// Las funciones de WordPress no se pasan como
+							// callback a secas: REST les da tres argumentos y el
+							// segundo de sanitize_title() es el título de
+							// respaldo, así que un slug vacío acababa en un
+							// fatal al intentar convertir la petición en texto.
+							'sanitize_callback' => static fn ( $value ): string => esc_url_raw( (string) $value ),
 							'description'       => __( 'URL de la página cuyos slugs se quieren editar.', 'polyglot-ai' ),
 						),
 					),
@@ -99,7 +104,7 @@ final class SlugsController extends Controller {
 						'translated_slug' => array(
 							'type'              => 'string',
 							'required'          => true,
-							'sanitize_callback' => 'sanitize_title',
+							'sanitize_callback' => static fn ( $value ): string => sanitize_title( (string) $value ),
 						),
 					),
 				),

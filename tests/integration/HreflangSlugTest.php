@@ -102,7 +102,7 @@ final class HreflangSlugTest extends WP_UnitTestCase {
 
 		$html = $this->render();
 
-		$this->assertStringContainsString( 'hreflang="es" href="' . home_url( '/contacto/' ) . '"', $html );
+		$this->assertStringContainsString( 'hreflang="es-ES" href="' . home_url( '/contacto/' ) . '"', $html );
 		$this->assertStringContainsString( 'hreflang="en-US" href="' . home_url( '/en/contact-us/' ) . '"', $html );
 		$this->assertStringContainsString( 'hreflang="ca" href="' . home_url( '/ca/contacte/' ) . '"', $html );
 		$this->assertStringContainsString( 'hreflang="x-default" href="' . home_url( '/contacto/' ) . '"', $html );
@@ -119,7 +119,7 @@ final class HreflangSlugTest extends WP_UnitTestCase {
 
 		$html = $this->render();
 
-		$this->assertStringContainsString( 'hreflang="es" href="' . home_url( '/contacto/' ) . '"', $html );
+		$this->assertStringContainsString( 'hreflang="es-ES" href="' . home_url( '/contacto/' ) . '"', $html );
 		$this->assertStringContainsString( 'hreflang="en-US" href="' . home_url( '/en/contact-us/' ) . '"', $html );
 		$this->assertStringContainsString( 'hreflang="ca" href="' . home_url( '/ca/contacte/' ) . '"', $html );
 	}
