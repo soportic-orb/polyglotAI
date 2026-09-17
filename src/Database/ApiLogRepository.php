@@ -56,6 +56,90 @@ final class ApiLogRepository {
 	}
 
 	/**
+	 * Consumo agrupado por mes.
+	 *
+	 * @param int $months Cuántos meses hacia atrás.
+	 * @return array<int, array{month:string, calls:int, strings:int, input:int, output:int, cache_read:int, cache_creation:int, errors:int}>
+	 */
+	public function monthly( int $months = 12 ): array {
+		global $wpdb;
+
+		$table = Schema::table( 'api_log' );
+		$since = gmdate( 'Y-m-01 00:00:00', strtotime( '-' . max( 1, $months ) . ' months' ) );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DATE_FORMAT(created_at, '%%Y-%%m') AS month,
+					COUNT(*) AS calls,
+					SUM(strings) AS strings,
+					SUM(input_tokens) AS input_tokens,
+					SUM(output_tokens) AS output_tokens,
+					SUM(cache_read_tokens) AS cache_read_tokens,
+					SUM(cache_creation_tokens) AS cache_creation_tokens,
+					SUM(CASE WHEN status <> 'ok' THEN 1 ELSE 0 END) AS errors
+				FROM {$table}
+				WHERE created_at >= %s
+				GROUP BY month
+				ORDER BY month DESC",
+				$since
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		return array_map(
+			static fn ( array $row ): array => array(
+				'month'          => (string) $row['month'],
+				'calls'          => (int) $row['calls'],
+				'strings'        => (int) $row['strings'],
+				'input'          => (int) $row['input_tokens'],
+				'output'         => (int) $row['output_tokens'],
+				'cache_read'     => (int) $row['cache_read_tokens'],
+				'cache_creation' => (int) $row['cache_creation_tokens'],
+				'errors'         => (int) $row['errors'],
+			),
+			(array) $rows
+		);
+	}
+
+	/**
+	 * Últimos errores registrados.
+	 *
+	 * @param int $limit Cuántos.
+	 * @return array<int, array{created_at:string, language:string, model:string, error:string}>
+	 */
+	public function recent_errors( int $limit = 10 ): array {
+		global $wpdb;
+
+		$table = Schema::table( 'api_log' );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT created_at, language, model, error
+				FROM {$table}
+				WHERE status <> 'ok'
+				ORDER BY id DESC
+				LIMIT %d",
+				max( 1, $limit )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		return array_map(
+			static fn ( array $row ): array => array(
+				'created_at' => (string) $row['created_at'],
+				'language'   => (string) ( $row['language'] ?? '' ),
+				'model'      => (string) ( $row['model'] ?? '' ),
+				'error'      => (string) ( $row['error'] ?? '' ),
+			),
+			(array) $rows
+		);
+	}
+
+	/**
 	 * Tokens consumidos desde una fecha.
 	 *
 	 * La lectura de caché cuenta aparte porque su precio es una fracción del

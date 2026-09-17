@@ -12,6 +12,7 @@ namespace PolyglotAI;
 use PolyglotAI\Admin\GlossaryPage;
 use PolyglotAI\Admin\ImportExport;
 use PolyglotAI\Admin\SettingsPage;
+use PolyglotAI\Admin\StatsPage;
 use PolyglotAI\Admin\StringsPage;
 use PolyglotAI\Admin\TranslatorAccess;
 use PolyglotAI\Admin\TranslatorProfile;
@@ -184,6 +185,7 @@ final class Plugin {
 
 			( new StringsPage( $this->translator_languages() ) )->register();
 			( new GlossaryPage( $this->options(), $this->languages() ) )->register();
+			( new StatsPage( $this->languages(), $this->translations(), $this->api_log(), $this->options() ) )->register();
 
 			( new ImportExport(
 				$this->languages(),

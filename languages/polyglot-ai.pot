@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-17T17:59:12+00:00\n"
+"POT-Creation-Date: 2026-09-17T20:48:33+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: polyglot-ai\n"
@@ -40,6 +40,58 @@ msgstr ""
 
 #: polyglot-ai.php:41
 msgid "Polyglot AI no encuentra sus dependencias. Ejecuta «composer install» en la carpeta del plugin."
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:63
+#: src/Admin/GlossaryPage.php:64
+#: src/Admin/GlossaryPage.php:121
+msgid "Glosario"
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:76
+msgid "No tienes permiso para cambiar el glosario."
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:125
+msgid "Glosario guardado."
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:132
+msgid "El glosario solo afecta a lo que se traduzca a partir de ahora. Para aplicarlo a lo ya traducido, selecciona esas cadenas en el gestor y usa «Volver a traducir»."
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:144
+msgid "Términos que no se traducen"
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:146
+msgid "Uno por línea. Nombres de marca, de producto o técnicos que tienen que salir igual en todos los idiomas."
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:150
+msgid "Traducciones obligatorias"
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:152
+msgid "Una por línea, con el formato «original = traducción»."
+msgstr ""
+
+#: src/Admin/GlossaryPage.php:156
+msgid "Añade algún idioma para poder escribir su glosario."
+msgstr ""
+
+#: src/Admin/ImportExport.php:261
+#: src/Rest/Controller.php:55
+msgid "No tienes permiso para hacer esto."
+msgstr ""
+
+#: src/Admin/ImportExport.php:270
+msgid "Ese idioma no se traduce."
+msgstr ""
+
+#: src/Admin/ImportExport.php:274
+#: src/Rest/Controller.php:97
+msgid "No tienes asignado este idioma."
 msgstr ""
 
 #: src/Admin/SettingsPage.php:78
@@ -92,6 +144,7 @@ msgid "Motor"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:255
+#: src/Admin/StatsPage.php:213
 msgid "Modelo"
 msgstr ""
 
@@ -241,6 +294,160 @@ msgstr ""
 msgid "Desactivar el plugin nunca borra nada. Esto solo afecta a la desinstalación."
 msgstr ""
 
+#: src/Admin/StatsPage.php:69
+#: src/Admin/StatsPage.php:70
+#: src/Admin/StatsPage.php:87
+msgid "Estadísticas"
+msgstr ""
+
+#: src/Admin/StatsPage.php:89
+msgid "Progreso por idioma"
+msgstr ""
+
+#: src/Admin/StatsPage.php:92
+msgid "Consumo de la API"
+msgstr ""
+
+#: src/Admin/StatsPage.php:105
+msgid "Todavía no hay idiomas a los que traducir."
+msgstr ""
+
+#: src/Admin/StatsPage.php:114
+#: src/Admin/StatsPage.php:212
+#: assets/src/editor/App.js:611
+#: assets/src/manager/App.js:208
+msgid "Idioma"
+msgstr ""
+
+#: src/Admin/StatsPage.php:118
+msgid "Hecho"
+msgstr ""
+
+#: src/Admin/StatsPage.php:144
+msgid "Todavía no se ha llamado a la API."
+msgstr ""
+
+#. translators: %s: número de tokens.
+#: src/Admin/StatsPage.php:157
+#, php-format
+msgid "Tope mensual: %s tokens. No incluye la lectura de caché, que cuesta una fracción del token de entrada."
+msgstr ""
+
+#: src/Admin/StatsPage.php:167
+msgid "Mes"
+msgstr ""
+
+#: src/Admin/StatsPage.php:168
+msgid "Llamadas"
+msgstr ""
+
+#: src/Admin/StatsPage.php:169
+#: src/Admin/StringsPage.php:51
+#: src/Admin/StringsPage.php:52
+#: src/Admin/StringsPage.php:108
+msgid "Cadenas"
+msgstr ""
+
+#: src/Admin/StatsPage.php:170
+msgid "Entrada"
+msgstr ""
+
+#: src/Admin/StatsPage.php:171
+msgid "Salida"
+msgstr ""
+
+#: src/Admin/StatsPage.php:172
+msgid "Caché escrita"
+msgstr ""
+
+#: src/Admin/StatsPage.php:173
+msgid "Caché leída"
+msgstr ""
+
+#: src/Admin/StatsPage.php:174
+msgid "Errores"
+msgstr ""
+
+#: src/Admin/StatsPage.php:206
+msgid "Últimos errores"
+msgstr ""
+
+#: src/Admin/StatsPage.php:211
+msgid "Cuándo"
+msgstr ""
+
+#: src/Admin/StatsPage.php:214
+#: src/Translation/Status.php:59
+#: assets/src/editor/SlugPanel.js:24
+#: assets/src/editor/StringEditor.js:25
+msgid "Error"
+msgstr ""
+
+#: src/Admin/StringsPage.php:117
+msgid "Faltan los recursos compilados. Ejecuta «npm install && npm run build» en la carpeta del plugin."
+msgstr ""
+
+#: src/Admin/StringsPage.php:145
+msgid "Importar y exportar"
+msgstr ""
+
+#: src/Admin/StringsPage.php:151
+msgid "Exportar a CSV"
+msgstr ""
+
+#: src/Admin/StringsPage.php:162
+msgid "Todos los estados"
+msgstr ""
+
+#: src/Admin/StringsPage.php:170
+msgid "Descargar"
+msgstr ""
+
+#: src/Admin/StringsPage.php:182
+msgid "Importar un CSV"
+msgstr ""
+
+#: src/Admin/StringsPage.php:196
+msgid "Sobrescribir también lo revisado y lo escrito a mano"
+msgstr ""
+
+#: src/Admin/StringsPage.php:199
+msgid "Importar"
+msgstr ""
+
+#: src/Admin/StringsPage.php:204
+msgid "El archivo se empareja por la columna «hash». Cambiar el texto original en la hoja de cálculo no rompe nada, pero tampoco sirve para nada: lo que se guarda es la columna «translation»."
+msgstr ""
+
+#: src/Admin/StringsPage.php:222
+msgid "No se ha podido leer el archivo."
+msgstr ""
+
+#. translators: 1: guardadas, 2: omitidas, 3: desconocidas.
+#: src/Admin/StringsPage.php:242
+#, php-format
+msgid "Importación terminada: %1$d guardadas, %2$d omitidas y %3$d que ya no existen en el sitio."
+msgstr ""
+
+#: src/Admin/TranslatorProfile.php:60
+#: assets/src/editor/StringEditor.js:200
+#: assets/src/manager/App.js:343
+#: assets/src/manager/Row.js:66
+msgid "Traducción"
+msgstr ""
+
+#: src/Admin/TranslatorProfile.php:64
+msgid "Idiomas asignados"
+msgstr ""
+
+#: src/Admin/TranslatorProfile.php:68
+msgid "Idiomas que esta persona puede traducir"
+msgstr ""
+
+#: src/Admin/TranslatorProfile.php:86
+msgid "Sin ninguno marcado puede traducir a todos los idiomas."
+msgstr ""
+
 #. translators: 1: versión requerida, 2: versión instalada.
 #: src/Bootstrap/Requirements.php:49
 #, php-format
@@ -261,13 +468,13 @@ msgstr ""
 msgid "Abrir el editor de traducciones para esta página"
 msgstr ""
 
-#: src/Editor/EditorPage.php:73
-#: src/Editor/EditorPage.php:74
+#: src/Editor/EditorPage.php:76
+#: src/Editor/EditorPage.php:77
 #: assets/src/editor/App.js:606
 msgid "Editor de traducciones"
 msgstr ""
 
-#: src/Editor/EditorPage.php:139
+#: src/Editor/EditorPage.php:142
 msgid "Faltan los recursos compilados del editor. Ejecuta «npm install && npm run build» en la carpeta del plugin."
 msgstr ""
 
@@ -301,26 +508,30 @@ msgstr ""
 msgid "Se actualiza solo al navegar por el sitio en otro idioma."
 msgstr ""
 
-#: src/Rest/Controller.php:54
-msgid "No tienes permiso para hacer esto."
-msgstr ""
-
 #. translators: %s: locale solicitado.
-#: src/Rest/Controller.php:74
+#: src/Rest/Controller.php:75
 #, php-format
 msgid "El idioma «%s» no está configurado."
 msgstr ""
 
-#: src/Rest/Controller.php:82
+#: src/Rest/Controller.php:83
 msgid "El idioma por defecto no se traduce."
 msgstr ""
 
-#: src/Rest/Controller.php:100
+#: src/Rest/Controller.php:115
 msgid "Locale de destino."
 msgstr ""
 
 #: src/Rest/DynamicController.php:101
 msgid "La traducción de contenido dinámico está desactivada."
+msgstr ""
+
+#: src/Rest/ManagerController.php:184
+msgid "No has seleccionado ninguna cadena."
+msgstr ""
+
+#: src/Rest/ManagerController.php:195
+msgid "No tienes permiso para dar traducciones por revisadas."
 msgstr ""
 
 #: src/Rest/MergesController.php:55
@@ -390,12 +601,6 @@ msgstr ""
 msgid "Pendiente"
 msgstr ""
 
-#: src/Translation/Status.php:59
-#: assets/src/editor/SlugPanel.js:24
-#: assets/src/editor/StringEditor.js:25
-msgid "Error"
-msgstr ""
-
 #: src/Translation/Status.php:60
 #: assets/src/editor/SlugPanel.js:22
 #: assets/src/editor/StringEditor.js:26
@@ -412,6 +617,38 @@ msgstr ""
 #: assets/src/editor/SlugPanel.js:18
 #: assets/src/editor/StringEditor.js:28
 msgid "Manual"
+msgstr ""
+
+#: src/Translation/StringType.php:50
+msgid "Texto"
+msgstr ""
+
+#: src/Translation/StringType.php:51
+msgid "Bloque"
+msgstr ""
+
+#: src/Translation/StringType.php:52
+msgid "Atributo"
+msgstr ""
+
+#: src/Translation/StringType.php:53
+msgid "Título o área de texto"
+msgstr ""
+
+#: src/Translation/StringType.php:54
+msgid "Metaetiqueta"
+msgstr ""
+
+#: src/Translation/StringType.php:55
+msgid "Slug"
+msgstr ""
+
+#: src/Translation/StringType.php:56
+msgid "Imagen"
+msgstr ""
+
+#: src/Translation/StringType.php:57
+msgid "Cadena del tema o de un plugin"
 msgstr ""
 
 #: assets/src/block/index.js:67
@@ -453,6 +690,7 @@ msgid "La traducción no conserva la estructura del original (%s)."
 msgstr ""
 
 #: assets/src/editor/App.js:343
+#: assets/src/manager/App.js:137
 msgid "No se ha podido guardar."
 msgstr ""
 
@@ -490,10 +728,6 @@ msgstr ""
 
 #: assets/src/editor/App.js:599
 msgid "en preparación"
-msgstr ""
-
-#: assets/src/editor/App.js:611
-msgid "Idioma"
 msgstr ""
 
 #: assets/src/editor/App.js:621
@@ -575,11 +809,8 @@ msgid "Usar la original"
 msgstr ""
 
 #: assets/src/editor/StringEditor.js:189
+#: assets/src/manager/App.js:342
 msgid "Original"
-msgstr ""
-
-#: assets/src/editor/StringEditor.js:200
-msgid "Traducción"
 msgstr ""
 
 #: assets/src/editor/StringEditor.js:205
@@ -595,6 +826,7 @@ msgid "Una traducción revisada no la sobrescribe ningún proceso automático."
 msgstr ""
 
 #: assets/src/editor/StringEditor.js:242
+#: assets/src/manager/Row.js:80
 msgid "Guardar"
 msgstr ""
 
@@ -674,6 +906,99 @@ msgstr ""
 
 #: assets/src/editor/StringList.js:162
 msgid "Marcar para fusionar"
+msgstr ""
+
+#: assets/src/manager/App.js:80
+msgid "No se han podido leer las cadenas."
+msgstr ""
+
+#: assets/src/manager/App.js:133
+msgid "Traducción guardada."
+msgstr ""
+
+#: assets/src/manager/App.js:158
+msgid "Se borrarán las traducciones seleccionadas en este idioma. El texto original se conserva."
+msgstr ""
+
+#. translators: %d: número de cadenas afectadas.
+#: assets/src/manager/App.js:176
+#, js-format
+msgid "%d cadenas actualizadas."
+msgstr ""
+
+#: assets/src/manager/App.js:185
+msgid "No se ha podido aplicar la acción."
+msgstr ""
+
+#: assets/src/manager/App.js:195
+msgid "Añade algún idioma para tener cadenas que traducir."
+msgstr ""
+
+#: assets/src/manager/App.js:219
+#: assets/src/manager/App.js:344
+msgid "Estado"
+msgstr ""
+
+#: assets/src/manager/App.js:222
+#: assets/src/manager/App.js:235
+msgid "Todos"
+msgstr ""
+
+#: assets/src/manager/App.js:232
+msgid "Tipo"
+msgstr ""
+
+#: assets/src/manager/App.js:253
+#: assets/src/manager/App.js:258
+msgid "Buscar"
+msgstr ""
+
+#. translators: 1: seleccionadas, 2: total.
+#: assets/src/manager/App.js:279
+#, js-format
+msgid "%1$d de %2$d seleccionadas"
+msgstr ""
+
+#: assets/src/manager/App.js:291
+msgid "Dar por revisadas"
+msgstr ""
+
+#: assets/src/manager/App.js:300
+msgid "Volver a traducir"
+msgstr ""
+
+#: assets/src/manager/App.js:309
+msgid "Borrar traducción"
+msgstr ""
+
+#: assets/src/manager/App.js:316
+msgid "Buscando…"
+msgstr ""
+
+#: assets/src/manager/App.js:326
+msgid "Seleccionar todas las cadenas de esta página"
+msgstr ""
+
+#: assets/src/manager/App.js:352
+msgid "No hay cadenas que encajen con estos filtros."
+msgstr ""
+
+#: assets/src/manager/App.js:385
+msgid "Anterior"
+msgstr ""
+
+#. translators: 1: página actual, 2: total de páginas.
+#: assets/src/manager/App.js:391
+#, js-format
+msgid "Página %1$d de %2$d"
+msgstr ""
+
+#: assets/src/manager/App.js:402
+msgid "Siguiente"
+msgstr ""
+
+#: assets/src/manager/Row.js:46
+msgid "Seleccionar esta cadena"
 msgstr ""
 
 #: assets/src/block/block.json
