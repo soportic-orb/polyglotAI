@@ -114,6 +114,17 @@ final class HtmlApiDriverTest extends TestCase {
 		);
 	}
 
+	public function test_no_extrae_lo_que_hay_escrito_en_un_textarea(): void {
+		// Dentro de un TEXTAREA suele estar lo que ha escrito el visitante: un
+		// comentario que vuelve tras un error de validación, las notas de un
+		// pedido. Guardarlo y mandarlo a la API es justo lo que prohíbe el
+		// ADR-12. El texto de interfaz de ese control va en el placeholder.
+		$this->assertSame(
+			array( array( 'attribute', 'Escribe aquí' ) ),
+			$this->extract( '<textarea placeholder="Escribe aquí">Lo que escribió Ana</textarea>' )
+		);
+	}
+
 	public function test_extrae_los_atributos_traducibles(): void {
 		$html = '<div>'
 			. '<img alt="Un gat" title="Foto">'

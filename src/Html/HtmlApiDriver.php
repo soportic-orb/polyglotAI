@@ -392,7 +392,26 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	 * @param int                $length    Longitud del token.
 	 */
 	private function emit_rcdata( OffsetTagProcessor $processor, array &$units, string $html, string $tag, int $start, int $length ): void {
-		if ( 'TITLE' !== $tag && 'TEXTAREA' !== $tag ) {
+		if ( 'TEXTAREA' === $tag ) {
+			/**
+			 * Si se traduce el contenido de los TEXTAREA.
+			 *
+			 * Viene desactivado porque lo que hay dentro de un TEXTAREA suele
+			 * ser lo que ha escrito el visitante, no texto del tema: un
+			 * comentario que vuelve tras un error de validación, las notas de
+			 * un pedido, el mensaje de un formulario de contacto. Traducirlo
+			 * significaría guardarlo y mandarlo a la API, que es justo lo que
+			 * prohíbe el ADR-12. El texto que sí es de la interfaz va en
+			 * `placeholder`, que sí se traduce.
+			 *
+			 * @since 0.1.0
+			 *
+			 * @param bool $translate Si se traduce.
+			 */
+			if ( ! (bool) apply_filters( 'pgai_translate_textarea', false ) ) {
+				return;
+			}
+		} elseif ( 'TITLE' !== $tag ) {
 			return;
 		}
 

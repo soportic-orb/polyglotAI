@@ -378,9 +378,29 @@ El rol "Traductor" recibe `pgai_translate` y `read`, y **no** accede al escritor
   (`pgai_allowed_html`), nunca `wp_kses_post` a secas en contexto de traductor.
 - Las llamadas a la API provocadas por tráfico de visitantes **nunca bloquean la
   carga** y están acotadas por presupuesto y por filtro de bots (ADR-13).
-- **Nunca se envían datos personales a la API.** Exclusión por defecto de las rutas de
-  cuenta, carrito, checkout, pedidos y de los datos enviados en formularios. Lista en
-  `Compat\PrivacyExclusions`, documentada para el RGPD.
+- **Nunca se envían datos personales a la API.** Tres exclusiones, todas por defecto y
+  todas en `Compat\PrivacyExclusions`, documentadas para el RGPD:
+
+  1. **Las páginas personales se las pregunta a WooCommerce**, no a la URL. La lista de
+     rutas de los ajustes (`/checkout`, `/my-account`…) solo acierta si el sitio usa
+     esos slugs, y en un sitio multilingüe precisamente no los usa: la página de pago en
+     catalán es `/ca/pagament/` y no se parece a ninguna cadena de la lista, de modo que
+     quedaban fuera de la exclusión justo las páginas que más datos personales enseñan.
+     `is_cart()`, `is_checkout()`, `is_account_page()` e `is_wc_endpoint_url()` aciertan
+     con cualquier slug, en cualquier idioma y aunque se hayan cambiado de sitio. Se
+     llaman por nombre de función, así que no hay dependencia de código con WooCommerce;
+     la lista de rutas se queda como red para los sitios que no lo llevan.
+  2. **Las respuestas a un POST no se traducen.** Una respuesta a un envío de formulario
+     está construida con lo que acaba de escribir el visitante —su nombre en un
+     «Gracias, …», el resumen de su pedido, su mensaje—, y distinguir dentro del HTML qué
+     frase viene del formulario y cuál es del tema no se puede hacer con garantías. Se
+     sirve el original, que es el criterio de toda la red de seguridad del ADR-01.
+  3. **El contenido de los `<textarea>` no se traduce.** Es lo que ha escrito el
+     visitante: un comentario que vuelve tras un error de validación, las notas de un
+     pedido, el mensaje de un formulario de contacto. El texto de interfaz de esos
+     controles va en `placeholder`, que sí se traduce, así que no se pierde nada. Hay un
+     filtro (`pgai_translate_textarea`) para quien tenga textareas con contenido
+     estático de verdad.
 - Desinstalación limpia opcional (`uninstall.php` borra tablas y opciones solo si el
   administrador lo ha marcado).
 

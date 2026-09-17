@@ -386,6 +386,27 @@ Sin escribir una línea de PHP:
 También quedan fuera por defecto `<script>`, `<style>`, `<code>`, `<pre>`,
 `<template>`, `<svg>`, `<math>`, `<canvas>` y `<object>`.
 
+## Privacidad
+
+Estas páginas no se traducen nunca y su contenido no llega a la API (ADR-12):
+
+| Qué | Por qué |
+|---|---|
+| Carrito, pago, cuenta y endpoints de WooCommerce | Se le pregunta a WooCommerce, no a la URL: así acierta con el slug traducido de cada idioma. |
+| Cualquier respuesta a una petición POST | Está construida con lo que acaba de enviar el visitante. |
+| El contenido de los `<textarea>` | Suele ser lo que ha escrito el visitante. Su texto de interfaz va en `placeholder`, que sí se traduce. |
+| Las rutas de `excluded_paths` en los ajustes | Red para los sitios sin WooCommerce. |
+
+### `pgai_translate_textarea`
+
+Activa la traducción del contenido de los `<textarea>`. Desactivado por
+defecto. Solo tiene sentido en sitios cuyos textareas llevan texto estático de
+la interfaz y nunca datos escritos por el visitante.
+
+```php
+add_filter( 'pgai_translate_textarea', '__return_true' );
+```
+
 ## Sitemaps
 
 Las URLs traducidas se publican siempre, esté quien esté al mando del sitemap.

@@ -40,6 +40,7 @@ use PolyglotAI\Engines\Claude\RetryPolicy;
 use PolyglotAI\Engines\EngineRegistry;
 use PolyglotAI\Frontend\DynamicScript;
 use PolyglotAI\Gettext\GettextTranslator;
+use PolyglotAI\Compat\PrivacyExclusions;
 use PolyglotAI\Html\BailConditions;
 use PolyglotAI\Html\DocumentProcessor;
 use PolyglotAI\Html\DriverFactory;
@@ -183,6 +184,10 @@ final class Plugin {
 		// Y el sitemap, para que un buscador descubra las URLs traducidas sin
 		// tener que rastrear enlaces.
 		( new Sitemaps( $this->languages(), $this->url_converter(), $this->slug_resolver() ) )->register();
+
+		// Y las exclusiones de privacidad, que deciden qué páginas no salen
+		// nunca hacia la API (ADR-12).
+		( new PrivacyExclusions() )->register();
 
 		if ( is_admin() ) {
 			$this->settings_page()->register();

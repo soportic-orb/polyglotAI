@@ -24,6 +24,7 @@ if ( ! is_dir( PGAI_VENDOR_WP ) ) {
 
 require_once __DIR__ . '/stubs/wp-functions.php';
 require_once __DIR__ . '/stubs/wp-http.php';
+require_once __DIR__ . '/stubs/woocommerce.php';
 require_once PGAI_VENDOR_WP . '/class-wp-token-map.php';
 require_once PGAI_VENDOR_WP . '/html-api/class-wp-html-span.php';
 require_once PGAI_VENDOR_WP . '/html-api/class-wp-html-text-replacement.php';
