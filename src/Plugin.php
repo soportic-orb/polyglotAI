@@ -47,6 +47,7 @@ use PolyglotAI\Mail\LanguageResolver;
 use PolyglotAI\Mail\MailTranslator;
 use PolyglotAI\Rest\DynamicController;
 use PolyglotAI\Rest\MergesController;
+use PolyglotAI\Rest\SlugsController;
 use PolyglotAI\Rest\StringsController;
 use PolyglotAI\Rest\SuggestController;
 use PolyglotAI\Routing\HeadTags;
@@ -215,6 +216,13 @@ final class Plugin {
 		) )->register_routes();
 
 		( new MergesController( $this->languages(), $this->merges() ) )->register_routes();
+
+		( new SlugsController(
+			$this->languages(),
+			$this->slugs(),
+			$this->slug_resolver(),
+			$this->url_converter()
+		) )->register_routes();
 
 		( new DynamicController(
 			$this->languages(),

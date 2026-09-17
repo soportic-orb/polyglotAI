@@ -192,6 +192,34 @@ Crea y deshace bloques de traducción fusionados. Capacidad: `pgai_translate`.
 Una fusión cambia cómo se trocea la página para todos los idiomas, así que no
 recibe un idioma.
 
+### `GET /wp-json/pgai/v1/slugs`
+
+Slugs traducibles de una página: el de la entrada, los de sus ascendientes y los
+de los términos y bases reescritas que aparezcan en su URL. Capacidad:
+`pgai_translate`.
+
+| Parámetro | Obligatorio | Qué es |
+|---|---|---|
+| `language` | sí | Locale, p. ej. `en_US`. |
+| `url` | sí | URL de la página. Puede llevar ya los slugs traducidos: es la que el traductor está viendo. |
+
+### `POST /wp-json/pgai/v1/slugs`
+
+Guarda un slug traducido. Capacidad: `pgai_translate`.
+
+| Parámetro | Obligatorio | Qué es |
+|---|---|---|
+| `language` | sí | Locale. |
+| `object_type` | sí | `post`, `term` o `base`. |
+| `object_subtype` | sí | Tipo de contenido, taxonomía o base. |
+| `object_id` | no | Identificador. `0` en las bases. |
+| `translated_slug` | sí | Slug, que se normaliza con `sanitize_title()`. |
+
+Lo guardado queda en estado `manual`, de modo que ninguna traducción automática
+volverá a tocarlo. El slug devuelto puede no ser el pedido: si otro objeto ya
+usaba ese slug en ese idioma, se desambigua con un sufijo numérico para que el
+enrutado inverso siga siendo inequívoco.
+
 ### `POST /wp-json/pgai/v1/dynamic`
 
 Devuelve traducciones ya existentes para textos que aparecen en la página

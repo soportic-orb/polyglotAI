@@ -347,6 +347,56 @@ final class SlugRepository {
 	}
 
 	/**
+	 * Filas de ciertos tipos cuyo slug original aparece en una lista.
+	 *
+	 * La usa el editor para saber qué hay de traducible en la ruta que se está
+	 * viendo, más allá de la entrada: los términos y las bases reescritas no se
+	 * pueden deducir de la URL sin consultarlas.
+	 *
+	 * @param string   $language     Locale.
+	 * @param string[] $slugs        Slugs originales.
+	 * @param string[] $object_types Tipos que interesan.
+	 * @return SlugRecord[]
+	 */
+	public function by_original_slugs( string $language, array $slugs, array $object_types ): array {
+		global $wpdb;
+
+		$slugs = array_values(
+			array_unique(
+				array_filter( array_map( 'strval', $slugs ), static fn ( string $slug ): bool => '' !== $slug )
+			)
+		);
+
+		$object_types = array_values( array_unique( array_map( 'strval', $object_types ) ) );
+
+		if ( array() === $slugs || array() === $object_types ) {
+			return array();
+		}
+
+		$table     = Schema::table( 'slugs' );
+		$in_slugs  = implode( ',', array_fill( 0, count( $slugs ), '%s' ) );
+		$in_types  = implode( ',', array_fill( 0, count( $object_types ), '%s' ) );
+		$arguments = array_merge( array( $language ), $slugs, $object_types );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table}
+				WHERE language = %s AND original_slug IN ({$in_slugs}) AND object_type IN ({$in_types})
+				ORDER BY id ASC",
+				$arguments
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		return array_map(
+			static fn ( array $row ): SlugRecord => SlugRecord::from_row( $row ),
+			(array) $rows
+		);
+	}
+
+	/**
 	 * Estado del slug de un objeto.
 	 *
 	 * @param string $object_type    post, term o base.
