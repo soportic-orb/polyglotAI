@@ -73,3 +73,26 @@ if ( ! function_exists( 'apply_filters' ) ) {
 		return $value;
 	}
 }
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	/**
+	 * @param mixed $data    Datos.
+	 * @param int   $options Opciones de json_encode.
+	 * @param int   $depth   Profundidad.
+	 * @return string|false
+	 */
+	function wp_json_encode( $data, $options = 0, $depth = 512 ) { // phpcs:ignore
+		return json_encode( $data, (int) $options, (int) $depth );
+	}
+}
+
+if ( ! function_exists( 'wp_rand' ) ) {
+	/**
+	 * @param int $min Mínimo.
+	 * @param int $max Máximo.
+	 * @return int
+	 */
+	function wp_rand( $min = 0, $max = 0 ) { // phpcs:ignore
+		return random_int( (int) $min, (int) $max );
+	}
+}
