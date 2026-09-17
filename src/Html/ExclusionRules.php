@@ -33,7 +33,7 @@ final class ExclusionRules {
 	/**
 	 * Si el elemento sobre el que está posicionado el analizador está excluido.
 	 *
-	 * @param WP_HTML_Tag_Processor $processor Analizador posicionado en la etiqueta.
+	 * @param WP_HTML_Tag_Processor    $processor Analizador posicionado en la etiqueta.
 	 * @param array<string, true>|null $present Atributos presentes en la
 	 *                                          etiqueta, en minúsculas. Pasarlo
 	 *                                          evita consultar atributos que la

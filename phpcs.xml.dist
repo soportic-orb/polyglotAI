@@ -4,6 +4,7 @@
 
     <file>src</file>
     <file>tests/unit</file>
+    <file>tests/integration</file>
     <file>polyglot-ai.php</file>
     <file>uninstall.php</file>
 

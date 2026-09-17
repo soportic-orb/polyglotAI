@@ -123,7 +123,7 @@ final class PerformanceTest extends TestCase {
 				'El driver cuesta %.1f veces el barrido en crudo (%.2f ms frente a %.2f ms sobre %.0f KB). ' .
 				'Por encima de %.1f suele significar que algo ha dejado de ser lineal.',
 				$ratio,
-					$extract,
+				$extract,
 				$baseline,
 				strlen( $html ) / 1024,
 				self::MAX_OVERHEAD_RATIO

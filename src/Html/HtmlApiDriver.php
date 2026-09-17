@@ -407,11 +407,11 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	/**
 	 * Emite los atributos traducibles de una etiqueta.
 	 *
-	 * @param OffsetTagProcessor $processor Analizador.
-	 * @param ExtractedString[]  $units     Unidades acumuladas.
-	 * @param string             $html      Documento completo.
-	 * @param string             $tag       Nombre de etiqueta en mayúsculas.
-	 * @param int                $start     Inicio del token.
+	 * @param OffsetTagProcessor  $processor Analizador.
+	 * @param ExtractedString[]   $units     Unidades acumuladas.
+	 * @param string              $html      Documento completo.
+	 * @param string              $tag       Nombre de etiqueta en mayúsculas.
+	 * @param int                 $start     Inicio del token.
 	 * @param int                 $length    Longitud del token.
 	 * @param array<string, true> $present   Atributos presentes, en minúsculas.
 	 */

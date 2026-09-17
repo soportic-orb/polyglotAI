@@ -38,6 +38,8 @@
         ],
         "phpcs": "phpcs",
         "phpcbf": "phpcbf",
-        "phpstan": "bash tools/install-phpstan.sh && php tools/phpstan.phar analyse --memory-limit=1G"
+        "phpstan": "bash tools/install-phpstan.sh && php tools/phpstan.phar analyse --memory-limit=1G",
+        "test:install": "bash tests/bin/install-wp-tests.sh",
+        "test:integration": "phpunit -c phpunit-integration.xml.dist"
     }
 }
