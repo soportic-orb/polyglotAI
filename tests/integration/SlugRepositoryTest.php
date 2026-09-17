@@ -60,9 +60,9 @@ final class SlugRepositoryTest extends WP_UnitTestCase {
 		$this->assertSame( Status::Automatic, $found->status );
 	}
 
-	public function test_guardar_dos_veces_actualiza_en_vez_de_duplicar(): void {
+	public function test_retraducir_actualiza_en_vez_de_duplicar(): void {
 		$this->repository->save( $this->record() );
-		$this->repository->save( $this->record( 'contact' ) );
+		$this->repository->save( $this->record( 'contact' ), true );
 
 		global $wpdb;
 		$table = Schema::table( 'slugs' );
@@ -75,6 +75,19 @@ final class SlugRepositoryTest extends WP_UnitTestCase {
 		$found = $this->repository->find( 'post', 'page', 12, 'en_US' );
 		$this->assertNotNull( $found );
 		$this->assertSame( 'contact', $found->translated_slug );
+	}
+
+	public function test_una_traduccion_automatica_no_repite_el_trabajo_ya_hecho(): void {
+		// Sobre una traducción automática previa solo se escribe si alguien ha
+		// pedido la retraducción: si no, cada barrido del sitio pagaría otra vez
+		// por el mismo slug.
+		$this->repository->save( $this->record( 'contact-us' ) );
+
+		$this->assertFalse( $this->repository->save( $this->record( 'contact' ) ) );
+
+		$found = $this->repository->find( 'post', 'page', 12, 'en_US' );
+		$this->assertNotNull( $found );
+		$this->assertSame( 'contact-us', $found->translated_slug );
 	}
 
 	public function test_lo_automatico_no_pisa_lo_manual(): void {
