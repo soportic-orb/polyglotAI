@@ -76,3 +76,42 @@ export function createMerge( hashes ) {
 export function removeMerge( hash ) {
 	return apiFetch( { path: 'merges', method: 'DELETE', data: { hash } } );
 }
+
+/**
+ * Recupera los slugs traducibles de una página.
+ *
+ * @param {string} url      URL de la página, tal como se está viendo.
+ * @param {string} language Locale.
+ * @return {Promise<Object>} Respuesta con la lista de slugs.
+ */
+export function fetchSlugs( url, language ) {
+	return apiFetch( {
+		path: `slugs?language=${ encodeURIComponent(
+			language
+		) }&url=${ encodeURIComponent( url ) }`,
+	} );
+}
+
+/**
+ * Guarda un slug traducido.
+ *
+ * El slug devuelto puede no ser el enviado: si otro objeto ya usaba ese slug en
+ * ese idioma, el servidor lo desambigua con un sufijo.
+ *
+ * @param {Object} slug     Slug a guardar.
+ * @param {string} language Locale.
+ * @return {Promise<Object>} Slug guardado y su estado.
+ */
+export function saveSlug( slug, language ) {
+	return apiFetch( {
+		path: 'slugs',
+		method: 'POST',
+		data: {
+			language,
+			object_type: slug.object_type,
+			object_subtype: slug.object_subtype,
+			object_id: slug.object_id,
+			translated_slug: slug.translated_slug,
+		},
+	} );
+}

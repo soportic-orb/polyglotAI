@@ -12,10 +12,18 @@ import {
 	useState,
 } from '@wordpress/element';
 
+import SlugPanel from './SlugPanel';
 import StringEditor from './StringEditor';
 import StringList from './StringList';
 import { buildSrcset, openMediaLibrary } from './media';
-import { createMerge, removeMerge, saveStrings, suggestStrings } from './api';
+import {
+	createMerge,
+	fetchSlugs,
+	removeMerge,
+	saveSlug,
+	saveStrings,
+	suggestStrings,
+} from './api';
 
 const boot = window.pgaiEditor || {};
 
@@ -28,6 +36,7 @@ export default function App() {
 	const [ language, setLanguage ] = useState( boot.initial || '' );
 	const [ previewUrl, setPreviewUrl ] = useState( boot.previewUrl || '' );
 	const [ strings, setStrings ] = useState( [] );
+	const [ slugs, setSlugs ] = useState( [] );
 	const [ selected, setSelected ] = useState( null );
 	const [ draft, setDraft ] = useState( '' );
 	const [ busy, setBusy ] = useState( false );
@@ -105,6 +114,68 @@ export default function App() {
 
 		return () => window.removeEventListener( 'message', onMessage );
 	}, [] );
+
+	// Los slugs de la página no vienen del barrido: son de la URL, así que se
+	// piden aparte cada vez que cambia la página o el idioma.
+	useEffect( () => {
+		if ( ! language || ! previewUrl ) {
+			return undefined;
+		}
+
+		let cancelled = false;
+
+		fetchSlugs( previewUrl, language )
+			.then( ( response ) => {
+				if ( ! cancelled ) {
+					setSlugs( response.items || [] );
+				}
+			} )
+			.catch( () => {
+				if ( ! cancelled ) {
+					setSlugs( [] );
+				}
+			} );
+
+		return () => {
+			cancelled = true;
+		};
+	}, [ previewUrl, language ] );
+
+	/**
+	 * Guarda un slug traducido.
+	 *
+	 * @param {Object} slug Slug con el valor escrito.
+	 */
+	const persistSlug = useCallback(
+		async ( slug ) => {
+			const response = await saveSlug( slug, language );
+
+			// El servidor puede devolver otro slug: si ya estaba cogido en este
+			// idioma lo desambigua, y la interfaz tiene que enseñar lo guardado
+			// y no lo escrito.
+			setSlugs( ( previous ) =>
+				previous.map( ( item ) =>
+					item.object_type === slug.object_type &&
+					item.object_subtype === slug.object_subtype &&
+					item.object_id === slug.object_id
+						? {
+								...item,
+								translated_slug: response.translated_slug,
+								status: response.status,
+						  }
+						: item
+				)
+			);
+
+			setMessage(
+				__(
+					'Slug guardado. La dirección de esta página ha cambiado en este idioma.',
+					'polyglot-ai'
+				)
+			);
+		},
+		[ language ]
+	);
 
 	// Al cambiar de cadena, el borrador parte de su traducción actual.
 	useEffect( () => {
@@ -617,6 +688,12 @@ export default function App() {
 								checked={ checked }
 								onCheck={ toggleCheck }
 								onMerge={ mergeChecked }
+							/>
+
+							<SlugPanel
+								slugs={ slugs }
+								busy={ busy }
+								onSave={ persistSlug }
 							/>
 						</>
 					) }

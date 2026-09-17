@@ -1,0 +1,562 @@
+# Copyright (C) 2026 Soportic
+# This file is distributed under the same license as the Polyglot AI plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Polyglot AI 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/polyglotAI\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-09-17T17:15:16+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: polyglot-ai\n"
+
+#. Plugin Name of the plugin
+#: polyglot-ai.php
+#: src/Admin/SettingsPage.php:60
+#: src/Admin/SettingsPage.php:61
+#: src/Admin/SettingsPage.php:128
+#: src/Languages/UserLanguage.php:76
+msgid "Polyglot AI"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: polyglot-ai.php
+msgid "https://github.com/soportic-orb/polyglotAI"
+msgstr ""
+
+#. Description of the plugin
+#: polyglot-ai.php
+msgid "Traducción multilingüe del sitio con motor de inteligencia artificial, editor visual y URLs por idioma."
+msgstr ""
+
+#. Author of the plugin
+#: polyglot-ai.php
+msgid "Soportic"
+msgstr ""
+
+#: polyglot-ai.php:41
+msgid "Polyglot AI no encuentra sus dependencias. Ejecuta «composer install» en la carpeta del plugin."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:75
+msgid "No tienes permiso para cambiar estos ajustes."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:132
+msgid "Ajustes guardados."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:138
+msgid "Todavía no hay una clave de API configurada. Sin ella no se puede traducir automáticamente."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:146
+msgid "Idiomas"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:149
+msgid "Idioma por defecto"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:153
+msgid "Idiomas adicionales"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:156
+msgid "Aún no hay idiomas adicionales."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:169
+msgid "(en preparación)"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:178
+msgid "URL del idioma por defecto"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:182
+msgid "Usar también un subdirectorio para el idioma por defecto."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:188
+msgid "Motor de traducción"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:191
+msgid "Motor"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:203
+msgid "Modelo"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:206
+msgid "Por defecto claude-sonnet-5. Para abaratar el coste, claude-haiku-4-5."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:210
+msgid "Clave de API"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:215
+msgid "Definida en wp-config.php mediante PGAI_API_KEY."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:221
+msgid "Recomendado: define PGAI_API_KEY en wp-config.php para que la clave no se guarde en la base de datos."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:227
+msgid "Contexto del sitio"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:230
+msgid "De qué va el sitio, a quién se dirige y con qué tono. Mejora mucho la calidad de la traducción."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:235
+msgid "Consumo"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:238
+msgid "Traducción en segundo plano"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:242
+msgid "Traducir automáticamente las cadenas nuevas que aparezcan al visitarse una página."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:244
+msgid "Nunca bloquea la carga: se muestra el original y la traducción aparece en la visita siguiente. El tráfico de robots no encola nada."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:248
+msgid "Tope mensual de tokens"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:251
+msgid "0 significa sin tope."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:256
+msgid "Desinstalación"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:259
+msgid "Al desinstalar"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:263
+msgid "Borrar las tablas y los ajustes al desinstalar el plugin."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:265
+msgid "Desactivar el plugin nunca borra nada. Esto solo afecta a la desinstalación."
+msgstr ""
+
+#. translators: 1: versión requerida, 2: versión instalada.
+#: src/Bootstrap/Requirements.php:49
+#, php-format
+msgid "Polyglot AI necesita PHP %1$s o superior. Esta instalación usa PHP %2$s."
+msgstr ""
+
+#. translators: 1: versión requerida, 2: versión instalada.
+#: src/Bootstrap/Requirements.php:58
+#, php-format
+msgid "Polyglot AI necesita WordPress %1$s o superior. Esta instalación usa WordPress %2$s."
+msgstr ""
+
+#: src/Editor/AdminBar.php:74
+msgid "Traducir página"
+msgstr ""
+
+#: src/Editor/AdminBar.php:76
+msgid "Abrir el editor de traducciones para esta página"
+msgstr ""
+
+#: src/Editor/EditorPage.php:73
+#: src/Editor/EditorPage.php:74
+#: assets/src/editor/App.js:606
+msgid "Editor de traducciones"
+msgstr ""
+
+#: src/Editor/EditorPage.php:139
+msgid "Faltan los recursos compilados del editor. Ejecuta «npm install && npm run build» en la carpeta del plugin."
+msgstr ""
+
+#: src/Editor/PreviewAs.php:107
+msgid "Como yo"
+msgstr ""
+
+#: src/Editor/PreviewAs.php:111
+msgid "Como visitante no conectado"
+msgstr ""
+
+#. translators: %s: nombre del rol.
+#: src/Editor/PreviewAs.php:119
+#, php-format
+msgid "Como %s"
+msgstr ""
+
+#: src/Engines/Claude/ClaudeEngine.php:57
+msgid "Motor IA (Anthropic)"
+msgstr ""
+
+#: src/Languages/UserLanguage.php:80
+msgid "Idioma para los correos"
+msgstr ""
+
+#: src/Languages/UserLanguage.php:84
+msgid "El del sitio"
+msgstr ""
+
+#: src/Languages/UserLanguage.php:92
+msgid "Se actualiza solo al navegar por el sitio en otro idioma."
+msgstr ""
+
+#: src/Rest/Controller.php:54
+msgid "No tienes permiso para hacer esto."
+msgstr ""
+
+#. translators: %s: locale solicitado.
+#: src/Rest/Controller.php:74
+#, php-format
+msgid "El idioma «%s» no está configurado."
+msgstr ""
+
+#: src/Rest/Controller.php:82
+msgid "El idioma por defecto no se traduce."
+msgstr ""
+
+#: src/Rest/Controller.php:100
+msgid "Locale de destino."
+msgstr ""
+
+#: src/Rest/DynamicController.php:101
+msgid "La traducción de contenido dinámico está desactivada."
+msgstr ""
+
+#: src/Rest/MergesController.php:55
+msgid "Hashes a fusionar, en el orden en que aparecen."
+msgstr ""
+
+#: src/Rest/MergesController.php:68
+msgid "Hash de cualquiera de las cadenas fusionadas."
+msgstr ""
+
+#: src/Rest/MergesController.php:90
+msgid "Hacen falta al menos dos cadenas para fusionarlas."
+msgstr ""
+
+#: src/Rest/MergesController.php:116
+msgid "Esa fusión ya no existe."
+msgstr ""
+
+#: src/Rest/SlugsController.php:78
+msgid "URL de la página cuyos slugs se quieren editar."
+msgstr ""
+
+#: src/Rest/SlugsController.php:175
+msgid "El slug no puede quedar vacío."
+msgstr ""
+
+#: src/Rest/SlugsController.php:185
+msgid "Ese elemento no tiene slug que traducir."
+msgstr ""
+
+#: src/Rest/SlugsController.php:199
+#: assets/src/editor/SlugPanel.js:84
+msgid "No se ha podido guardar el slug."
+msgstr ""
+
+#: src/Rest/StringsController.php:123
+msgid "Hashes de las cadenas a recuperar."
+msgstr ""
+
+#: src/Rest/StringsController.php:138
+msgid "Traducciones a guardar."
+msgstr ""
+
+#: src/Rest/SuggestController.php:88
+msgid "Si se guardan las traducciones además de devolverlas."
+msgstr ""
+
+#: src/Rest/SuggestController.php:112
+msgid "Se ha alcanzado el tope mensual de tokens configurado."
+msgstr ""
+
+#: src/Support/Capabilities.php:53
+msgid "Traductor"
+msgstr ""
+
+#: src/Switcher/Shortcode.php:94
+msgid "Selector de idioma"
+msgstr ""
+
+#: src/Translation/Status.php:58
+#: assets/src/editor/SlugPanel.js:26
+#: assets/src/editor/StringEditor.js:24
+msgid "Pendiente"
+msgstr ""
+
+#: src/Translation/Status.php:59
+#: assets/src/editor/SlugPanel.js:24
+#: assets/src/editor/StringEditor.js:25
+msgid "Error"
+msgstr ""
+
+#: src/Translation/Status.php:60
+#: assets/src/editor/SlugPanel.js:22
+#: assets/src/editor/StringEditor.js:26
+msgid "Automática"
+msgstr ""
+
+#: src/Translation/Status.php:61
+#: assets/src/editor/SlugPanel.js:20
+#: assets/src/editor/StringEditor.js:27
+msgid "Revisada"
+msgstr ""
+
+#: src/Translation/Status.php:62
+#: assets/src/editor/SlugPanel.js:18
+#: assets/src/editor/StringEditor.js:28
+msgid "Manual"
+msgstr ""
+
+#: assets/src/editor/App.js:171
+msgid "Slug guardado. La dirección de esta página ha cambiado en este idioma."
+msgstr ""
+
+#. translators: %s: motivo del rechazo.
+#: assets/src/editor/App.js:285
+#, js-format
+msgid "La traducción no conserva la estructura del original (%s)."
+msgstr ""
+
+#: assets/src/editor/App.js:343
+msgid "No se ha podido guardar."
+msgstr ""
+
+#. translators: %s: motivo del fallo.
+#: assets/src/editor/App.js:384
+#, js-format
+msgid "El motor no ha devuelto una traducción válida (%s)."
+msgstr ""
+
+#: assets/src/editor/App.js:395
+msgid "No se ha podido pedir la sugerencia."
+msgstr ""
+
+#: assets/src/editor/App.js:413
+msgid "No queda nada pendiente en esta página."
+msgstr ""
+
+#. translators: 1: cadenas traducidas, 2: cadenas que han fallado.
+#: assets/src/editor/App.js:457
+#, js-format
+msgid "%1$d cadenas traducidas, %2$d descartadas por no validar."
+msgstr ""
+
+#: assets/src/editor/App.js:468
+msgid "No se ha podido traducir la página."
+msgstr ""
+
+#: assets/src/editor/App.js:522
+msgid "No se han podido fusionar."
+msgstr ""
+
+#: assets/src/editor/App.js:549
+msgid "No se ha podido deshacer."
+msgstr ""
+
+#: assets/src/editor/App.js:599
+msgid "en preparación"
+msgstr ""
+
+#: assets/src/editor/App.js:611
+msgid "Idioma"
+msgstr ""
+
+#: assets/src/editor/App.js:621
+msgid "Ver como"
+msgstr ""
+
+#: assets/src/editor/App.js:635
+msgid "Traducir lo pendiente con IA"
+msgstr ""
+
+#: assets/src/editor/App.js:640
+msgid "Salir"
+msgstr ""
+
+#: assets/src/editor/App.js:656
+msgid "Leyendo las cadenas de la página…"
+msgstr ""
+
+#: assets/src/editor/App.js:706
+msgid "Vista previa del sitio"
+msgstr ""
+
+#: assets/src/editor/media.js:55
+msgid "Elegir la imagen de este idioma"
+msgstr ""
+
+#: assets/src/editor/media.js:56
+msgid "Usar esta imagen"
+msgstr ""
+
+#: assets/src/editor/SlugPanel.js:92
+msgid "Dirección de la página"
+msgstr ""
+
+#: assets/src/editor/SlugPanel.js:96
+msgid "Cambiar un slug cambia la URL de esta página en este idioma. La anterior redirige a la nueva."
+msgstr ""
+
+#. translators: 1: nombre del elemento, 2: slug original.
+#: assets/src/editor/SlugPanel.js:113
+#, js-format
+msgid "%1$s (original: %2$s)"
+msgstr ""
+
+#: assets/src/editor/SlugPanel.js:141
+msgid "Guardar slug"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:85
+msgid "Pulsa cualquier texto de la vista previa para traducirlo."
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:121
+msgid "Este texto es un bloque fusionado: varias cadenas se traducen como una sola."
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:126
+msgid "Deshacer la fusión"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:145
+msgid "Imagen original"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:155
+msgid "Imagen de este idioma"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:156
+msgid "Este idioma usa la imagen original"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:172
+msgid "Elegir imagen…"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:180
+msgid "Usar la original"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:189
+msgid "Original"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:200
+msgid "Traducción"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:205
+msgid "Ctrl+S guarda. Ctrl+Intro guarda y pasa a la siguiente."
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:216
+msgid "Marcar como revisada"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:219
+msgid "Una traducción revisada no la sobrescribe ningún proceso automático."
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:242
+msgid "Guardar"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:251
+msgid "Sugerir con IA"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:260
+msgid "Descartar cambios"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:272
+msgid "← Anterior"
+msgstr ""
+
+#: assets/src/editor/StringEditor.js:275
+msgid "Siguiente →"
+msgstr ""
+
+#: assets/src/editor/StringList.js:17
+#: assets/src/editor/StringList.js:18
+msgid "Contenido"
+msgstr ""
+
+#: assets/src/editor/StringList.js:19
+msgid "Imágenes y atributos"
+msgstr ""
+
+#: assets/src/editor/StringList.js:20
+msgid "SEO y metadatos"
+msgstr ""
+
+#: assets/src/editor/StringList.js:21
+msgid "Título de la página"
+msgstr ""
+
+#: assets/src/editor/StringList.js:22
+msgid "Cadenas del tema y plugins"
+msgstr ""
+
+#: assets/src/editor/StringList.js:23
+msgid "Slugs"
+msgstr ""
+
+#: assets/src/editor/StringList.js:26
+msgid "Otras"
+msgstr ""
+
+#: assets/src/editor/StringList.js:100
+msgid "Buscar cadenas"
+msgstr ""
+
+#: assets/src/editor/StringList.js:101
+msgid "Buscar en esta página…"
+msgstr ""
+
+#. translators: 1: cadenas totales, 2: cadenas sin traducir.
+#: assets/src/editor/StringList.js:107
+#, js-format
+msgctxt "resumen de la página"
+msgid "%1$d cadenas, %2$d sin traducir"
+msgstr ""
+
+#. translators: %d: cadenas marcadas.
+#: assets/src/editor/StringList.js:126
+#, js-format
+msgid "Fusionar %d cadenas"
+msgstr ""
+
+#: assets/src/editor/StringList.js:131
+msgid "Solo se pueden fusionar cadenas consecutivas de la página."
+msgstr ""
+
+#: assets/src/editor/StringList.js:141
+msgid "Ninguna cadena coincide."
+msgstr ""
+
+#: assets/src/editor/StringList.js:162
+msgid "Marcar para fusionar"
+msgstr ""

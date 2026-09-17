@@ -279,3 +279,38 @@
 		border-bottom: 1px solid #dcdcde;
 	}
 }
+
+.pgai-slugs {
+	border-top: 1px solid #e0e0e0;
+	margin-top: 16px;
+	padding-top: 16px;
+
+	&__title {
+		font-size: 13px;
+		margin: 0 0 4px;
+		text-transform: uppercase;
+	}
+
+	&__help {
+		color: #757575;
+		font-size: 12px;
+		margin: 0 0 12px;
+	}
+
+	&__item {
+		margin-bottom: 16px;
+	}
+
+	&__row {
+		align-items: center;
+		display: flex;
+		gap: 8px;
+		justify-content: space-between;
+		margin-top: 4px;
+	}
+
+	&__status {
+		color: #757575;
+		font-size: 12px;
+	}
+}
