@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<ruleset name="Polyglot AI">
+    <description>WordPress Coding Standards para Polyglot AI.</description>
+
+    <file>src</file>
+    <file>tests/unit</file>
+    <file>polyglot-ai.php</file>
+    <file>uninstall.php</file>
+
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <arg name="parallel" value="8"/>
+
+    <rule ref="WordPress">
+        <!-- PSR-4: los nombres de fichero siguen el nombre de clase, no el
+             esquema class-*.php del core. -->
+        <exclude name="WordPress.Files.FileName"/>
+        <!-- El plugin declara su propio autoload; no usamos el patrón de
+             ficheros con un único nombre en snake_case. -->
+        <exclude name="Universal.Files.SeparateFunctionsFromOO"/>
+    </rule>
+
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="polyglot-ai"/>
+            </property>
+        </properties>
+    </rule>
+
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="pgai"/>
+                <element value="PGAI"/>
+                <element value="PolyglotAI"/>
+            </property>
+        </properties>
+    </rule>
+
+    <rule ref="PHPCompatibilityWP"/>
+    <config name="testVersion" value="8.1-"/>
+    <config name="minimum_wp_version" value="6.6"/>
+</ruleset>

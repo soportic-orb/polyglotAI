@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tienda de ejemplo &mdash; Inicio</title>
+<meta name="description" content="Una tienda con productos de prueba y acentos: ñ, é, ü.">
+<meta property="og:title" content="Tienda de ejemplo">
+<meta name="generator" content="WordPress 6.6.2">
+<link rel="stylesheet" href="/wp-content/themes/x/style.css">
+<style>
+.cabecera::after { content: "—"; }
+.oculto { display: none !important; }
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Store","name":"Tienda de ejemplo","description":"No traducir < esto > nunca"}
+</script>
+<script>
+var config = {"moneda":"EUR","etiqueta":"<b>Oferta</b>","comparar":function(a,b){return a<b;}};
+</script>
+</head>
+<body class="home page">
+<header class="cabecera">
+  <a class="logo" href="/" title="Volver al inicio"><img src="/logo.png" alt="Logotipo de la tienda"></a>
+  <nav>
+    <ul>
+      <li><a href="/">Inicio</a></li>
+      <li><a href="/tienda/">Tienda</a></li>
+      <li><a href="/contacto/">Contacto</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <h1>Bienvenido a la <em>mejor</em> tienda</h1>
+
+  <p>Tenemos más de 100 productos con envío gratuito a partir de 50&nbsp;&euro;.
+     Consulta nuestras <a href="/condiciones/">condiciones de envío</a> antes de comprar.</p>
+
+  <p class="notranslate">ACME Corporation&reg;</p>
+
+  <div class="producto">
+    <h2>Camiseta de algodón</h2>
+    <p>Disponible en <strong>tallas S a XXL</strong>. Tom &amp; Jerry edición limitada.</p>
+    <p class="precio">19,99 €</p>
+    <form action="/carrito/" method="post">
+      <label for="cantidad">Cantidad</label>
+      <input type="number" id="cantidad" name="cantidad" value="1" min="1">
+      <input type="text" name="nota" placeholder="Nota para el vendedor">
+      <input type="submit" value="Añadir al carrito">
+    </form>
+  </div>
+
+  <section translate="no">
+    <p>Do not translate this legal boilerplate.</p>
+  </section>
+
+  <pre><code>echo "hola mundo";</code></pre>
+
+  <template id="plantilla-aviso">
+    <div class="aviso"><p>Texto de plantilla</p></div>
+  </template>
+
+  <p>Contacta en <a href="mailto:info@ejemplo.com">info@ejemplo.com</a> o llama al 900 000 000.</p>
+
+  <textarea name="comentario" placeholder="Escribe aquí">Texto previo</textarea>
+
+  <p>Hola <span class="notranslate">MARCA</span> y adiós</p>
+</main>
+
+<footer>
+  <p>&copy; 2026 Tienda de ejemplo. Todos los derechos reservados.</p>
+</footer>
+<script src="/wp-includes/js/app.js"></script>
+</body>
+</html>

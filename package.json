@@ -1,0 +1,23 @@
+{
+    "name": "polyglot-ai",
+    "version": "0.1.0",
+    "private": true,
+    "license": "UNLICENSED",
+    "scripts": {
+        "build": "wp-scripts build",
+        "start": "wp-scripts start",
+        "lint:js": "wp-scripts lint-js",
+        "lint:css": "wp-scripts lint-style",
+        "format": "wp-scripts format",
+        "env:start": "wp-env start",
+        "env:stop": "wp-env stop",
+        "env:clean": "wp-env clean all",
+        "test:e2e": "playwright test",
+        "makepot": "wp-cli i18n make-pot . languages/polyglot-ai.pot --domain=polyglot-ai --exclude=vendor,node_modules,tests"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.45.0",
+        "@wordpress/env": "^10.2.0",
+        "@wordpress/scripts": "^28.1.0"
+    }
+}

@@ -27,3 +27,10 @@ Thumbs.db
 # Nunca versionar credenciales
 .env
 .env.*
+
+# HTML API de WordPress descargada para la suite unitaria
+/tests/vendor-wp/
+
+# PHPStan se instala como phar (ver tools/install-phpstan.sh)
+/tools/phpstan.phar
+/tools/.phpstan-version
