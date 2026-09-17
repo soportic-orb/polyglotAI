@@ -1,0 +1,69 @@
+/**
+ * Estilos del selector de idioma.
+ *
+ * Deliberadamente escuetos: el selector vive dentro del tema del sitio y no
+ * tiene por qué imponerle tipografías ni colores. Solo se resuelve la
+ * disposición, que es lo que el tema no puede adivinar.
+ */
+
+.pgai-switcher {
+
+	&__list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	&__item {
+		margin: 0;
+	}
+
+	&__flag {
+		font-style: normal;
+	}
+
+	&--inline &__list,
+	&--dropdown &__list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75em;
+	}
+
+	// El desplegable se abre al pasar por encima y al recibir el foco: sin lo
+	// segundo, quien navega con el teclado no puede abrirlo.
+	&--dropdown {
+		position: relative;
+
+		.pgai-switcher__item:not(.pgai-switcher__item--current) {
+			display: none;
+		}
+
+		&:hover,
+		&:focus-within {
+
+			.pgai-switcher__item {
+				display: block;
+			}
+		}
+	}
+}
+
+.pgai-switcher-floating {
+	bottom: 1rem;
+	position: fixed;
+	right: 1rem;
+	z-index: 9999;
+
+	.pgai-switcher {
+		background: #fff;
+		border: 1px solid rgba(0, 0, 0, 0.15);
+		border-radius: 4px;
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+		padding: 0.5em 0.75em;
+	}
+}
+
+.rtl .pgai-switcher-floating {
+	left: 1rem;
+	right: auto;
+}

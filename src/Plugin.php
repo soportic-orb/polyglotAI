@@ -71,6 +71,8 @@ use PolyglotAI\Routing\SlugResolver;
 use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Options;
+use PolyglotAI\Switcher\Block;
+use PolyglotAI\Switcher\FloatingSwitcher;
 use PolyglotAI\Switcher\MenuLocations;
 use PolyglotAI\Switcher\NavMenu;
 use PolyglotAI\Switcher\NavMenuMetaBox;
@@ -178,9 +180,12 @@ final class Plugin {
 
 		// Selector de idioma dentro de los menús, y menús distintos por idioma.
 		( new NavMenu( $this->switcher_renderer(), $this->request() ) )->register();
+		( new Block( $this->switcher_renderer(), $this->languages() ) )->register();
 		$this->menu_locations()->register();
 
 		if ( ! is_admin() ) {
+			( new FloatingSwitcher( $this->switcher_renderer(), $this->options() ) )->register();
+
 			( new VisitorRedirect(
 				$this->options(),
 				$this->request(),

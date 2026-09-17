@@ -81,15 +81,17 @@ final class SettingsPage {
 		check_admin_referer( 'pgai_save_settings' );
 
 		$values = array(
-			'engine'                  => sanitize_key( wp_unslash( (string) ( $_POST['engine'] ?? 'anthropic' ) ) ),
-			'model'                   => sanitize_text_field( wp_unslash( (string) ( $_POST['model'] ?? 'claude-sonnet-5' ) ) ),
-			'effort'                  => sanitize_key( wp_unslash( (string) ( $_POST['effort'] ?? 'low' ) ) ),
-			'site_context'            => sanitize_textarea_field( wp_unslash( (string) ( $_POST['site_context'] ?? '' ) ) ),
-			'prefix_default'          => isset( $_POST['prefix_default'] ),
-			'realtime'                => isset( $_POST['realtime'] ),
-			'detect_visitor_language' => isset( $_POST['detect_visitor_language'] ),
-			'monthly_token_limit'     => absint( wp_unslash( (string) ( $_POST['monthly_token_limit'] ?? 0 ) ) ),
-			'uninstall_removes_data'  => isset( $_POST['uninstall_removes_data'] ),
+			'engine'                    => sanitize_key( wp_unslash( (string) ( $_POST['engine'] ?? 'anthropic' ) ) ),
+			'model'                     => sanitize_text_field( wp_unslash( (string) ( $_POST['model'] ?? 'claude-sonnet-5' ) ) ),
+			'effort'                    => sanitize_key( wp_unslash( (string) ( $_POST['effort'] ?? 'low' ) ) ),
+			'site_context'              => sanitize_textarea_field( wp_unslash( (string) ( $_POST['site_context'] ?? '' ) ) ),
+			'prefix_default'            => isset( $_POST['prefix_default'] ),
+			'realtime'                  => isset( $_POST['realtime'] ),
+			'detect_visitor_language'   => isset( $_POST['detect_visitor_language'] ),
+			'floating_switcher'         => isset( $_POST['floating_switcher'] ),
+			'floating_switcher_display' => sanitize_key( wp_unslash( (string) ( $_POST['floating_switcher_display'] ?? 'name' ) ) ),
+			'monthly_token_limit'       => absint( wp_unslash( (string) ( $_POST['monthly_token_limit'] ?? 0 ) ) ),
+			'uninstall_removes_data'    => isset( $_POST['uninstall_removes_data'] ),
 		);
 
 		$values[ MenuLocations::OPTION_KEY ] = $this->submitted_menus();
@@ -278,6 +280,50 @@ final class SettingsPage {
 						<td>
 							<textarea name="site_context" id="pgai-context" rows="4" class="large-text"><?php echo esc_textarea( (string) $options['site_context'] ); ?></textarea>
 							<p class="description"><?php esc_html_e( 'De qué va el sitio, a quién se dirige y con qué tono. Mejora mucho la calidad de la traducción.', 'polyglot-ai' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Selector de idioma', 'polyglot-ai' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Selector flotante', 'polyglot-ai' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="floating_switcher" <?php checked( (bool) $options['floating_switcher'] ); ?>>
+								<?php esc_html_e( 'Mostrarlo fijo en una esquina de todas las páginas.', 'polyglot-ai' ); ?>
+							</label>
+							<p class="description">
+								<?php
+								esc_html_e(
+									'Para temas donde no hay dónde poner el bloque. Ocupa la misma esquina que los avisos de cookies y los chats de soporte.',
+									'polyglot-ai'
+								);
+								?>
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">
+							<label for="pgai-floating-display"><?php esc_html_e( 'Qué muestra', 'polyglot-ai' ); ?></label>
+						</th>
+						<td>
+							<select name="floating_switcher_display" id="pgai-floating-display">
+								<?php
+								$display_choices = array(
+									'name'      => __( 'Nombre', 'polyglot-ai' ),
+									'code'      => __( 'Código', 'polyglot-ai' ),
+									'both'      => __( 'Nombre y código', 'polyglot-ai' ),
+									'flag'      => __( 'Bandera', 'polyglot-ai' ),
+									'flag_name' => __( 'Bandera y nombre', 'polyglot-ai' ),
+								);
+								?>
+								<?php foreach ( $display_choices as $value => $label ) : ?>
+									<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $options['floating_switcher_display'], $value ); ?>>
+										<?php echo esc_html( $label ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
 						</td>
 					</tr>
 				</table>

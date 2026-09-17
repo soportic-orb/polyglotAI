@@ -111,6 +111,12 @@ final class SwitcherRenderer {
 			return '';
 		}
 
+		// Un solo sitio donde se pide la hoja de estilos: el shortcode, el
+		// bloque y el selector flotante pasan todos por aquí.
+		if ( wp_style_is( Block::STYLE_HANDLE, 'registered' ) ) {
+			wp_enqueue_style( Block::STYLE_HANDLE );
+		}
+
 		$classes = 'pgai-switcher pgai-switcher--' . sanitize_html_class( (string) $attributes['layout'] );
 
 		if ( '' !== (string) $attributes['class'] ) {

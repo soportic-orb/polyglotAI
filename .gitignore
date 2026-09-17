@@ -34,3 +34,4 @@ Thumbs.db
 # PHPStan se instala como phar (ver tools/install-phpstan.sh)
 /tools/phpstan.phar
 /tools/.phpstan-version
+/.phpunit-integration.result.cache

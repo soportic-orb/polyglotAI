@@ -9,16 +9,16 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-17T17:15:16+00:00\n"
+"POT-Creation-Date: 2026-09-17T17:59:12+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: polyglot-ai\n"
 
 #. Plugin Name of the plugin
 #: polyglot-ai.php
-#: src/Admin/SettingsPage.php:60
-#: src/Admin/SettingsPage.php:61
-#: src/Admin/SettingsPage.php:128
+#: src/Admin/SettingsPage.php:63
+#: src/Admin/SettingsPage.php:64
+#: src/Admin/SettingsPage.php:180
 #: src/Languages/UserLanguage.php:76
 msgid "Polyglot AI"
 msgstr ""
@@ -42,119 +42,202 @@ msgstr ""
 msgid "Polyglot AI no encuentra sus dependencias. Ejecuta «composer install» en la carpeta del plugin."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:75
+#: src/Admin/SettingsPage.php:78
 msgid "No tienes permiso para cambiar estos ajustes."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:132
+#: src/Admin/SettingsPage.php:184
 msgid "Ajustes guardados."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:138
+#: src/Admin/SettingsPage.php:190
 msgid "Todavía no hay una clave de API configurada. Sin ella no se puede traducir automáticamente."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:146
+#: src/Admin/SettingsPage.php:198
+#: src/Switcher/NavMenuMetaBox.php:42
 msgid "Idiomas"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:149
+#: src/Admin/SettingsPage.php:201
 msgid "Idioma por defecto"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:153
+#: src/Admin/SettingsPage.php:205
 msgid "Idiomas adicionales"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:156
+#: src/Admin/SettingsPage.php:208
 msgid "Aún no hay idiomas adicionales."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:169
+#: src/Admin/SettingsPage.php:221
 msgid "(en preparación)"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:178
+#: src/Admin/SettingsPage.php:230
 msgid "URL del idioma por defecto"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:182
+#: src/Admin/SettingsPage.php:234
 msgid "Usar también un subdirectorio para el idioma por defecto."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:188
+#: src/Admin/SettingsPage.php:240
 msgid "Motor de traducción"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:191
+#: src/Admin/SettingsPage.php:243
 msgid "Motor"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:203
+#: src/Admin/SettingsPage.php:255
 msgid "Modelo"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:206
+#: src/Admin/SettingsPage.php:258
 msgid "Por defecto claude-sonnet-5. Para abaratar el coste, claude-haiku-4-5."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:210
+#: src/Admin/SettingsPage.php:262
 msgid "Clave de API"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:215
+#: src/Admin/SettingsPage.php:267
 msgid "Definida en wp-config.php mediante PGAI_API_KEY."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:221
+#: src/Admin/SettingsPage.php:273
 msgid "Recomendado: define PGAI_API_KEY en wp-config.php para que la clave no se guarde en la base de datos."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:227
+#: src/Admin/SettingsPage.php:279
 msgid "Contexto del sitio"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:230
+#: src/Admin/SettingsPage.php:282
 msgid "De qué va el sitio, a quién se dirige y con qué tono. Mejora mucho la calidad de la traducción."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:235
+#: src/Admin/SettingsPage.php:287
+#: src/Switcher/NavMenuMetaBox.php:57
+#: src/Switcher/SwitcherRenderer.php:132
+#: assets/src/block/index.js:64
+msgid "Selector de idioma"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:290
+msgid "Selector flotante"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:294
+msgid "Mostrarlo fijo en una esquina de todas las páginas."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:298
+msgid "Para temas donde no hay dónde poner el bloque. Ocupa la misma esquina que los avisos de cookies y los chats de soporte."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:308
+msgid "Qué muestra"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:314
+#: assets/src/block/index.js:72
+msgid "Nombre"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:315
+#: assets/src/block/index.js:76
+msgid "Código"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:316
+#: assets/src/block/index.js:80
+msgid "Nombre y código"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:317
+#: assets/src/block/index.js:84
+msgid "Bandera"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:318
+#: assets/src/block/index.js:88
+msgid "Bandera y nombre"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:331
+msgid "Visitantes"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:334
+msgid "Detectar el idioma del navegador"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:338
+msgid "Llevar al visitante a su idioma la primera vez que llega."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:342
+msgid "Actívalo solo si sabes que tu caché de página varía por cookie: si no, la primera respuesta cacheada se queda con la redirección dentro y se la lleva todo el mundo. Además manda sobre la intención de quien sigue un enlace a un idioma concreto."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:352
+msgid "Menús por idioma"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:359
+msgid "Aparecerá aquí cuando el tema declare ubicaciones de menú y haya algún idioma añadido."
+msgstr ""
+
+#. translators: 1: nombre del idioma, 2: ubicación del menú en el tema.
+#: src/Admin/SettingsPage.php:376
+#, php-format
+msgid "%1$s — %2$s"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:385
+msgid "El mismo que el idioma por defecto"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:400
 msgid "Consumo"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:238
+#: src/Admin/SettingsPage.php:403
 msgid "Traducción en segundo plano"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:242
+#: src/Admin/SettingsPage.php:407
 msgid "Traducir automáticamente las cadenas nuevas que aparezcan al visitarse una página."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:244
+#: src/Admin/SettingsPage.php:409
 msgid "Nunca bloquea la carga: se muestra el original y la traducción aparece en la visita siguiente. El tráfico de robots no encola nada."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:248
+#: src/Admin/SettingsPage.php:413
 msgid "Tope mensual de tokens"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:251
+#: src/Admin/SettingsPage.php:416
 msgid "0 significa sin tope."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:256
+#: src/Admin/SettingsPage.php:421
 msgid "Desinstalación"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:259
+#: src/Admin/SettingsPage.php:424
 msgid "Al desinstalar"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:263
+#: src/Admin/SettingsPage.php:428
 msgid "Borrar las tablas y los ajustes al desinstalar el plugin."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:265
+#: src/Admin/SettingsPage.php:430
 msgid "Desactivar el plugin nunca borra nada. Esto solo afecta a la desinstalación."
 msgstr ""
 
@@ -293,8 +376,12 @@ msgstr ""
 msgid "Traductor"
 msgstr ""
 
-#: src/Switcher/Shortcode.php:94
-msgid "Selector de idioma"
+#: src/Switcher/NavMenuMetaBox.php:103
+msgid "Añadir al menú"
+msgstr ""
+
+#: src/Switcher/NavMenuMetaBox.php:113
+msgid "El selector se convierte en un desplegable con el idioma en curso y los demás debajo. Cada idioma suelto lleva a esta misma página en ese idioma."
 msgstr ""
 
 #: src/Translation/Status.php:58
@@ -325,6 +412,34 @@ msgstr ""
 #: assets/src/editor/SlugPanel.js:18
 #: assets/src/editor/StringEditor.js:28
 msgid "Manual"
+msgstr ""
+
+#: assets/src/block/index.js:67
+msgid "Mostrar"
+msgstr ""
+
+#: assets/src/block/index.js:98
+msgid "Disposición"
+msgstr ""
+
+#: assets/src/block/index.js:103
+msgid "Lista"
+msgstr ""
+
+#: assets/src/block/index.js:107
+msgid "En línea"
+msgstr ""
+
+#: assets/src/block/index.js:111
+msgid "Desplegable"
+msgstr ""
+
+#: assets/src/block/index.js:121
+msgid "Ocultar el idioma en curso"
+msgstr ""
+
+#: assets/src/block/index.js:136
+msgid "Añade algún idioma para que el selector tenga algo que mostrar."
 msgstr ""
 
 #: assets/src/editor/App.js:171
@@ -559,4 +674,14 @@ msgstr ""
 
 #: assets/src/editor/StringList.js:162
 msgid "Marcar para fusionar"
+msgstr ""
+
+#: assets/src/block/block.json
+msgctxt "block title"
+msgid "Selector de idioma"
+msgstr ""
+
+#: assets/src/block/block.json
+msgctxt "block description"
+msgid "Enlaces a esta misma página en los demás idiomas del sitio."
 msgstr ""
