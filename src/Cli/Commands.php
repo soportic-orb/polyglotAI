@@ -16,6 +16,7 @@ use PolyglotAI\Engines\EngineException;
 use PolyglotAI\Engines\TranslationEngineInterface;
 use PolyglotAI\Engines\TranslationRequest;
 use PolyglotAI\Jobs\PendingTranslator;
+use PolyglotAI\Jobs\SiteTranslator;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Options;
@@ -42,6 +43,7 @@ final class Commands {
 	 * @param Options                    $options      Ajustes.
 	 * @param ApiKey                     $api_key      Custodia de la clave.
 	 * @param PendingTranslator          $pending      Traductor en segundo plano.
+	 * @param SiteTranslator|null        $site         Traductor de sitio completo, si el motor lo admite.
 	 */
 	public function __construct(
 		private readonly TranslationEngineInterface $engine,
@@ -50,7 +52,8 @@ final class Commands {
 		private readonly LanguageRegistry $languages,
 		private readonly Options $options,
 		private readonly ApiKey $api_key,
-		private readonly PendingTranslator $pending
+		private readonly PendingTranslator $pending,
+		private readonly ?SiteTranslator $site = null
 	) {}
 
 	/**
@@ -60,6 +63,7 @@ final class Commands {
 		WP_CLI::add_command( 'pgai test', array( $this, 'test' ) );
 		WP_CLI::add_command( 'pgai translate', array( $this, 'translate' ) );
 		WP_CLI::add_command( 'pgai status', array( $this, 'status' ) );
+		WP_CLI::add_command( 'pgai site', array( $this, 'site' ) );
 	}
 
 	/**
@@ -270,5 +274,119 @@ final class Commands {
 			$this->options->glossary( $language ),
 			$this->options->do_not_translate()
 		);
+	}
+	/**
+	 * Traduce el sitio entero en diferido.
+	 *
+	 * Existe además del botón del panel porque un sitio grande tarda horas y a
+	 * menudo se lanza desde un `wp cron` o por SSH, sin nadie mirando.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <accion>
+	 * : start, status, pause, resume o cancel.
+	 *
+	 * [--language=<locale>]
+	 * : Idioma. Por defecto, todos los traducibles.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp pgai site start --language=en_US
+	 *     wp pgai site status
+	 *
+	 * @param string[]              $args       Argumentos posicionales.
+	 * @param array<string, string> $assoc_args Argumentos con nombre.
+	 */
+	public function site( array $args, array $assoc_args ): void {
+		if ( null === $this->site ) {
+			WP_CLI::error( 'El motor configurado no admite traducir el sitio entero en diferido.' );
+
+			return;
+		}
+
+		$action = (string) ( $args[0] ?? 'status' );
+
+		if ( ! in_array( $action, array( 'start', 'status', 'pause', 'resume', 'cancel' ), true ) ) {
+			WP_CLI::error( sprintf( 'Acción desconocida: %s', $action ) );
+
+			return;
+		}
+
+		foreach ( $this->requested_languages( $assoc_args ) as $language ) {
+			$this->site_action( $action, $language->locale );
+		}
+	}
+
+	/**
+	 * Aplica una acción de sitio completo a un idioma.
+	 *
+	 * @param string $action   Acción.
+	 * @param string $language Locale.
+	 */
+	private function site_action( string $action, string $language ): void {
+		if ( null === $this->site ) {
+			return;
+		}
+
+		$run = match ( $action ) {
+			'start'  => $this->site->start( $language ),
+			'pause'  => $this->site->pause( $language ),
+			'resume' => $this->site->resume( $language ),
+			default  => $this->site->status( $language ),
+		};
+
+		if ( 'cancel' === $action ) {
+			$this->site->cancel( $language );
+
+			WP_CLI::success( sprintf( '%s: cancelada.', $language ) );
+
+			return;
+		}
+
+		if ( null === $run ) {
+			WP_CLI::log( sprintf( '%s: no hay nada que traducir.', $language ) );
+
+			return;
+		}
+
+		WP_CLI::log(
+			sprintf(
+				'%s: %s, %d%% (%d de %d, %d con error).',
+				$language,
+				$run->status,
+				$run->progress(),
+				$run->done,
+				$run->total,
+				$run->failed
+			)
+		);
+
+		if ( '' !== $run->message ) {
+			WP_CLI::warning( sprintf( '%s: %s', $language, $run->message ) );
+		}
+	}
+
+	/**
+	 * Idiomas sobre los que actuar.
+	 *
+	 * @param array<string, string> $assoc_args Argumentos con nombre.
+	 * @return \PolyglotAI\Languages\Language[]
+	 */
+	private function requested_languages( array $assoc_args ): array {
+		$requested = (string) ( $assoc_args['language'] ?? '' );
+
+		if ( '' === $requested ) {
+			return $this->languages->translatable();
+		}
+
+		$language = $this->languages->by_locale( $requested );
+
+		if ( null === $language ) {
+			WP_CLI::error( sprintf( 'El idioma «%s» no está configurado.', $requested ) );
+
+			return array();
+		}
+
+		return array( $language );
 	}
 }

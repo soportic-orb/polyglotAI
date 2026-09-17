@@ -568,6 +568,33 @@ Y por lo mismo los elementos de menú guardan un centinela (`#pgai-switcher`,
 `#pgai-lang-en`) en vez de una URL: no existe una URL que se pueda guardar una
 vez, y un menú guardado sigue valiendo si después se añade o se quita un idioma.
 
+### ADR-19 — La traducción de sitio completo vive entre peticiones, no dentro de una
+
+Enviar, preguntar y recoger son tres momentos separados por horas, y cada uno es
+una pasada de Action Scheduler. No es una elección estética: una traducción de
+sitio completo puede tardar más que cualquier `max_execution_time`, así que nada
+de esto puede vivir dentro de una sola petición.
+
+De ahí que el estado (`Jobs\SiteRun`) se guarde entre pasadas: es lo que hace
+que el trabajo sea **pausable y reanudable de verdad** y no solo que lo parezca.
+
+- **Pausar no cancela el lote en vuelo.** Lo ya enviado se cobra igual, así que
+  tirarlo sería pagar por nada: se deja de preguntar y de enviar más, y reanudar
+  vuelve a esperar por el mismo lote sin reenviarlo.
+- **Un lote por pasada**, no el sitio entero de golpe. Así el mapa de trozos que
+  hay que recordar tiene un tamaño acotado, y si algo va mal se pierde una tanda
+  y no el trabajo de un día.
+- **El estado va en una opción por idioma, sin autocarga.** Es una fila por
+  idioma activo y solo se lee cuando alguien mira el progreso o cuando corre la
+  tarea; una tabla nueva habría significado migrar el esquema para guardar como
+  mucho ocho filas. Sin autocarga porque el mapa de trozos puede ocupar y no
+  tiene por qué estar en memoria en cada visita de cada visitante.
+
+**Los lotes asíncronos son una interfaz aparte** (`AsyncBatchEngineInterface`),
+no métodos nuevos en `TranslationEngineInterface`: no todo motor los admite, y
+el ciclo es distinto del de una llamada normal. Si el motor configurado no los
+admite, la pantalla lo dice en vez de enseñar un botón que no hace nada.
+
 ---
 
 ## 4. Estructura del repositorio
@@ -585,8 +612,10 @@ src/
   Routing/               UrlConverter, RequestRouter, SlugResolver, SlugSync,
                          PermalinkTranslator, LinkRewriter, InternalUrl, HeadTags
   Html/                  Drivers, extractor, sustituidor, exclusiones, BailConditions
-  Translation/           Dictionary, Normalizer, Hasher, Validator, StatusPrecedence, Memory
-  Engines/               Interfaz + Claude/{ClaudeEngine,Client,PromptBuilder,Schema,Batches,UsageMeter}
+  Translation/           Dictionary, Normalizer, Hasher, Validator, StatusPrecedence,
+                         Memory, MissingQueue, TranslationLookup
+  Engines/               Interfaces + Claude/{ClaudeEngine,ClaudeClient,PromptBuilder,
+                         ResponseSchema,ResponseParser,RetryPolicy,Batches}
   Seo/                   HeadUrls, StructuredData, Sitemaps
   Switcher/              SwitcherRenderer, Shortcode, Block, NavMenu,
                          MenuLocations, FloatingSwitcher
@@ -596,7 +625,8 @@ src/
                          ImportExport, TranslatorProfile, TranslatorAccess
   Gettext/  Editor/  Rest/
   Compat/                WooCommerce, Forms, Cache, Builders, SeoPlugins
-  Jobs/                  PendingTranslator, SlugTranslator, Budget, ContextFactory
+  Jobs/                  PendingTranslator, SlugTranslator, SiteTranslator,
+                         SiteRun, Budget, ContextFactory
   Support/               Options, Capabilities, Logger, Lock, Cache
 assets/src → assets/build
 languages/               polyglot-ai.pot
@@ -661,7 +691,8 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 | 4. SEO Pack | Completa, salvo los sitemaps de los plugins de SEO (ADR-16) |
 | 5. Selector, navegación y detección | Completa |
 | 6. Roles, gestor de cadenas, glosario y estadísticas | Completa |
-| 7–8 | Sin empezar |
+| 7. Traducción de sitio completo | Completa |
+| 8 | Sin empezar |
 
 Un punto del encargo que caía en la fase 3 sigue pendiente, y otro ya está
 resuelto:

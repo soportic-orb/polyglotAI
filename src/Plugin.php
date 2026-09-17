@@ -899,7 +899,8 @@ final class Plugin {
 				$this->languages(),
 				$this->options(),
 				new ApiKey(),
-				$this->pending_translator()
+				$this->pending_translator(),
+				$this->site_translator()
 			)
 		);
 	}
