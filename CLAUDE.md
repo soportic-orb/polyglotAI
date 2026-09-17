@@ -191,6 +191,13 @@ Se **abandona sin procesar** (sin arrancar siquiera el buffer) cuando:
 - El idioma solicitado es el idioma por defecto y no hay nada que sustituir.
 - Modo edición de constructor: `et_fb`, `elementor-preview` / `action=elementor`,
   `fl_builder`, `bricks=run`, `vc_action`, `customize_changeset_uuid`, `tve` (Thrive).
+- **Vista previa** (`is_preview()`, `is_customize_preview()`). Un borrador es contenido
+  sin publicar: procesarlo lo guardaría en `pgai_sources` y la tarea de fondo acabaría
+  mandándolo a la API (ADR-13), de modo que un anuncio con fecha o una página de producto
+  sin estrenar saldrían del sitio antes de estar publicados. Y como cambia en cada
+  revisión, se pagaría además por traducir borradores que luego se tiran. El editor
+  visual no se ve afectado: usa sus propios parámetros (`pgai-edit`, `pgai-as`) y no la
+  vista previa de WordPress.
 - El `Content-Type` de la respuesta no es `text/html`.
 
 La lista de abandonos vive en `PolyglotAI\Html\BailConditions` y es **filtrable**

@@ -87,6 +87,16 @@ final class BailConditions {
 			return true;
 		}
 
+		// La vista previa de un borrador es contenido sin publicar. Procesarla
+		// lo guardaría en pgai_sources y la tarea de fondo acabaría mandándolo
+		// a la API (ADR-13), de modo que un anuncio con fecha o una página de
+		// producto sin estrenar saldrían del sitio antes de estar publicados.
+		// Además cambia en cada revisión, así que se pagaría por traducir
+		// borradores que luego se tiran.
+		if ( is_preview() || is_customize_preview() ) {
+			return true;
+		}
+
 		return $this->is_excluded_path();
 	}
 
