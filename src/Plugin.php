@@ -62,6 +62,7 @@ use PolyglotAI\Routing\HeadTags;
 use PolyglotAI\Routing\InternalUrl;
 use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Routing\RequestContext;
+use PolyglotAI\Content\Conditional;
 use PolyglotAI\Database\SlugRepository;
 use PolyglotAI\Routing\PermalinkTranslator;
 use PolyglotAI\Routing\RequestRouter;
@@ -173,6 +174,7 @@ final class Plugin {
 		}
 
 		$this->switcher()->register();
+		( new Conditional( $this->languages(), $this->request() ) )->register();
 
 		// Selector de idioma dentro de los menús, y menús distintos por idioma.
 		( new NavMenu( $this->switcher_renderer(), $this->request() ) )->register();

@@ -247,6 +247,43 @@ add_filter( 'pgai_detected_language', function ( $language ) {
 | `$language` | `PolyglotAI\Languages\Language` detectado, o `null`. |
 | `$header` | Cabecera `Accept-Language` recibida. |
 
+## Shortcodes
+
+### `[pgai_language_switcher]`
+
+Selector de idioma.
+
+| Atributo | Valores | Qué hace |
+|---|---|---|
+| `display` | `name`, `code`, `both`, `flag`, `flag_name` | Qué se ve en cada enlace. |
+| `layout` | `list`, `inline`, `dropdown` | Clase CSS del contenedor. |
+| `hide_current` | `yes`, `no` | Oculta el idioma en curso. |
+| `class` | | Clases extra, saneadas. |
+
+### `[pgai_if]` y `[pgai_unless]`
+
+Muestran u ocultan contenido según el idioma. Aceptan tanto el slug de la URL
+(`en`) como el locale (`en_US`).
+
+```
+[pgai_if lang="en,ca"]Solo en inglés y catalán[/pgai_if]
+[pgai_unless lang="es"]En todos menos en español[/pgai_unless]
+```
+
+Lo que no se muestra **no llega a la salida**: no se registra como cadena, no se
+encola y no se paga por traducirlo.
+
+Con `translate="no"` el contenido se envuelve en un contenedor que el barrido
+salta. Es para el texto que ya está escrito en el idioma al que se condiciona.
+
+**Para anidar una condición dentro de otra hay que alternar los dos nombres.**
+WordPress no sabe anidar dos shortcodes con el mismo nombre: su expresión
+regular cierra en el primer `[/...]` que encuentra.
+
+### `[pgai_language]`
+
+Escribe el idioma en curso. `display` acepta `name`, `code`, `locale` y `slug`.
+
 ## Funciones públicas
 
 | Función | Devuelve |
