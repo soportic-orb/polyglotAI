@@ -14,15 +14,35 @@ namespace PolyglotAI\Html;
  *
  * Los nombres van en mayúsculas porque es lo que devuelve
  * WP_HTML_Tag_Processor::get_tag().
+ *
+ * Están escritas como mapas con la etiqueta por clave, y no como listas, porque
+ * se consultan varias veces por cada etiqueta del documento: con in_array cada
+ * consulta recorría hasta cuarenta y cinco cadenas, y en una página real eso
+ * suponía más tiempo que el propio analizador.
  */
 final class Elements {
 
 	/**
 	 * Elementos vacíos: no tienen etiqueta de cierre y no se apilan.
 	 *
-	 * @var string[]
+	 * @var array<string, true>
 	 */
-	private const VOID = array( 'AREA', 'BASE', 'BR', 'COL', 'EMBED', 'HR', 'IMG', 'INPUT', 'LINK', 'META', 'PARAM', 'SOURCE', 'TRACK', 'WBR' );
+	private const VOID = array(
+		'AREA' => true,
+		'BASE' => true,
+		'BR' => true,
+		'COL' => true,
+		'EMBED' => true,
+		'HR' => true,
+		'IMG' => true,
+		'INPUT' => true,
+		'LINK' => true,
+		'META' => true,
+		'PARAM' => true,
+		'SOURCE' => true,
+		'TRACK' => true,
+		'WBR' => true,
+	);
 
 	/**
 	 * Elementos que WP_HTML_Tag_Processor entrega como un único token, con su
@@ -32,62 +52,71 @@ final class Elements {
 	 * skip_script_data, skip_rcdata y skip_rawtext). Apilar uno de estos
 	 * descuadraría la pila, porque su cierre nunca llega como token propio.
 	 *
-	 * @var string[]
+	 * @var array<string, true>
 	 */
-	private const SELF_CONTAINED = array( 'SCRIPT', 'STYLE', 'TITLE', 'TEXTAREA', 'IFRAME', 'NOEMBED', 'NOFRAMES', 'XMP' );
+	private const SELF_CONTAINED = array(
+		'SCRIPT' => true,
+		'STYLE' => true,
+		'TITLE' => true,
+		'TEXTAREA' => true,
+		'IFRAME' => true,
+		'NOEMBED' => true,
+		'NOFRAMES' => true,
+		'XMP' => true,
+	);
 
 	/**
 	 * Elementos de bloque. Interrumpen una unidad de traducción: el texto a un
 	 * lado y al otro son cadenas distintas.
 	 *
-	 * @var string[]
+	 * @var array<string, true>
 	 */
 	private const BLOCK_LEVEL = array(
-		'ADDRESS',
-		'ARTICLE',
-		'ASIDE',
-		'BLOCKQUOTE',
-		'BODY',
-		'CAPTION',
-		'DD',
-		'DETAILS',
-		'DIALOG',
-		'DIV',
-		'DL',
-		'DT',
-		'FIELDSET',
-		'FIGCAPTION',
-		'FIGURE',
-		'FOOTER',
-		'FORM',
-		'H1',
-		'H2',
-		'H3',
-		'H4',
-		'H5',
-		'H6',
-		'HEAD',
-		'HEADER',
-		'HGROUP',
-		'HR',
-		'HTML',
-		'LI',
-		'MAIN',
-		'NAV',
-		'OL',
-		'OPTION',
-		'P',
-		'PRE',
-		'SECTION',
-		'SUMMARY',
-		'TABLE',
-		'TBODY',
-		'TD',
-		'TFOOT',
-		'TH',
-		'THEAD',
-		'TR',
-		'UL',
+		'ADDRESS' => true,
+		'ARTICLE' => true,
+		'ASIDE' => true,
+		'BLOCKQUOTE' => true,
+		'BODY' => true,
+		'CAPTION' => true,
+		'DD' => true,
+		'DETAILS' => true,
+		'DIALOG' => true,
+		'DIV' => true,
+		'DL' => true,
+		'DT' => true,
+		'FIELDSET' => true,
+		'FIGCAPTION' => true,
+		'FIGURE' => true,
+		'FOOTER' => true,
+		'FORM' => true,
+		'H1' => true,
+		'H2' => true,
+		'H3' => true,
+		'H4' => true,
+		'H5' => true,
+		'H6' => true,
+		'HEAD' => true,
+		'HEADER' => true,
+		'HGROUP' => true,
+		'HR' => true,
+		'HTML' => true,
+		'LI' => true,
+		'MAIN' => true,
+		'NAV' => true,
+		'OL' => true,
+		'OPTION' => true,
+		'P' => true,
+		'PRE' => true,
+		'SECTION' => true,
+		'SUMMARY' => true,
+		'TABLE' => true,
+		'TBODY' => true,
+		'TD' => true,
+		'TFOOT' => true,
+		'TH' => true,
+		'THEAD' => true,
+		'TR' => true,
+		'UL' => true,
 	);
 
 	/**
@@ -99,9 +128,19 @@ final class Elements {
 	 * convertiría en una sola unidad y los atributos de sus controles quedarían
 	 * absorbidos por ella.
 	 *
-	 * @var string[]
+	 * @var array<string, true>
 	 */
-	private const BREAKS_RUN = array( 'AUDIO', 'BUTTON', 'EMBED', 'INPUT', 'LABEL', 'LEGEND', 'OPTGROUP', 'SELECT', 'VIDEO' );
+	private const BREAKS_RUN = array(
+		'AUDIO' => true,
+		'BUTTON' => true,
+		'EMBED' => true,
+		'INPUT' => true,
+		'LABEL' => true,
+		'LEGEND' => true,
+		'OPTGROUP' => true,
+		'SELECT' => true,
+		'VIDEO' => true,
+	);
 
 	/**
 	 * Elementos cuyo contenido no se traduce nunca.
@@ -110,9 +149,22 @@ final class Elements {
 	 * su interior, pero se incluyen para que la regla siga siendo explícita si
 	 * algún día cambia el driver.
 	 *
-	 * @var string[]
+	 * @var array<string, true>
 	 */
-	private const NEVER_TRANSLATE = array( 'CANVAS', 'CODE', 'KBD', 'MATH', 'OBJECT', 'PRE', 'SAMP', 'SCRIPT', 'STYLE', 'SVG', 'TEMPLATE', 'VAR' );
+	private const NEVER_TRANSLATE = array(
+		'CANVAS' => true,
+		'CODE' => true,
+		'KBD' => true,
+		'MATH' => true,
+		'OBJECT' => true,
+		'PRE' => true,
+		'SAMP' => true,
+		'SCRIPT' => true,
+		'STYLE' => true,
+		'SVG' => true,
+		'TEMPLATE' => true,
+		'VAR' => true,
+	);
 
 	/**
 	 * Si el elemento es vacío.
@@ -120,7 +172,7 @@ final class Elements {
 	 * @param string $tag Nombre de etiqueta en mayúsculas.
 	 */
 	public static function is_void( string $tag ): bool {
-		return in_array( $tag, self::VOID, true );
+		return isset( self::VOID[ $tag ] );
 	}
 
 	/**
@@ -129,7 +181,7 @@ final class Elements {
 	 * @param string $tag Nombre de etiqueta en mayúsculas.
 	 */
 	public static function is_self_contained( string $tag ): bool {
-		return in_array( $tag, self::SELF_CONTAINED, true );
+		return isset( self::SELF_CONTAINED[ $tag ] );
 	}
 
 	/**
@@ -138,7 +190,7 @@ final class Elements {
 	 * @param string $tag Nombre de etiqueta en mayúsculas.
 	 */
 	public static function breaks_run( string $tag ): bool {
-		return in_array( $tag, self::BLOCK_LEVEL, true ) || in_array( $tag, self::BREAKS_RUN, true );
+		return isset( self::BLOCK_LEVEL[ $tag ] ) || isset( self::BREAKS_RUN[ $tag ] );
 	}
 
 	/**
@@ -147,6 +199,6 @@ final class Elements {
 	 * @param string $tag Nombre de etiqueta en mayúsculas.
 	 */
 	public static function never_translate( string $tag ): bool {
-		return in_array( $tag, self::NEVER_TRANSLATE, true );
+		return isset( self::NEVER_TRANSLATE[ $tag ] );
 	}
 }

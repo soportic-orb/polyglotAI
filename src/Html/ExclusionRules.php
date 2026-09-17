@@ -34,8 +34,17 @@ final class ExclusionRules {
 	 * Si el elemento sobre el que está posicionado el analizador está excluido.
 	 *
 	 * @param WP_HTML_Tag_Processor $processor Analizador posicionado en la etiqueta.
+	 * @param array<string, true>|null $present Atributos presentes en la
+	 *                                          etiqueta, en minúsculas. Pasarlo
+	 *                                          evita consultar atributos que la
+	 *                                          etiqueta no tiene, que es el caso
+	 *                                          de casi todas.
 	 */
-	public function excludes( WP_HTML_Tag_Processor $processor ): bool {
+	public function excludes( WP_HTML_Tag_Processor $processor, ?array $present = null ): bool {
+		if ( null !== $present && ! $this->may_exclude( $present ) ) {
+			return false;
+		}
+
 		foreach ( $this->classes as $class ) {
 			if ( true === $processor->has_class( $class ) ) {
 				return true;
@@ -52,5 +61,24 @@ final class ExclusionRules {
 		$translate = $processor->get_attribute( 'translate' );
 
 		return is_string( $translate ) && 'no' === strtolower( $translate );
+	}
+
+	/**
+	 * Si la etiqueta lleva algún atributo capaz de excluirla.
+	 *
+	 * @param array<string, true> $present Atributos presentes, en minúsculas.
+	 */
+	private function may_exclude( array $present ): bool {
+		if ( isset( $present['class'] ) || isset( $present['translate'] ) ) {
+			return true;
+		}
+
+		foreach ( $this->attributes as $attribute ) {
+			if ( isset( $present[ $attribute ] ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

@@ -30,6 +30,26 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	private const TRIM_BYTES = " \t\r\n\f";
 
 	/**
+	 * Atributos que ALGUNA etiqueta podría tener traducibles.
+	 *
+	 * Es un filtro previo barato. Si una etiqueta no lleva ninguno de estos, no
+	 * se construye nada ni se vuelven a recorrer sus bytes: en una página real
+	 * eso es la inmensa mayoría de las etiquetas.
+	 *
+	 * @var array<string, true>
+	 */
+	private const CANDIDATE_ATTRIBUTES = array(
+		'alt'                  => true,
+		'aria-label'           => true,
+		'aria-placeholder'     => true,
+		'aria-roledescription' => true,
+		'content'              => true,
+		'placeholder'          => true,
+		'title'                => true,
+		'value'                => true,
+	);
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TagScanner     $scanner    Analizador de posiciones dentro de una etiqueta.
@@ -119,7 +139,14 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	 */
 	private function open_tag( array &$stack, OffsetTagProcessor $processor, string $html, array &$units, string $tag, int $start, int $length ): void {
 		$parent_excluded = (bool) $stack[ array_key_last( $stack ) ]['excluded'];
-		$excluded        = $parent_excluded || Elements::never_translate( $tag ) || $this->exclusions->excludes( $processor );
+
+		// Los nombres de los atributos se leen UNA vez por etiqueta y se
+		// reutilizan: tanto la comprobación de exclusión como la extracción de
+		// atributos los necesitan, y consultarlos dos veces era medible.
+		$present  = $this->attribute_names( $processor );
+		$excluded = $parent_excluded
+			|| Elements::never_translate( $tag )
+			|| $this->exclusions->excludes( $processor, $present );
 
 		// Elementos que llegan completos en un token: no se apilan nunca, porque
 		// su etiqueta de cierre no llega como token independiente.
@@ -128,7 +155,7 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 
 			if ( ! $excluded ) {
 				$this->emit_rcdata( $processor, $units, $html, $tag, $start, $length );
-				$this->emit_attributes( $processor, $units, $html, $tag, $start, $length );
+				$this->emit_attributes( $processor, $units, $html, $tag, $start, $length, $present );
 			}
 
 			return;
@@ -146,7 +173,7 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 			return;
 		}
 
-		$this->emit_attributes( $processor, $units, $html, $tag, $start, $length );
+		$this->emit_attributes( $processor, $units, $html, $tag, $start, $length, $present );
 
 		$breaks = Elements::breaks_run( $tag );
 
@@ -385,25 +412,38 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	 * @param string             $html      Documento completo.
 	 * @param string             $tag       Nombre de etiqueta en mayúsculas.
 	 * @param int                $start     Inicio del token.
-	 * @param int                $length    Longitud del token.
+	 * @param int                 $length    Longitud del token.
+	 * @param array<string, true> $present   Atributos presentes, en minúsculas.
 	 */
-	private function emit_attributes( OffsetTagProcessor $processor, array &$units, string $html, string $tag, int $start, int $length ): void {
-		$wanted = $this->translatable_attributes( $processor, $tag );
+	private function emit_attributes( OffsetTagProcessor $processor, array &$units, string $html, string $tag, int $start, int $length, array $present ): void {
+		$candidates = array_intersect_key( $present, self::CANDIDATE_ATTRIBUTES );
 
-		if ( array() === $wanted ) {
+		if ( array() === $candidates ) {
 			return;
 		}
 
-		$spans = $this->scanner->attribute_spans( substr( $html, $start, $length ) );
+		$candidates = array_keys( $candidates );
 
-		foreach ( $wanted as $name => $meta ) {
-			if ( ! isset( $spans[ $name ] ) ) {
+		$spans = null;
+
+		foreach ( $candidates as $name ) {
+			$meta = $this->attribute_meta( $processor, $tag, $name );
+
+			if ( null === $meta ) {
 				continue;
 			}
 
 			$value = $processor->get_attribute( $name );
 
 			if ( ! is_string( $value ) || $this->is_blank( $value ) ) {
+				continue;
+			}
+
+			if ( null === $spans ) {
+				$spans = $this->scanner->attribute_spans( substr( $html, $start, $length ) );
+			}
+
+			if ( ! isset( $spans[ $name ] ) ) {
 				continue;
 			}
 
@@ -419,58 +459,67 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	}
 
 	/**
-	 * Atributos traducibles de una etiqueta concreta.
+	 * Tipo y contexto de un atributo concreto, o null si en esta etiqueta no es
+	 * traducible.
 	 *
 	 * @param OffsetTagProcessor $processor Analizador.
 	 * @param string             $tag       Nombre de etiqueta en mayúsculas.
-	 * @return array<string, array{0:StringType, 1:string|null}> Nombre => [tipo, contexto].
+	 * @param string             $name      Nombre del atributo en minúsculas.
+	 * @return array{0:StringType, 1:string|null}|null
 	 */
-	private function translatable_attributes( OffsetTagProcessor $processor, string $tag ): array {
+	private function attribute_meta( OffsetTagProcessor $processor, string $tag, string $name ): ?array {
 		if ( 'META' === $tag ) {
-			return $this->meta_attribute( $processor );
+			return 'content' === $name ? $this->meta_content( $processor ) : null;
 		}
 
-		$wanted = array(
-			'title'                => array( StringType::Attribute, 'title' ),
-			'aria-label'           => array( StringType::Attribute, 'aria-label' ),
-			'aria-placeholder'     => array( StringType::Attribute, 'aria-placeholder' ),
-			'aria-roledescription' => array( StringType::Attribute, 'aria-roledescription' ),
-		);
+		switch ( $name ) {
+			case 'title':
+			case 'aria-label':
+			case 'aria-placeholder':
+			case 'aria-roledescription':
+				return array( StringType::Attribute, $name );
 
-		if ( in_array( $tag, array( 'IMG', 'AREA', 'INPUT' ), true ) ) {
-			$wanted['alt'] = array( StringType::Attribute, 'alt' );
+			case 'alt':
+				return in_array( $tag, array( 'IMG', 'AREA', 'INPUT' ), true )
+					? array( StringType::Attribute, 'alt' )
+					: null;
+
+			case 'placeholder':
+				return in_array( $tag, array( 'INPUT', 'TEXTAREA' ), true )
+					? array( StringType::Attribute, 'placeholder' )
+					: null;
+
+			case 'value':
+				// El value de un input solo es texto visible en los botones. En
+				// el resto es un dato que no debe tocarse.
+				if ( 'INPUT' !== $tag ) {
+					return null;
+				}
+
+				$type = $processor->get_attribute( 'type' );
+
+				return is_string( $type ) && in_array( strtolower( $type ), array( 'submit', 'button', 'reset' ), true )
+					? array( StringType::Attribute, 'button' )
+					: null;
 		}
 
-		if ( in_array( $tag, array( 'INPUT', 'TEXTAREA' ), true ) ) {
-			$wanted['placeholder'] = array( StringType::Attribute, 'placeholder' );
-		}
-
-		// El value de un input solo es texto visible en los botones. En el resto
-		// es un dato que no debe tocarse.
-		if ( 'INPUT' === $tag ) {
-			$type = $processor->get_attribute( 'type' );
-
-			if ( is_string( $type ) && in_array( strtolower( $type ), array( 'submit', 'button', 'reset' ), true ) ) {
-				$wanted['value'] = array( StringType::Attribute, 'button' );
-			}
-		}
-
-		return $wanted;
+		return null;
 	}
 
 	/**
-	 * Atributo traducible de una etiqueta META, si lo tiene.
+	 * Tipo y contexto del atributo content de una etiqueta META, si es
+	 * traducible.
 	 *
 	 * @param OffsetTagProcessor $processor Analizador.
-	 * @return array<string, array{0:StringType, 1:string|null}>
+	 * @return array{0:StringType, 1:string|null}|null
 	 */
-	private function meta_attribute( OffsetTagProcessor $processor ): array {
+	private function meta_content( OffsetTagProcessor $processor ): ?array {
 		$name     = $processor->get_attribute( 'name' );
 		$property = $processor->get_attribute( 'property' );
 		$key      = is_string( $name ) ? strtolower( $name ) : ( is_string( $property ) ? strtolower( $property ) : '' );
 
 		if ( '' === $key ) {
-			return array();
+			return null;
 		}
 
 		$translatable = 'description' === $key
@@ -483,10 +532,10 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 			|| str_starts_with( $key, 'twitter:image:alt' );
 
 		if ( ! $translatable ) {
-			return array();
+			return null;
 		}
 
-		return array( 'content' => array( StringType::Meta, $key ) );
+		return array( StringType::Meta, $key );
 	}
 
 	/**
@@ -499,7 +548,43 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	 * @param string $text Texto decodificado.
 	 */
 	private function is_blank( string $text ): bool {
-		return 1 === preg_match( '/^[\s\x{00A0}\x{200B}\x{FEFF}]*$/u', $text );
+		if ( '' === $text ) {
+			return true;
+		}
+
+		// El caso abrumadoramente mayoritario se resuelve con trim, que opera
+		// sobre bytes. Solo si queda algo se pagan las sustituciones de los
+		// espacios multibyte, que trim no reconoce.
+		$trimmed = trim( $text, " \t\r\n\f\v\0" );
+
+		if ( '' === $trimmed ) {
+			return true;
+		}
+
+		// U+00A0 (espacio duro), U+200B (espacio de ancho cero) y U+FEFF.
+		return '' === trim( str_replace( array( "\xC2\xA0", "\xE2\x80\x8B", "\xEF\xBB\xBF" ), '', $trimmed ) );
+	}
+
+	/**
+	 * Nombres en minúsculas de los atributos de la etiqueta actual.
+	 *
+	 * @param OffsetTagProcessor $processor Analizador.
+	 * @return array<string, true>
+	 */
+	private function attribute_names( OffsetTagProcessor $processor ): array {
+		$names = $processor->get_attribute_names_with_prefix( '' );
+
+		if ( null === $names || array() === $names ) {
+			return array();
+		}
+
+		$present = array();
+
+		foreach ( $names as $name ) {
+			$present[ strtolower( $name ) ] = true;
+		}
+
+		return $present;
 	}
 
 	/**
@@ -532,37 +617,25 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	 * @return ExtractedString[]
 	 */
 	private function drop_contained( array $units ): array {
-		$blocks = array();
+		// Las unidades llegan ordenadas y no se solapan entre sí, así que basta
+		// un barrido recordando hasta dónde llega el último bloque: no hace
+		// falta comparar cada unidad contra todos los bloques.
+		$kept      = array();
+		$block_end = -1;
 
 		foreach ( $units as $unit ) {
 			if ( StringType::Block === $unit->type ) {
-				$blocks[] = $unit;
-			}
-		}
+				$kept[]    = $unit;
+				$block_end = max( $block_end, $unit->end() );
 
-		if ( array() === $blocks ) {
-			return array_values( $units );
-		}
-
-		$kept = array();
-
-		foreach ( $units as $unit ) {
-			$contained = false;
-
-			foreach ( $blocks as $block ) {
-				if ( $block === $unit ) {
-					continue;
-				}
-
-				if ( $unit->start >= $block->start && $unit->end() <= $block->end() ) {
-					$contained = true;
-					break;
-				}
+				continue;
 			}
 
-			if ( ! $contained ) {
-				$kept[] = $unit;
+			if ( $unit->end() <= $block_end ) {
+				continue;
 			}
+
+			$kept[] = $unit;
 		}
 
 		return $kept;

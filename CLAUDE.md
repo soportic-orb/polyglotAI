@@ -300,8 +300,33 @@ encargo, no un detalle: cualquier ruta de escritura pasa por
   recorrer y borrar claves.
 - Bloqueo con `wp_cache_add()` (atómico) para no traducir la misma cadena en paralelo
   desde dos peticiones.
-- **Objetivo de rendimiento: < 50 ms de sobrecoste de procesado por página típica con
-  el diccionario en caché.** Hay un test de rendimiento que falla si se supera.
+**Rendimiento medido** (no estimado; `tests/unit/PerformanceTest.php`):
+
+| HTML | Extraer | Traducir entero |
+|---|---:|---:|
+| 21 KB | 8,2 ms | 8,5 ms |
+| 128 KB | 47 ms | 49 ms |
+
+Son **0,37 ms por KB**, de los cuales una cuarta parte es el propio
+`WP_HTML_Tag_Processor` del core y el resto lógica nuestra. El empalme es
+marginal frente al barrido, como debe ser.
+
+Eso sitúa el objetivo de < 50 ms en páginas de **hasta unos 128 KB de HTML**. Se
+cumple con holgura en una página de blog o de tienda corriente. **No se cumple**
+en páginas grandes de Divi o Elementor, que pasan a menudo de 200 KB: ahí el
+sobrecoste ronda los 75 ms. Queda como trabajo de la fase 8, y es el escenario
+que justificaría activar el driver de `Dom\HTMLDocument` del ADR-01.
+
+El test de rendimiento **no mide milisegundos absolutos**, que dependen de la
+máquina de CI: mide el coste del driver en relación con el del barrido en crudo
+del core sobre el mismo documento. Umbral calibrado con mediciones reales sobre
+128 KB — 3,6 con coste lineal, 7,0 con una regresión cuadrática introducida a
+propósito para comprobar que el test la detecta— y fijado en 5,0.
+
+Una primera versión de este test comparaba tiempos entre dos tamaños de
+documento. Se descartó tras comprobar que **no detectaba** la regresión
+cuadrática inyectada: a esos tamaños el término cuadrático no llegaba a dominar
+sobre el lineal.
 
 ### ADR-09 — Enrutado
 
