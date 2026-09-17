@@ -1,0 +1,29 @@
+# Dependencias
+/vendor/
+/node_modules/
+
+# Build
+/assets/build/
+/build/
+*.min.js.map
+
+# Entorno local
+/.wp-env.override.json
+/wp-env/
+
+# Tests
+/tests/e2e/artifacts/
+/playwright-report/
+/test-results/
+/.phpunit.result.cache
+/.phpcs.cache
+
+# Herramientas y sistema
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+
+# Nunca versionar credenciales
+.env
+.env.*

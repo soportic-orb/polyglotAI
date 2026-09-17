@@ -1,0 +1,417 @@
+# CLAUDE.md — Polyglot AI
+
+Guía de trabajo para este repositorio. Léela entera antes de tocar código.
+
+---
+
+## 1. Qué es esto
+
+Plugin de WordPress de traducción multilingüe con paridad funcional con TranslatePress
+Business (incluidos sus add-ons), cuyo motor de traducción automática es la **API de
+Anthropic (Claude)** en lugar de Google Translate o DeepL.
+
+- **Nombre provisional del plugin:** Polyglot AI
+- **Prefijo de funciones/hooks/opciones/tablas:** `pgai_`
+- **Prefijo de constantes:** `PGAI_`
+- **Text domain:** `polyglot-ai`
+- **Namespace PHP:** `PolyglotAI\` (PSR-4 sobre `src/`)
+- **Namespace REST:** `pgai/v1`
+
+**Marcas.** Ni "TranslatePress" ni "Claude" aparecen en el nombre del plugin, en el
+slug, en el menú de administración ni en la interfaz de usuario. Sí se nombra a
+Anthropic/Claude en código, comentarios y documentación técnica cuando se describe el
+proveedor de la API que se está llamando (uso nominativo, es la realidad técnica):
+p. ej. la clase `PolyglotAI\Engines\Claude\ClaudeEngine`. En la UI el motor se llama
+"Motor IA (Anthropic)".
+
+**No copiar código.** Nada de TranslatePress ni de ningún otro plugin. Se reimplementa
+el comportamiento observable desde cero.
+
+---
+
+## 2. Requisitos de entorno
+
+| Pieza | Versión |
+|---|---|
+| WordPress | 6.4+ (ver ADR-01: interesa subir el mínimo) |
+| PHP | 8.1+ (desarrollo sobre 8.4) |
+| MySQL / MariaDB | 5.7+ / 10.4+ |
+| Node | 20+ |
+
+- Entorno local: `wp-env` (Docker) + WP-CLI.
+- Composer con autoload PSR-4. **Cero dependencias pesadas en producción**: lo que se
+  instale en `require` debe justificarse; el grueso va en `require-dev`.
+- JS del editor visual y del panel: React con `@wordpress/scripts` y `@wordpress/components`.
+- Compatible con multisite.
+
+---
+
+## 3. Decisiones de arquitectura (ADR)
+
+Cada decisión lleva su justificación. Si una decisión se cambia, se actualiza aquí en
+el mismo commit que la implementa.
+
+### ADR-01 — Parser HTML: arquitectura de *drivers*, primario la HTML API de WordPress
+
+La traducción se hace **sobre el HTML final renderizado** (buffer de salida), igual que
+TranslatePress, para funcionar con cualquier tema, constructor o plugin.
+
+El requisito duro es: *no corromper* `<script>`, `<style>`, JSON-LD, plantillas inline;
+conservar UTF-8 sin convertir a entidades; conservar el doctype. Eso descarta atacar el
+problema con un único parser genérico y re-serializar el documento entero.
+
+Interfaz `PolyglotAI\Html\DocumentDriverInterface`, con selección por capacidad en
+tiempo de ejecución:
+
+1. **`WP_HTML_Tag_Processor` / `WP_HTML_Processor` (HTML API del core) — PRIMARIO.**
+   Es la única opción que satisface el requisito *por construcción* y no por
+   configuración cuidadosa del serializador: opera sobre la cadena original con un
+   cursor y **no re-serializa el documento**, de modo que todo byte que no tocamos
+   sale idéntico — doctype, codificación, `<script>`, `<style>`, JSON-LD,
+   `<template>`, elementos personalizados. Además: cero dependencias, mantenida por
+   el core y alineada con la especificación HTML5.
+2. **`Dom\HTMLDocument` (PHP 8.4+) — ACELERADO/OPCIONAL.** Parser HTML5 conforme
+   implementado en C, UTF-8 y doctype correctos. Útil cuando necesitamos operaciones
+   reales de subárbol. Solo se activa si la instalación tiene PHP 8.4+.
+3. **`masterminds/html5` — RESERVA.** Puro PHP, conforme, lento (un orden de magnitud
+   por encima de un parser en C). Va en `require-dev` como **oráculo de referencia en
+   los tests diferenciales**; en producción solo se usa si está presente y los dos
+   anteriores no son viables.
+4. **`DOMDocument::loadHTML()` (libxml/HTML4) — PROHIBIDO.** Destroza HTML5 (elementos
+   vacíos, `<template>`, elementos personalizados), exige *hacks* de entidades para no
+   romper UTF-8 y reordena o pierde el doctype. Es exactamente la clase de bugs que no
+   queremos; no se usa ni como reserva.
+
+**Bloques en línea como unidad de traducción.** Un `<p>Hola <strong>món</strong></p>` se
+traduce como una sola cadena. No hace falta DOM: durante el barrido se registran los
+desplazamientos de byte de apertura y cierre del bloque, se corta la subcadena y se
+sustituye entera. Las sustituciones se acumulan como tuplas `(inicio, fin, reemplazo)` y
+se aplican **de derecha a izquierda** sobre la cadena original, para que los
+desplazamientos no se invaliden.
+
+**Red de seguridad, obligatoria.** Tras sustituir, se comprueba que la salida conserva
+el prefijo de doctype y el mismo recuento de bloques `<script>` y `<style>` que la
+entrada. Si el driver lanza una excepción o la comprobación falla, **se devuelve el
+buffer original intacto**. Nunca se sirve una página corrupta: ante la duda, se sirve
+sin traducir.
+
+**Pendiente de la Fase 1:** un *spike* con banco de pruebas (páginas reales de Divi,
+Elementor y WooCommerce) que mida los tres drivers y fije el primario con números. La
+disponibilidad de `next_token()` / `get_modifiable_text()` varía entre WP 6.4 y 6.7;
+verificar contra el mínimo que fijemos antes de comprometerse.
+
+### ADR-02 — Almacenamiento: tablas propias normalizadas, **no** una tabla por idioma
+
+Se descarta la tabla-por-idioma (el modelo de TranslatePress):
+
+- Idiomas ilimitados ⇒ `CREATE TABLE` en tiempo de ejecución al añadir un idioma.
+- En multisite explota: una red de 50 sitios × 8 idiomas = 400 tablas, y cada
+  `dbDelta` de actualización tiene que recorrerlas todas.
+- No aporta nada: MySQL 5.7 resuelve sin despeinarse decenas de millones de filas con
+  un índice compuesto adecuado.
+
+Esquema (todas con prefijo `{$wpdb->prefix}pgai_`):
+
+- **`pgai_sources`** — `id`, `hash` CHAR(32) ascii_bin UNIQUE, `type` (text, block,
+  attribute, meta, slug, gettext), `domain` (dominio gettext, NULL si no aplica),
+  `context`, `original` LONGTEXT, `first_seen`, `last_seen`.
+- **`pgai_translations`** — `id`, `source_id`, `language`, `translation` LONGTEXT,
+  `status`, `engine`, `model`, `reviewed_by`, `updated_at`.
+  UNIQUE(`source_id`, `language`); KEY(`language`, `status`).
+- **`pgai_slugs`** — `id`, `object_type` (post_type, taxonomy, term, base),
+  `object_id`, `language`, `original_slug`, `translated_slug`, `status`.
+  UNIQUE(`object_type`, `object_id`, `language`); KEY(`language`, `translated_slug`)
+  ← este índice es el que sirve el **enrutado inverso**.
+- **`pgai_api_log`** — `id`, `created_at`, `engine`, `model`, `language`, `request_id`,
+  `batch_id`, `input_tokens`, `output_tokens`, `cache_read_tokens`,
+  `cache_creation_tokens`, `strings`, `status`, `error`.
+
+Normalizar `sources` frente a `translations` evita duplicar el texto original una vez
+por idioma, abarata la limpieza de huérfanas (`sources` sin `translations` y con
+`last_seen` antiguo) y hace que editar el original sea una sola fila.
+
+**Consulta caliente** (una por página e idioma):
+`SELECT s.hash, t.translation, t.status FROM sources s JOIN translations t
+ON t.source_id = s.id WHERE t.language = %s AND s.hash IN (…)`.
+
+### ADR-03 — Normalización y hash
+
+`hash = md5( normalize(original) . "\x1f" . type . "\x1f" . (context ?? '') . "\x1f" . (domain ?? '') )`
+
+`normalize()`: recorta extremos y colapsa secuencias de espacio en blanco a un solo
+espacio, **conservando el HTML interior**. Sin esto, `"  Hola\n"` y `"Hola"` serían dos
+cadenas distintas y el sitio se llenaría de duplicados.
+
+`CHAR(32)` con colación `ascii_bin` en vez de `BINARY(16)`: 16 bytes más por fila a
+cambio de que la tabla sea legible y depurable con cualquier cliente SQL y de evitar
+fricción con `$wpdb->prepare` y charsets binarios. Compensa.
+
+### ADR-04 — Captura de la salida y condiciones de abandono
+
+`ob_start()` en `template_redirect` con prioridad 1 (antes de que se emita `wp_head`).
+
+Se **abandona sin procesar** (sin arrancar siquiera el buffer) cuando:
+
+- `is_admin()`, `wp_doing_ajax()`, `wp_doing_cron()`, `defined('WP_CLI')`,
+  `defined('REST_REQUEST')`, `is_feed()` (los feeds tienen su propio camino), login.
+- El idioma solicitado es el idioma por defecto y no hay nada que sustituir.
+- Modo edición de constructor: `et_fb`, `elementor-preview` / `action=elementor`,
+  `fl_builder`, `bricks=run`, `vc_action`, `customize_changeset_uuid`, `tve` (Thrive).
+- El `Content-Type` de la respuesta no es `text/html`.
+
+La lista de abandonos vive en `PolyglotAI\Html\BailConditions` y es **filtrable**
+(`pgai_should_process_output`). Es el primer sitio donde mirar cuando un constructor se
+rompe.
+
+### ADR-05 — Capa de motores y motor Anthropic
+
+`PolyglotAI\Engines\TranslationEngineInterface`:
+
+```php
+public function translate( array $strings, string $source, string $target, Context $ctx ): BatchResult;
+public function supports_async_batch(): bool;
+public function estimate_cost( array $strings, string $target ): CostEstimate;
+```
+
+Implementación principal `Claude\ClaudeEngine`. Detalles fijados:
+
+- **Transporte:** `wp_remote_post()` contra `https://api.anthropic.com/v1/messages`.
+  Nada de SDK: un plugin de WordPress no puede arrastrar un árbol de dependencias
+  Composer al `vendor/` de un sitio ajeno sin provocar colisiones de versiones.
+- **Cabeceras:** `x-api-key`, `anthropic-version: 2023-06-01`, `content-type: application/json`.
+- **Clave.** Se prefiere la constante `PGAI_API_KEY` en `wp-config.php`. Si se guarda
+  en la BD, se cifra con `AUTH_KEY`/`SECURE_AUTH_KEY` vía `sodium_crypto_secretbox` y
+  **nunca** se devuelve al navegador: los endpoints REST devuelven solo si está
+  configurada y los 4 últimos caracteres.
+- **Modelos.** Por defecto `claude-sonnet-5`; opción económica `claude-haiku-4-5`.
+  El desplegable del panel se rellena desde `GET /v1/models` y se cachea 24 h, así que
+  no hay una lista de modelos incrustada que se quede obsoleta.
+  (Nota: el encargo escribía `claude-haiku-4-5-20251001`; el identificador sin sufijo
+  de fecha es el canónico y es el que usamos.)
+- **Salida estructurada.** Se usa `output_config.format` con `type: "json_schema"`
+  (*structured outputs*), **no** *tool use*. El encargo pedía *tool use* con JSON
+  Schema para evitar JSON en texto libre; `output_config.format` cumple ese objetivo
+  mejor: garantiza a nivel de API que el primer bloque de texto es JSON válido contra
+  el esquema, sin el viaje de ida y vuelta de `tool_use` → `tool_result`. Soportado en
+  `claude-sonnet-5` y `claude-haiku-4-5`, y compatible con la Batches API.
+  El esquema es **fijo entre lotes** — `{"translations":[{"id":…,"text":…}]}`, con
+  `additionalProperties: false` — y no un mapa dinámico con los ids como propiedades:
+  un esquema estable aprovecha la caché de compilación de esquemas de 24 h en lugar de
+  pagar la compilación en cada lote.
+  Limitaciones del subconjunto de JSON Schema admitido: sin esquemas recursivos, sin
+  `minLength`/`maximum` y `additionalProperties` solo puede valer `false`.
+- **Prompt del sistema** (array de bloques `system`, en este orden): reglas del
+  traductor → contexto del sitio escrito por el administrador → glosario obligatorio →
+  lista de términos que no se traducen → idioma origen/destino con variante regional y
+  formalidad (tú/usted, du/Sie). Reglas: conservar todas las etiquetas y atributos HTML
+  (salvo el contenido de `alt`, `title`, `placeholder`, `aria-label`), los placeholders
+  (`%s`, `%1$s`, `{name}`), shortcodes, URLs, emails y números.
+- **Prompt caching.** `cache_control: {"type":"ephemeral"}` en el **último bloque
+  estable** del array `system`. El orden de renderizado es `tools` → `system` →
+  `messages`, así que las cadenas del lote van en `messages`, después del punto de
+  corte. **Mínimo de prefijo cacheable en `claude-sonnet-5`: 1024 tokens** — por debajo
+  de eso no cachea y no avisa (`cache_creation_input_tokens: 0`). Si el glosario y el
+  contexto no llegan al mínimo, el caching no engancha: hay que medirlo, no suponerlo.
+  TTL de 5 min por defecto; `"ttl":"1h"` solo para la traducción de sitio completo, que
+  es donde hay ráfagas con huecos.
+- **Thinking.** Traducir no requiere razonamiento extendido: por defecto
+  `thinking: {"type":"disabled"}` con `output_config.effort: "low"` para los lotes
+  masivos. Ajustable en el panel; el reintento de cadenas que fallaron la validación
+  estructural sube a `effort: "medium"`.
+- **`max_tokens`.** Calculado a partir del tamaño del lote (≈3× los tokens de entrada
+  estimados), con suelo 4096 y techo 16000 — sin *streaming*, porque `wp_remote_post`
+  es bloqueante y la respuesta debe caber dentro del timeout.
+- **Traducción de sitio completo:** Message Batches API (`POST /v1/messages/batches`),
+  50 % de coste. Se sondea `processing_status` hasta `"ended"` y se leen los resultados
+  desde `results_url`. **Los resultados llegan en cualquier orden: se indexan por
+  `custom_id`, nunca por posición.** Orquestado con Action Scheduler; progreso visible,
+  pausable y reanudable.
+- **Medición de consumo:** `POST /v1/messages/count_tokens` para la estimación previa
+  y el tope mensual; el `usage` de cada respuesta para el consumo real (incluidos
+  `cache_read_input_tokens` y `cache_creation_input_tokens`, que se registran aparte
+  porque tienen precio distinto). Se registra todo en `pgai_api_log`.
+- **Reintentos:** *backoff* exponencial con *jitter* ante 429 y 529, respetando la
+  cabecera `retry-after`. Máximo 5 intentos, luego se marca `error` y se registra.
+- **Memoria de traducción:** antes de llamar a la API se busca por hash exacto y, en
+  segundo lugar, por similitud sobre el texto normalizado.
+- **Contexto de vecindad:** se envían las cadenas vecinas de la misma página como
+  contexto de solo lectura para mejorar la coherencia.
+
+### ADR-06 — Validación estructural posterior
+
+Toda traducción devuelta por un motor pasa por `Translation\Validator` antes de
+guardarse. Se compara entre original y traducción:
+
+- la secuencia de nombres de etiqueta HTML y sus atributos,
+- el multiconjunto de placeholders (`%s`, `%1$s`, `%d`, `{name}`),
+- el multiconjunto de shortcodes,
+- URLs y emails.
+
+Si algo no cuadra, la traducción **se descarta**, se guarda con estado `error` y el
+original se sirve tal cual. Un fallo de validación nunca degrada la página.
+
+### ADR-07 — Precedencia de estados: lo manual no se pisa jamás
+
+Estados: `pending` < `error` < `automatic` < `reviewed` < `manual`.
+
+La traducción automática solo escribe sobre `pending` y `error`. Escribe sobre
+`automatic` **solo** si el usuario ha pedido explícitamente "retraducir". **Nunca**
+escribe sobre `reviewed` ni `manual` — ni en la traducción de sitio completo, ni al
+cambiar de modelo, ni al reimportar. Esto es un criterio de aceptación global del
+encargo, no un detalle: cualquier ruta de escritura pasa por
+`Translation\StatusPrecedence::can_overwrite()`.
+
+### ADR-08 — Caché
+
+- Diccionario por (URL, idioma) en caché de objeto (`wp_cache_*`), grupo `pgai_dict`,
+  no persistente entre peticiones salvo que haya Redis/Memcached.
+- Invalidación al guardar cualquier traducción de esa página, y por versión global
+  (`pgai_dict_version`) en operaciones masivas: se incrementa un entero en vez de
+  recorrer y borrar claves.
+- Bloqueo con `wp_cache_add()` (atómico) para no traducir la misma cadena en paralelo
+  desde dos peticiones.
+- **Objetivo de rendimiento: < 50 ms de sobrecoste de procesado por página típica con
+  el diccionario en caché.** Hay un test de rendimiento que falla si se supera.
+
+### ADR-09 — Enrutado
+
+- Estructura por subdirectorio: `/en/`, con opción de subdirectorio también para el
+  idioma por defecto.
+- El idioma se resuelve **una sola vez y pronto** (en `plugins_loaded`, a partir de
+  `REQUEST_URI`) y se guarda en un singleton; nada de volver a parsear la URL en cada
+  llamada.
+- Reescritura de enlaces internos en la capa de salida (ADR-01), incluidos `action` de
+  formularios, paginación, búsqueda y feeds.
+- Enrutado inverso de slugs por el índice `KEY(language, translated_slug)` de
+  `pgai_slugs`; redirección 301 del slug sin traducir al traducido.
+
+### ADR-10 — REST y capacidades
+
+Namespace `pgai/v1`. Todos los endpoints con `permission_callback` real (nunca
+`__return_true`) y nonce `wp_rest`. Capacidades propias, asignadas por rol:
+
+| Capacidad | Qué permite |
+|---|---|
+| `pgai_translate` | Editar traducciones en el editor visual |
+| `pgai_review` | Marcar cadenas como revisadas |
+| `pgai_run_auto_translate` | Lanzar traducción automática (gasta dinero) |
+| `pgai_manage_languages` | Añadir/quitar/activar idiomas |
+| `pgai_manage_settings` | Ajustes, clave de API, límites |
+
+El rol "Traductor" recibe `pgai_translate` y `read`, y **no** accede al escritorio.
+
+### ADR-11 — Opciones y multisite
+
+- Una sola opción `pgai_settings` (array, autoload `yes`) para lo que se lee en cada
+  petición; lo voluminoso (glosario, exclusiones) en opciones separadas con
+  autoload `no`.
+- Las tablas son **por sitio** (`$wpdb->prefix`), no por red: los contenidos de cada
+  sitio son independientes.
+- La clave de API puede definirse a nivel de red con `PGAI_API_KEY`.
+
+### ADR-12 — Seguridad y privacidad
+
+- Nonces + comprobación de capacidad en **toda** acción; `sanitize_*` a la entrada y
+  `esc_*` a la salida, siempre en el punto de uso.
+- Traducciones manuales con HTML: `wp_kses` con lista blanca propia
+  (`pgai_allowed_html`), nunca `wp_kses_post` a secas en contexto de traductor.
+- **Sin llamadas a la API en páginas vistas por visitantes** si la traducción en tiempo
+  real está desactivada (que es el valor por defecto propuesto; ver §7).
+- **Nunca se envían datos personales a la API.** Exclusión por defecto de las rutas de
+  cuenta, carrito, checkout, pedidos y de los datos enviados en formularios. Lista en
+  `Compat\PrivacyExclusions`, documentada para el RGPD.
+- Desinstalación limpia opcional (`uninstall.php` borra tablas y opciones solo si el
+  administrador lo ha marcado).
+
+---
+
+## 4. Estructura del repositorio
+
+```
+polyglot-ai.php          Cabecera del plugin y arranque
+uninstall.php
+composer.json  package.json  phpcs.xml.dist  phpstan.neon.dist
+phpunit.xml.dist  playwright.config.js  .wp-env.json
+src/
+  Plugin.php             Contenedor y registro de servicios
+  Bootstrap/             Activación, desactivación, comprobación de requisitos
+  Database/              Schema, Migrator, repositorios
+  Languages/             Registro de idiomas, variantes, RTL
+  Routing/               UrlConverter, Rewrites, Redirector, Canonical
+  Html/                  Drivers, extractor, sustituidor, exclusiones, BailConditions
+  Translation/           Dictionary, Normalizer, Hasher, Validator, StatusPrecedence, Memory
+  Engines/               Interfaz + Claude/{ClaudeEngine,Client,PromptBuilder,Schema,Batches,UsageMeter}
+  Gettext/  Seo/  Editor/  Rest/  Admin/  Switcher/  Detection/
+  Compat/                WooCommerce, Forms, Cache, Builders, SeoPlugins
+  Jobs/                  Action Scheduler, SiteTranslator
+  Support/               Options, Capabilities, Logger, Lock, Cache
+assets/src → assets/build
+languages/               polyglot-ai.pot
+tests/phpunit/  tests/e2e/
+docs/
+```
+
+---
+
+## 5. Comandos
+
+```bash
+composer install
+npm install
+
+# Entorno
+npm run env:start          # wp-env up
+npm run env:stop
+
+# Calidad (los tres tienen que estar en verde al cerrar cada fase)
+composer phpcs             # WordPress Coding Standards
+composer phpcbf            # autocorrección
+composer phpstan           # nivel 6
+npm run lint:js
+
+# Tests
+composer test              # PHPUnit con la suite de WordPress
+composer test -- --filter HtmlDriverTest
+npm run test:e2e           # Playwright (editor visual, selector de idioma)
+
+# Build
+npm run build              # @wordpress/scripts, producción
+npm run start              # watch
+npm run makepot            # regenera languages/polyglot-ai.pot
+```
+
+---
+
+## 6. Cómo trabajamos
+
+- **Fase a fase.** Al cerrar una fase: tests en verde, `phpcs` y `phpstan` limpios,
+  resumen de lo hecho y de lo pendiente.
+- **Commits pequeños y descriptivos**, en imperativo y en español.
+- Rama de desarrollo: `claude/nice-ramanujan-wlznzz`.
+- **Todas las cadenas de interfaz traducibles** (`__()`, `_x()`, `wp.i18n`), con text
+  domain `polyglot-ai`. Interfaz por defecto en español. Se regenera el `.pot` en la
+  fase que añada cadenas.
+- Cada hook y filtro público se documenta en `docs/hooks.md` **en el mismo commit** que
+  lo introduce.
+- Si una decisión de este documento resulta equivocada al implementarla, se cambia aquí
+  con su justificación en el mismo commit.
+
+---
+
+## 7. Decisiones pendientes de confirmar
+
+No dar por cerradas hasta que el propietario del proyecto responda:
+
+1. **Mínimo de WordPress.** El encargo dice 6.4+. La HTML API del core es
+   sustancialmente más capaz en 6.6/6.7 (`next_token()`, `set_modifiable_text()`).
+   Subir el mínimo simplifica ADR-01; mantener 6.4 obliga a más código de reserva.
+2. **GeoIP.** MaxMind GeoLite2 exige cuenta y clave de licencia y tiene términos
+   propios; alternativas: cabecera `CF-IPCountry` de Cloudflare, un servicio externo o
+   no incluir GeoIP en la v1 y detectar solo por idioma del navegador.
+3. **Distribución.** WordPress.org (GPL, readme.txt, consentimiento explícito
+   documentado para las llamadas a un servicio externo) o comercial/privada. Afecta a
+   qué se puede empaquetar y a si los "add-ons" son plugins separados.
+4. **Traducción en tiempo real para visitantes**: valor por defecto (propuesta:
+   desactivada; la traducción se genera desde el panel o por lotes).
+5. **Licencias para pruebas de compatibilidad**: Divi y Elementor Pro son de pago y
+   hacen falta en `wp-env` para las pruebas E2E de la Fase 8.
