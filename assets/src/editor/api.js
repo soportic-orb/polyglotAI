@@ -56,3 +56,23 @@ export function suggestStrings( hashes, language, save = false ) {
 		data: { language, hashes, save },
 	} );
 }
+
+/**
+ * Fusiona varias cadenas en un solo bloque de traducción.
+ *
+ * @param {string[]} hashes Hashes en el orden en que aparecen en la página.
+ * @return {Promise<Object>} Identificador del grupo creado.
+ */
+export function createMerge( hashes ) {
+	return apiFetch( { path: 'merges', method: 'POST', data: { hashes } } );
+}
+
+/**
+ * Deshace una fusión.
+ *
+ * @param {string} hash Hash de un miembro, o el contexto del bloque fusionado.
+ * @return {Promise<Object>} Resultado.
+ */
+export function removeMerge( hash ) {
+	return apiFetch( { path: 'merges', method: 'DELETE', data: { hash } } );
+}

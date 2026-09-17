@@ -31,6 +31,8 @@ final class ExtractedString {
 	 * @param int         $length    Longitud en bytes del fragmento sustituible.
 	 * @param string|null $context   Contexto para el hash y para el traductor.
 	 * @param string|null $attribute Nombre del atributo, si el tipo lo es.
+	 * @param int|null    $outer_start  Inicio del elemento que la contiene.
+	 * @param int|null    $outer_length Longitud de ese elemento.
 	 */
 	public function __construct(
 		public readonly StringType $type,
@@ -38,8 +40,30 @@ final class ExtractedString {
 		public readonly int $start,
 		public readonly int $length,
 		public readonly ?string $context = null,
-		public readonly ?string $attribute = null
+		public readonly ?string $attribute = null,
+		public readonly ?int $outer_start = null,
+		public readonly ?int $outer_length = null
 	) {}
+
+	/**
+	 * Inicio del elemento que contiene la cadena, o de la cadena misma.
+	 *
+	 * Lo usa la fusión de bloques: fusionar por el contenido produciría HTML
+	 * descuadrado (un «Uno</p><p>Dos»), y lo que hay que fusionar son elementos
+	 * enteros.
+	 */
+	public function outer_start(): int {
+		return $this->outer_start ?? $this->start;
+	}
+
+	/**
+	 * Primer byte posterior al elemento que contiene la cadena.
+	 */
+	public function outer_end(): int {
+		return null === $this->outer_start || null === $this->outer_length
+			? $this->end()
+			: $this->outer_start + $this->outer_length;
+	}
 
 	/**
 	 * Desplazamiento del primer byte posterior al fragmento.

@@ -3,7 +3,7 @@
  */
 
 import { __, _x, sprintf } from '@wordpress/i18n';
-import { SearchControl } from '@wordpress/components';
+import { Button, CheckboxControl, SearchControl } from '@wordpress/components';
 import { useMemo, useState } from '@wordpress/element';
 
 /**
@@ -48,9 +48,19 @@ function summarize( string ) {
  * @param {Array}    props.strings  Cadenas de la página.
  * @param {string}   props.selected Hash seleccionado.
  * @param {Function} props.onSelect Devolución al seleccionar.
+ * @param {Array}    props.checked  Hashes marcados para fusionar.
+ * @param {Function} props.onCheck  Marcar o desmarcar una cadena.
+ * @param {Function} props.onMerge  Fusionar lo marcado.
  * @return {JSX.Element} Lista.
  */
-export default function StringList( { strings, selected, onSelect } ) {
+export default function StringList( {
+	strings,
+	selected,
+	onSelect,
+	checked,
+	onCheck,
+	onMerge,
+} ) {
 	const [ search, setSearch ] = useState( '' );
 
 	const groups = useMemo( () => {
@@ -104,6 +114,28 @@ export default function StringList( { strings, selected, onSelect } ) {
 				) }
 			</p>
 
+			{ checked.length > 0 && (
+				<div className="pgai-list__merge">
+					<Button
+						variant="secondary"
+						onClick={ onMerge }
+						disabled={ checked.length < 2 }
+					>
+						{ sprintf(
+							/* translators: %d: cadenas marcadas. */
+							__( 'Fusionar %d cadenas', 'polyglot-ai' ),
+							checked.length
+						) }
+					</Button>
+					<p className="pgai-list__hint">
+						{ __(
+							'Solo se pueden fusionar cadenas consecutivas de la página.',
+							'polyglot-ai'
+						) }
+					</p>
+				</div>
+			) }
+
 			{ Object.keys( groups ).length === 0 && (
 				<p className="pgai-list__empty">
 					{ __( 'Ninguna cadena coincide.', 'polyglot-ai' ) }
@@ -115,7 +147,24 @@ export default function StringList( { strings, selected, onSelect } ) {
 					<h3 className="pgai-list__title">{ label }</h3>
 					<ul className="pgai-list__items">
 						{ items.map( ( string ) => (
-							<li key={ string.hash }>
+							<li className="pgai-list__row" key={ string.hash }>
+								{ ( string.type === 'text' ||
+									string.type === 'block' ) && (
+									<CheckboxControl
+										__nextHasNoMarginBottom
+										checked={ checked.includes(
+											string.hash
+										) }
+										onChange={ () =>
+											onCheck( string.hash )
+										}
+										label=""
+										aria-label={ __(
+											'Marcar para fusionar',
+											'polyglot-ai'
+										) }
+									/>
+								) }
 								<button
 									type="button"
 									className={ `pgai-list__item pgai-list__item--${

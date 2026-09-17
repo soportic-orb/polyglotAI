@@ -46,6 +46,7 @@ function statusLabel( status ) {
  * @param {Function} props.onNext      Cadena siguiente.
  * @param {Function} props.onDraft     Cambio en el borrador.
  * @param {Function} props.onPickImage Abrir la mediateca.
+ * @param {Function} props.onUnmerge   Deshacer la fusión de este bloque.
  * @param {string}   props.draft       Texto en edición.
  * @return {JSX.Element} Formulario.
  */
@@ -61,6 +62,7 @@ export default function StringEditor( {
 	onNext,
 	onDraft,
 	onPickImage,
+	onUnmerge,
 	draft,
 } ) {
 	const [ reviewed, setReviewed ] = useState( false );
@@ -110,6 +112,22 @@ export default function StringEditor( {
 
 	return (
 		<div className="pgai-editor__form">
+			{ String( string.context || '' ).startsWith( 'merge:' ) && (
+				<Notice
+					status="info"
+					isDismissible={ false }
+					className="pgai-editor__notice"
+				>
+					{ __(
+						'Este texto es un bloque fusionado: varias cadenas se traducen como una sola.',
+						'polyglot-ai'
+					) }{ ' ' }
+					<Button variant="link" onClick={ onUnmerge }>
+						{ __( 'Deshacer la fusión', 'polyglot-ai' ) }
+					</Button>
+				</Notice>
+			) }
+
 			<div className="pgai-editor__meta">
 				<span className={ `pgai-badge pgai-badge--${ string.status }` }>
 					{ statusLabel( string.status ) }

@@ -39,6 +39,7 @@ use PolyglotAI\Html\TagScanner;
 use PolyglotAI\Jobs\PendingTranslator;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
+use PolyglotAI\Rest\MergesController;
 use PolyglotAI\Rest\StringsController;
 use PolyglotAI\Rest\SuggestController;
 use PolyglotAI\Routing\HeadTags;
@@ -50,6 +51,8 @@ use PolyglotAI\Support\Options;
 use PolyglotAI\Switcher\Shortcode;
 use PolyglotAI\Translation\DictionaryFactory;
 use PolyglotAI\Translation\Hasher;
+use PolyglotAI\Html\MergingDriver;
+use PolyglotAI\Translation\MergeRegistry;
 use PolyglotAI\Translation\MissingQueue;
 use PolyglotAI\Translation\Normalizer;
 use PolyglotAI\Translation\StatusPrecedence;
@@ -165,6 +168,8 @@ final class Plugin {
 			new Validator()
 		) )->register_routes();
 
+		( new MergesController( $this->languages(), $this->merges() ) )->register_routes();
+
 		( new SuggestController(
 			$this->languages(),
 			$this->engine(),
@@ -259,7 +264,16 @@ final class Plugin {
 				/** @var string[] $classes */
 				$classes = (array) apply_filters( 'pgai_exclusion_classes', array( 'notranslate' ) );
 
-				return ( new DriverFactory() )->create( new TagScanner(), new ExclusionRules( $classes ) );
+				$driver = ( new DriverFactory() )->create( new TagScanner(), new ExclusionRules( $classes ) );
+
+				if ( null === $driver ) {
+					return null;
+				}
+
+				// La fusión de bloques va por fuera del extractor: extraer es
+				// una operación sobre el documento y fusionar es una decisión
+				// del traductor.
+				return new MergingDriver( $driver, $this->merges(), $this->hasher() );
 			}
 		);
 	}
@@ -386,6 +400,13 @@ final class Plugin {
 				$this->preview()
 			)
 		);
+	}
+
+	/**
+	 * Registro de bloques de traducción fusionados.
+	 */
+	public function merges(): MergeRegistry {
+		return $this->service( 'merges', static fn(): MergeRegistry => new MergeRegistry() );
 	}
 
 	/**

@@ -78,7 +78,7 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	public function extract( string $html ): array {
 		$processor = new OffsetTagProcessor( $html );
 		$units     = array();
-		$stack     = array( $this->frame( '#root', false, false ) );
+		$stack     = array( $this->frame( '#root', false, false, 0 ) );
 
 		while ( $processor->next_token() ) {
 			$span = $processor->token_span();
@@ -169,7 +169,7 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 			$this->flush_owner( $stack, $html, $units );
 
 			if ( ! Elements::is_void( $tag ) && ! $processor->has_self_closing_flag() ) {
-				$stack[] = $this->frame( $tag, true, false );
+				$stack[] = $this->frame( $tag, true, false, $start );
 			}
 
 			return;
@@ -190,7 +190,7 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 			return;
 		}
 
-		$stack[] = $this->frame( $tag, false, ! $breaks );
+		$stack[] = $this->frame( $tag, false, ! $breaks, $start );
 	}
 
 	/**
@@ -228,11 +228,17 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 		$was_suppressed = (bool) $stack[ $index ]['suppressed'];
 
 		// Cerrar también lo que haya quedado abierto por encima (marcado mal anidado).
+		$element_end = $start + $length;
+
 		while ( array_key_last( $stack ) >= $index ) {
-			$frame = array_pop( $stack );
+			$closing = array_key_last( $stack ) === $index;
+			$frame   = array_pop( $stack );
 
 			if ( false === $frame['suppressed'] ) {
-				$this->flush_frame( $frame, $html, $units );
+				// El final del elemento solo se conoce para el que de verdad se
+				// cierra; los que quedaban abiertos por encima son marcado mal
+				// anidado y no tienen un cierre propio.
+				$this->flush_frame( $frame, $html, $units, $closing ? $element_end : null );
 			}
 		}
 
@@ -324,11 +330,13 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	/**
 	 * Emite la unidad acumulada en un elemento, si contiene texto traducible.
 	 *
-	 * @param array<string, mixed> $frame Elemento.
-	 * @param string               $html  Documento completo.
-	 * @param ExtractedString[]    $units Unidades acumuladas.
+	 * @param array<string, mixed> $frame       Elemento.
+	 * @param string               $html        Documento completo.
+	 * @param ExtractedString[]    $units       Unidades acumuladas.
+	 * @param int|null             $element_end Fin del elemento, si se conoce.
+	 *                                          Solo se sabe al cerrarlo.
 	 */
-	private function flush_frame( array $frame, string $html, array &$units ): void {
+	private function flush_frame( array $frame, string $html, array &$units, ?int $element_end = null ): void {
 		if ( null === $frame['run_start'] || false === $frame['run_has_text'] ) {
 			return;
 		}
@@ -351,22 +359,25 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 			return;
 		}
 
-		if ( true === $frame['run_has_tags'] ) {
-			$units[] = new ExtractedString(
-				StringType::Block,
-				substr( $html, $start, $end - $start ),
-				$start,
-				$end - $start
-			);
+		$outer_start  = null;
+		$outer_length = null;
 
-			return;
+		if ( null !== $element_end && '#root' !== $frame['tag'] ) {
+			$outer_start  = (int) $frame['open_start'];
+			$outer_length = $element_end - $outer_start;
 		}
 
 		$units[] = new ExtractedString(
-			StringType::Text,
-			trim( (string) $frame['run_text'] ),
+			true === $frame['run_has_tags'] ? StringType::Block : StringType::Text,
+			true === $frame['run_has_tags']
+				? substr( $html, $start, $end - $start )
+				: trim( (string) $frame['run_text'] ),
 			$start,
-			$end - $start
+			$end - $start,
+			null,
+			null,
+			$outer_start,
+			$outer_length
 		);
 	}
 
@@ -667,11 +678,13 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 	 * @param string $tag        Nombre de etiqueta.
 	 * @param bool   $excluded   Si su contenido queda fuera de la traducción.
 	 * @param bool   $suppressed Si cede su contenido a la unidad del contenedor.
+	 * @param int    $open_start Byte donde empieza su etiqueta de apertura.
 	 * @return array<string, mixed>
 	 */
-	private function frame( string $tag, bool $excluded, bool $suppressed ): array {
+	private function frame( string $tag, bool $excluded, bool $suppressed, int $open_start = 0 ): array {
 		return array(
 			'tag'          => $tag,
+			'open_start'   => $open_start,
 			'excluded'     => $excluded,
 			'suppressed'   => $suppressed,
 			'run_start'    => null,

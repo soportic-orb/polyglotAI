@@ -96,3 +96,47 @@ if ( ! function_exists( 'wp_rand' ) ) {
 		return random_int( (int) $min, (int) $max );
 	}
 }
+
+/**
+ * Opciones en memoria para la suite unitaria.
+ *
+ * @var array<string, mixed>
+ */
+$GLOBALS['pgai_test_options'] = array();
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * @param string $option  Nombre.
+	 * @param mixed  $default Valor por defecto.
+	 * @return mixed
+	 */
+	function get_option( $option, $default = false ) { // phpcs:ignore
+		return $GLOBALS['pgai_test_options'][ $option ] ?? $default;
+	}
+}
+
+if ( ! function_exists( 'update_option' ) ) {
+	/**
+	 * @param string $option   Nombre.
+	 * @param mixed  $value    Valor.
+	 * @param bool   $autoload Autocarga.
+	 * @return bool
+	 */
+	function update_option( $option, $value, $autoload = null ) { // phpcs:ignore
+		$GLOBALS['pgai_test_options'][ $option ] = $value;
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_option' ) ) {
+	/**
+	 * @param string $option Nombre.
+	 * @return bool
+	 */
+	function delete_option( $option ) { // phpcs:ignore
+		unset( $GLOBALS['pgai_test_options'][ $option ] );
+
+		return true;
+	}
+}

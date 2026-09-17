@@ -15,7 +15,7 @@ import {
 import StringEditor from './StringEditor';
 import StringList from './StringList';
 import { buildSrcset, openMediaLibrary } from './media';
-import { saveStrings, suggestStrings } from './api';
+import { createMerge, removeMerge, saveStrings, suggestStrings } from './api';
 
 const boot = window.pgaiEditor || {};
 
@@ -38,6 +38,9 @@ export default function App() {
 	// Al cambiar una imagen hay que cambiar también su srcset, o la traducción
 	// solo se vería en algunos tamaños de pantalla.
 	const [ companion, setCompanion ] = useState( null );
+
+	// Cadenas marcadas para fusionar en un solo bloque de traducción.
+	const [ checked, setChecked ] = useState( [] );
 
 	const iframe = useRef( null );
 
@@ -79,6 +82,7 @@ export default function App() {
 				setStrings( event.data.strings || [] );
 				setLoading( false );
 				setSelected( null );
+				setChecked( [] );
 				setError( '' );
 			}
 
@@ -395,6 +399,87 @@ export default function App() {
 	}, [ strings, language, toPreview ] );
 
 	/**
+	 * Recarga la vista previa.
+	 *
+	 * Fusionar o deshacer una fusión cambia cómo se trocea la página, así que
+	 * las cadenas hay que volver a leerlas del servidor.
+	 */
+	const reloadPreview = useCallback( () => {
+		setLoading( true );
+
+		if ( iframe.current && iframe.current.contentWindow ) {
+			iframe.current.contentWindow.location.reload();
+		}
+	}, [] );
+
+	/**
+	 * Marca o desmarca una cadena para fusionarla.
+	 *
+	 * @param {string} hash Hash.
+	 */
+	const toggleCheck = useCallback( ( hash ) => {
+		setChecked( ( previous ) =>
+			previous.includes( hash )
+				? previous.filter( ( item ) => item !== hash )
+				: [ ...previous, hash ]
+		);
+	}, [] );
+
+	/**
+	 * Fusiona las cadenas marcadas.
+	 */
+	const mergeChecked = useCallback( async () => {
+		setBusy( true );
+		setError( '' );
+
+		try {
+			// Se manda en el orden en que aparecen en la página, no en el que se
+			// marcaron: la fusión solo se aplica a cadenas consecutivas.
+			const ordered = strings
+				.filter( ( string ) => checked.includes( string.hash ) )
+				.map( ( string ) => string.hash );
+
+			await createMerge( ordered );
+			setChecked( [] );
+			reloadPreview();
+		} catch ( failure ) {
+			setError(
+				failure.message ||
+					__( 'No se han podido fusionar.', 'polyglot-ai' )
+			);
+		}
+
+		setBusy( false );
+	}, [ strings, checked, reloadPreview ] );
+
+	/**
+	 * Deshace la fusión del bloque seleccionado.
+	 */
+	const unmerge = useCallback( async () => {
+		if (
+			! current ||
+			! String( current.context || '' ).startsWith( 'merge:' )
+		) {
+			return;
+		}
+
+		setBusy( true );
+		setError( '' );
+
+		try {
+			await removeMerge( current.context );
+			reloadPreview();
+		} catch ( failure ) {
+			setError(
+				failure.message ||
+					__( 'No se ha podido deshacer.', 'polyglot-ai' )
+			);
+		}
+
+		setBusy( false );
+	}, [ current, reloadPreview ] );
+
+	/**
 	 * Cambia el idioma que se está traduciendo.
 	 *
 	 * @param {string} locale Locale.
@@ -483,6 +568,7 @@ export default function App() {
 								onSave={ save }
 								onSuggest={ suggest }
 								onPickImage={ pickImage }
+								onUnmerge={ unmerge }
 								onPrevious={ () => move( -1 ) }
 								onNext={ () => move( 1 ) }
 							/>
@@ -491,6 +577,9 @@ export default function App() {
 								strings={ strings }
 								selected={ selected }
 								onSelect={ select }
+								checked={ checked }
+								onCheck={ toggleCheck }
+								onMerge={ mergeChecked }
 							/>
 						</>
 					) }

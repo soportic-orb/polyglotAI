@@ -194,6 +194,27 @@
 		margin: 12px 0 4px;
 	}
 
+	&__merge {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 8px;
+		background: #f0f6fc;
+		border: 1px solid #c5d9ed;
+	}
+
+	&__hint {
+		margin: 0;
+		font-size: 11px;
+		color: #646970;
+	}
+
+	&__row {
+		display: flex;
+		align-items: flex-start;
+		gap: 4px;
+	}
+
 	&__items {
 		margin: 0;
 		padding: 0;
@@ -209,7 +230,8 @@
 
 	&__item {
 		display: block;
-		width: 100%;
+		flex: 1 1 auto;
+		min-width: 0;
 		text-align: left;
 		background: none;
 		border: 0;
