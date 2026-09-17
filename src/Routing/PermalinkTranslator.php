@@ -91,6 +91,10 @@ final class PermalinkTranslator {
 
 		$this->prime( 'post', $ids );
 
+		// Y de paso las bases, que hacen falta para casi cualquier enlace: si se
+		// dejan para la primera que se pinte, la consulta cae dentro del bucle.
+		$this->base_map();
+
 		return $posts;
 	}
 

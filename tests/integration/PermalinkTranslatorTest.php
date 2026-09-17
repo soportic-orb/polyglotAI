@@ -61,7 +61,7 @@ final class PermalinkTranslatorTest extends WP_UnitTestCase {
 	private function activate( string $slug = 'en' ): PermalinkTranslator {
 		$language = 'en' === $slug
 			? new Language( 'en_US', 'en', 'English' )
-			: $this->languages->default();
+			: $this->languages->default_language();
 
 		$this->request->force( $language );
 
@@ -126,6 +126,14 @@ final class PermalinkTranslatorTest extends WP_UnitTestCase {
 	}
 
 	public function test_el_enlace_de_un_termino_traduce_slug_y_base(): void {
+		global $wp_rewrite;
+
+		// Las taxonomías del núcleo se registran sin reescritura cuando aún no
+		// hay enlaces bonitos, que es como arranca la suite. Hay que volver a
+		// registrarlas después de ponerlos para que tengan permastruct.
+		create_initial_taxonomies();
+		$wp_rewrite->flush_rules();
+
 		$term_id = self::factory()->category->create( array( 'slug' => 'noticias' ) );
 
 		$this->slugs->save( new SlugRecord( 'term', 'category', $term_id, 'en_US', 'noticias', 'news' ) );

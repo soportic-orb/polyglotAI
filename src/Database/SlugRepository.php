@@ -215,6 +215,7 @@ final class SlugRepository {
 			$wpdb->prepare(
 				"SELECT translated_slug, original_slug FROM {$table}
 				WHERE language = %s AND translated_slug IN ({$placeholders})
+				AND translated_slug <> ''
 				ORDER BY id ASC",
 				$arguments
 			),
@@ -325,11 +326,17 @@ final class SlugRepository {
 
 		$slug = sanitize_title( $record->translated_slug );
 
-		if ( '' === $slug ) {
+		// Una fila pendiente es justamente la que aún no tiene slug traducido:
+		// es así como se anota que hay trabajo por hacer.
+		if ( '' === $slug && Status::Pending !== $record->status ) {
 			return false;
 		}
 
-		$record = $record->with_translated_slug( $this->unique_slug( $record->with_translated_slug( $slug ) ) );
+		if ( '' !== $slug ) {
+			$slug = $this->unique_slug( $record->with_translated_slug( $slug ) );
+		}
+
+		$record = $record->with_translated_slug( $slug );
 
 		$table = Schema::table( 'slugs' );
 
@@ -377,6 +384,74 @@ final class SlugRepository {
 	 */
 	private function bump_version(): void {
 		update_option( self::VERSION_OPTION, $this->version() + 1, true );
+	}
+
+	/**
+	 * Anota que un objeto necesita slug traducido en un idioma.
+	 *
+	 * Es el punto por el que entra todo el trabajo pendiente: al guardar una
+	 * entrada o un término se anota una fila pendiente por idioma activo, y la
+	 * traducción automática la recoge de ahí. Anotar es barato; traducir no.
+	 *
+	 * Si el slug original ha cambiado, lo traducido ya no le corresponde. Se
+	 * vuelve a marcar pendiente lo que había puesto una máquina, pero **no** lo
+	 * que ha escrito una persona: un slug elegido a mano sigue siendo una URL
+	 * válida, y tirarlo sería justo lo que ADR-07 prohíbe.
+	 *
+	 * @param string $object_type    post, term o base.
+	 * @param string $object_subtype Tipo de contenido, taxonomía o base.
+	 * @param int    $object_id      Identificador.
+	 * @param string $language       Locale.
+	 * @param string $original_slug  Slug en el idioma por defecto.
+	 * @return bool True si se ha tocado la base de datos.
+	 */
+	public function track( string $object_type, string $object_subtype, int $object_id, string $language, string $original_slug ): bool {
+		global $wpdb;
+
+		if ( '' === $original_slug ) {
+			return false;
+		}
+
+		$current = $this->find( $object_type, $object_subtype, $object_id, $language );
+
+		if ( null === $current ) {
+			return $this->save(
+				new SlugRecord( $object_type, $object_subtype, $object_id, $language, $original_slug, '', Status::Pending )
+			);
+		}
+
+		if ( $current->original_slug === $original_slug ) {
+			return false;
+		}
+
+		$stale = ! $current->status->is_human();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$updated = $wpdb->update(
+			Schema::table( 'slugs' ),
+			array(
+				'original_slug'   => $original_slug,
+				'translated_slug' => $stale ? '' : $current->translated_slug,
+				'status'          => $stale ? Status::Pending->value : $current->status->value,
+				'updated_at'      => current_time( 'mysql', true ),
+			),
+			array(
+				'object_type'    => $object_type,
+				'object_subtype' => $object_subtype,
+				'object_id'      => $object_id,
+				'language'       => $language,
+			),
+			array( '%s', '%s', '%s', '%s' ),
+			array( '%s', '%s', '%d', '%s' )
+		);
+
+		if ( false === $updated || 0 === (int) $updated ) {
+			return false;
+		}
+
+		$this->bump_version();
+
+		return true;
 	}
 
 	/**

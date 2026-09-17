@@ -55,6 +55,7 @@ use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Database\SlugRepository;
 use PolyglotAI\Routing\PermalinkTranslator;
 use PolyglotAI\Routing\RequestRouter;
+use PolyglotAI\Routing\SlugSync;
 use PolyglotAI\Routing\SlugResolver;
 use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Support\ApiKey;
@@ -143,6 +144,10 @@ final class Plugin {
 		// Y la vuelta: los enlaces que genere WordPress tienen que apuntar al
 		// slug traducido, también los que no pasan por el HTML de la página.
 		$this->permalink_translator()->register();
+
+		// Y quien anota qué slugs quedan por traducir. Va tanto en el escritorio
+		// como en el frente: las entradas se guardan en el escritorio.
+		$this->slug_sync()->register();
 
 		if ( is_admin() ) {
 			$this->settings_page()->register();
@@ -428,6 +433,16 @@ final class Plugin {
 		return $this->service(
 			'permalink_translator',
 			fn(): PermalinkTranslator => new PermalinkTranslator( $this->slugs(), $this->request() )
+		);
+	}
+
+	/**
+	 * Sincronización de slugs con el contenido.
+	 */
+	public function slug_sync(): SlugSync {
+		return $this->service(
+			'slug_sync',
+			fn(): SlugSync => new SlugSync( $this->slugs(), $this->languages() )
 		);
 	}
 
