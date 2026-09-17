@@ -431,10 +431,10 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 		}
 
 		$wanted = array(
-			'title'                 => array( StringType::Attribute, 'title' ),
-			'aria-label'            => array( StringType::Attribute, 'aria-label' ),
-			'aria-placeholder'      => array( StringType::Attribute, 'aria-placeholder' ),
-			'aria-roledescription'  => array( StringType::Attribute, 'aria-roledescription' ),
+			'title'                => array( StringType::Attribute, 'title' ),
+			'aria-label'           => array( StringType::Attribute, 'aria-label' ),
+			'aria-placeholder'     => array( StringType::Attribute, 'aria-placeholder' ),
+			'aria-roledescription' => array( StringType::Attribute, 'aria-roledescription' ),
 		);
 
 		if ( in_array( $tag, array( 'IMG', 'AREA', 'INPUT' ), true ) ) {

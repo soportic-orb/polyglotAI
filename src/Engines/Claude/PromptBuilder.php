@@ -102,12 +102,20 @@ final class PromptBuilder {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function system( EngineContext $context ): array {
-		$blocks = array( array( 'type' => 'text', 'text' => $this->rules( $context ) ) );
+		$blocks = array(
+			array(
+				'type' => 'text',
+				'text' => $this->rules( $context ),
+			),
+		);
 
 		$reference = $this->reference( $context );
 
 		if ( '' !== $reference ) {
-			$blocks[] = array( 'type' => 'text', 'text' => $reference );
+			$blocks[] = array(
+				'type' => 'text',
+				'text' => $reference,
+			);
 		}
 
 		$cache_control = array( 'type' => 'ephemeral' );

@@ -19,6 +19,50 @@
         <!-- El plugin declara su propio autoload; no usamos el patrón de
              ficheros con un único nombre en snake_case. -->
         <exclude name="Universal.Files.SeparateFunctionsFromOO"/>
+
+        <!-- Las anotaciones de tipo en línea (/** @var Foo $x */) son idiomáticas
+             y no admiten descripción: exigirles una solo añade ruido. -->
+        <exclude name="Generic.Commenting.DocComment.MissingShort"/>
+
+        <!-- El mensaje de una excepción es para quien depura, no salida hacia el
+             navegador: escaparlo estorba la lectura de la traza. -->
+        <exclude name="WordPress.Security.EscapeOutput.ExceptionNotEscaped"/>
+    </rule>
+
+    <!-- PHPCompatibility no reconoce los enums de PHP 8.1 y toma match($this)
+         dentro de un método de enum por un uso de $this fuera de contexto. -->
+    <rule ref="PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext">
+        <exclude-pattern>src/Translation/Status.php</exclude-pattern>
+        <exclude-pattern>src/Translation/StringType.php</exclude-pattern>
+        <exclude-pattern>src/Html/Escaper.php</exclude-pattern>
+    </rule>
+
+    <!-- En los tests el nombre del método ES la descripción: esa es la
+         convención de nombres de esta suite. -->
+    <rule ref="Squiz.Commenting.FunctionComment.Missing">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="Squiz.Commenting.VariableComment.Missing">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.MissingParamComment">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="WordPress.WP.GlobalVariablesOverride">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <!-- Los tests comprueban precisamente que un <script> inyectado no llega a
+         la página: el marcado en las aserciones es el dato de la prueba. -->
+    <rule ref="WordPress.WP.EnqueuedResources">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <!-- En la suite unitaria no hay WordPress cargado: leer una fixture del
+         disco con file_get_contents y serializar con json_encode es lo correcto. -->
+    <rule ref="WordPress.WP.AlternativeFunctions">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
+        <exclude-pattern>tests/*</exclude-pattern>
     </rule>
 
     <rule ref="WordPress.WP.I18n">

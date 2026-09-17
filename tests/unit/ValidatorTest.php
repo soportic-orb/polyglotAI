@@ -40,14 +40,14 @@ final class ValidatorTest extends TestCase {
 	 */
 	public static function proveedor_de_traducciones_validas(): array {
 		return array(
-			'texto simple'            => array( 'Hola', 'Hello', StringType::Text ),
-			'etiquetas conservadas'   => array( 'Hola <b>món</b>', 'Hello <b>world</b>', StringType::Block ),
+			'texto simple'             => array( 'Hola', 'Hello', StringType::Text ),
+			'etiquetas conservadas'    => array( 'Hola <b>món</b>', 'Hello <b>world</b>', StringType::Block ),
 			'placeholders reordenados' => array( '%1$s de %2$s', '%2$s of %1$s', StringType::Text ),
-			'misma url'               => array( 'Ver <a href="/x">aquí</a>', 'See <a href="/x">here</a>', StringType::Block ),
-			'alt traducido en bloque' => array( 'Un <img alt="gat" src="a.png"> aquí', 'A <img alt="cat" src="a.png"> here', StringType::Block ),
-			'shortcode intacto'       => array( 'Mira [precio id="3"] esto', 'Look at [precio id="3"] this', StringType::Text ),
-			'email intacto'           => array( 'Escribe a info@x.com', 'Write to info@x.com', StringType::Text ),
-			'sin cambios'             => array( 'ACME', 'ACME', StringType::Text ),
+			'misma url'                => array( 'Ver <a href="/x">aquí</a>', 'See <a href="/x">here</a>', StringType::Block ),
+			'alt traducido en bloque'  => array( 'Un <img alt="gat" src="a.png"> aquí', 'A <img alt="cat" src="a.png"> here', StringType::Block ),
+			'shortcode intacto'        => array( 'Mira [precio id="3"] esto', 'Look at [precio id="3"] this', StringType::Text ),
+			'email intacto'            => array( 'Escribe a info@x.com', 'Write to info@x.com', StringType::Text ),
+			'sin cambios'              => array( 'ACME', 'ACME', StringType::Text ),
 		);
 	}
 

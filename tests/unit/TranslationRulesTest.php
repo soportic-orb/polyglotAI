@@ -46,13 +46,13 @@ final class TranslationRulesTest extends TestCase {
 	 */
 	public static function proveedor_de_normalizacion(): array {
 		return array(
-			'recorta extremos'      => array( '  Hola  ', 'Hola' ),
-			'colapsa saltos'        => array( "Hola\n\n  món", 'Hola món' ),
-			'colapsa tabuladores'   => array( "Hola\t\tmón", 'Hola món' ),
-			'espacio duro'          => array( "Hola\u{00A0}\u{00A0}món", 'Hola món' ),
-			'conserva el html'      => array( '  Hola <b>món</b>  ', 'Hola <b>món</b>' ),
-			'conserva los acentos'  => array( ' Cafè ñandú ', 'Cafè ñandú' ),
-			'ya normalizada'        => array( 'Hola món', 'Hola món' ),
+			'recorta extremos'     => array( '  Hola  ', 'Hola' ),
+			'colapsa saltos'       => array( "Hola\n\n  món", 'Hola món' ),
+			'colapsa tabuladores'  => array( "Hola\t\tmón", 'Hola món' ),
+			'espacio duro'         => array( "Hola\u{00A0}\u{00A0}món", 'Hola món' ),
+			'conserva el html'     => array( '  Hola <b>món</b>  ', 'Hola <b>món</b>' ),
+			'conserva los acentos' => array( ' Cafè ñandú ', 'Cafè ñandú' ),
+			'ya normalizada'       => array( 'Hola món', 'Hola món' ),
 		);
 	}
 
@@ -124,23 +124,23 @@ final class TranslationRulesTest extends TestCase {
 	 */
 	public static function proveedor_de_precedencia(): array {
 		return array(
-			'sin traduccion previa'            => array( null, Status::Automatic, false, true ),
-			'automatica sobre pendiente'       => array( Status::Pending, Status::Automatic, false, true ),
-			'automatica sobre error'           => array( Status::Error, Status::Automatic, false, true ),
-			'automatica sobre automatica'      => array( Status::Automatic, Status::Automatic, false, false ),
-			'retraduccion sobre automatica'    => array( Status::Automatic, Status::Automatic, true, true ),
+			'sin traduccion previa'         => array( null, Status::Automatic, false, true ),
+			'automatica sobre pendiente'    => array( Status::Pending, Status::Automatic, false, true ),
+			'automatica sobre error'        => array( Status::Error, Status::Automatic, false, true ),
+			'automatica sobre automatica'   => array( Status::Automatic, Status::Automatic, false, false ),
+			'retraduccion sobre automatica' => array( Status::Automatic, Status::Automatic, true, true ),
 
 			// El criterio de aceptación: lo que ha tocado una persona no lo pisa
 			// una máquina, ni siquiera forzando la retraducción.
-			'automatica sobre revisada'        => array( Status::Reviewed, Status::Automatic, false, false ),
-			'automatica sobre manual'          => array( Status::Manual, Status::Automatic, false, false ),
-			'retraduccion sobre revisada'      => array( Status::Reviewed, Status::Automatic, true, false ),
-			'retraduccion sobre manual'        => array( Status::Manual, Status::Automatic, true, false ),
+			'automatica sobre revisada'     => array( Status::Reviewed, Status::Automatic, false, false ),
+			'automatica sobre manual'       => array( Status::Manual, Status::Automatic, false, false ),
+			'retraduccion sobre revisada'   => array( Status::Reviewed, Status::Automatic, true, false ),
+			'retraduccion sobre manual'     => array( Status::Manual, Status::Automatic, true, false ),
 
 			// Una persona sí puede corregir cualquier cosa desde el editor.
-			'manual sobre automatica'          => array( Status::Automatic, Status::Manual, false, true ),
-			'manual sobre manual'              => array( Status::Manual, Status::Manual, false, true ),
-			'revisada sobre manual'            => array( Status::Manual, Status::Reviewed, false, true ),
+			'manual sobre automatica'       => array( Status::Automatic, Status::Manual, false, true ),
+			'manual sobre manual'           => array( Status::Manual, Status::Manual, false, true ),
+			'revisada sobre manual'         => array( Status::Manual, Status::Reviewed, false, true ),
 		);
 	}
 }

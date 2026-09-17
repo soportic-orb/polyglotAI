@@ -63,47 +63,72 @@ problema con un único parser genérico y re-serializar el documento entero.
 Interfaz `PolyglotAI\Html\DocumentDriverInterface`, con selección por capacidad en
 tiempo de ejecución:
 
-1. **`WP_HTML_Tag_Processor` / `WP_HTML_Processor` (HTML API del core) — PRIMARIO.**
+1. **`WP_HTML_Tag_Processor` (HTML API del core) — PRIMARIO.**
    Es la única opción que satisface el requisito *por construcción* y no por
-   configuración cuidadosa del serializador: opera sobre la cadena original con un
-   cursor y **no re-serializa el documento**, de modo que todo byte que no tocamos
-   sale idéntico — doctype, codificación, `<script>`, `<style>`, JSON-LD,
-   `<template>`, elementos personalizados. Además: cero dependencias, mantenida por
-   el core y alineada con la especificación HTML5.
-2. **`Dom\HTMLDocument` (PHP 8.4+) — ACELERADO/OPCIONAL.** Parser HTML5 conforme
-   implementado en C, UTF-8 y doctype correctos. Útil cuando necesitamos operaciones
-   reales de subárbol. Solo se activa si la instalación tiene PHP 8.4+.
-3. **`masterminds/html5` — RESERVA.** Puro PHP, conforme, lento (un orden de magnitud
-   por encima de un parser en C). Va en `require-dev` como **oráculo de referencia en
-   los tests diferenciales**; en producción solo se usa si está presente y los dos
-   anteriores no son viables.
-4. **`DOMDocument::loadHTML()` (libxml/HTML4) — PROHIBIDO.** Destroza HTML5 (elementos
-   vacíos, `<template>`, elementos personalizados), exige *hacks* de entidades para no
-   romper UTF-8 y reordena o pierde el doctype. Es exactamente la clase de bugs que no
-   queremos; no se usa ni como reserva.
+   configuración cuidadosa del serializador: opera sobre la cadena original con
+   un cursor y **no re-serializa el documento**, de modo que todo byte que no
+   tocamos sale idéntico — doctype, codificación, `<script>`, `<style>`,
+   JSON-LD, `<template>`, elementos personalizados. Cero dependencias,
+   mantenida por el core y alineada con la especificación HTML5.
+2. **`Dom\HTMLDocument` (PHP 8.4+) — ACELERADO/OPCIONAL.** Parser HTML5
+   conforme implementado en C. Pendiente de la fase de rendimiento; solo se
+   activaría si el banco de pruebas demuestra que hace falta.
+3. **`masterminds/html5` — RESERVA.** Puro PHP, conforme, lento. En
+   `require-dev` como oráculo de tests diferenciales, no en producción.
+4. **`DOMDocument::loadHTML()` (libxml/HTML4) — PROHIBIDO.** Destroza HTML5
+   (elementos vacíos, `<template>`, elementos personalizados), exige *hacks* de
+   entidades para no romper UTF-8 y reordena o pierde el doctype. No se usa ni
+   como reserva.
 
-**Bloques en línea como unidad de traducción.** Un `<p>Hola <strong>món</strong></p>` se
-traduce como una sola cadena. No hace falta DOM: durante el barrido se registran los
-desplazamientos de byte de apertura y cierre del bloque, se corta la subcadena y se
-sustituye entera. Las sustituciones se acumulan como tuplas `(inicio, fin, reemplazo)` y
-se aplican **de derecha a izquierda** sobre la cadena original, para que los
-desplazamientos no se invaliden.
+**Corrección tras verificar la fuente de WordPress 6.6.2** (esto contradice la
+primera versión de este ADR, que daba por hecho `WP_HTML_Processor`):
 
-**Red de seguridad, obligatoria.** Tras sustituir, se comprueba que la salida conserva
-el prefijo de doctype y el mismo recuento de bloques `<script>` y `<style>` que la
-entrada. Si el driver lanza una excepción o la comprobación falla, **se devuelve el
-buffer original intacto**. Nunca se sirve una página corrupta: ante la duda, se sirve
-sin traducir.
+- **`WP_HTML_Processor` no sirve para una página completa en 6.6.** Solo existe
+  `create_fragment()`, que exige contexto `<body>` y devuelve `null` para
+  cualquier otro; `create_full_parser()` no llega hasta más adelante. Una página
+  con doctype y `<head>` no se puede analizar con él. El primario es por tanto
+  el analizador de etiquetas, que es un barrido lineal que nunca abandona, más
+  **nuestra propia pila de elementos** (`Html\Elements` + `HtmlApiDriver`).
+- **Las posiciones de los tokens no son accesibles por herencia.**
+  `$token_starts_at` y `$token_length` son `private`, no `protected`. La vía
+  disponible son los marcadores: `set_bookmark()` es público y guarda un
+  `WP_HTML_Span` con el inicio y la longitud del token en `$bookmarks`, que sí
+  es `protected`. Es la **única** dependencia del plugin sobre una propiedad
+  protegida del core, está aislada en `Html\OffsetTagProcessor` y
+  `DriverFactory` ejecuta una sonda de capacidad en tiempo de ejecución: si una
+  versión futura la cambia, no hay driver y el plugin deja de procesar la salida
+  en vez de corromper páginas.
+- **Elementos que llegan como un único token** y que por tanto no se apilan:
+  `SCRIPT`, `STYLE`, `TITLE`, `TEXTAREA`, `IFRAME`, `NOEMBED`, `NOFRAMES`,
+  `XMP`. Verificado en el `switch` de `parse_next_tag()`. Como el tokenizador no
+  desciende a su interior, el contenido de los scripts y los estilos queda
+  intacto sin hacer nada.
+- **`get_modifiable_text()` y `get_attribute()` devuelven el texto
+  decodificado.** Al escribir de vuelta hay que recodificar `&` y `<` (y `"` en
+  atributos). Se recodifica solo eso: el resto del UTF-8 se conserva tal cual.
 
-**Mínimo de WordPress: 6.6.** Decidido para este ADR: en 6.6 están disponibles
-`WP_HTML_Processor::next_token()` y `get_modifiable_text()`, que es justo lo que
-necesita el barrido de nodos de texto. Con 6.4 habría que mantener el camino de reserva
-como vía real y no como red de seguridad. No usamos `set_modifiable_text()` (6.7+): las
-sustituciones se hacen con el empalme por desplazamientos de byte descrito arriba, que
-además es lo que necesitamos para los bloques en línea.
+**Bloques en línea como unidad de traducción.** Un `<p>Hola <strong>món</strong></p>`
+se traduce como una sola cadena. No hace falta DOM: durante el barrido se
+registran los desplazamientos de byte de apertura y cierre del bloque, se corta
+la subcadena y se sustituye entera. Las sustituciones se acumulan como tuplas
+`(inicio, fin, reemplazo)` y se aplican **de derecha a izquierda** sobre la
+cadena original, para que los desplazamientos no se invaliden.
 
-**Pendiente de la Fase 1:** un *spike* con banco de pruebas (páginas reales de Divi,
-Elementor y WooCommerce) que mida los tres drivers y confirme el primario con números.
+Los controles de formulario (`INPUT`, `LABEL`, `SELECT`, `BUTTON`…) cortan la
+unidad aunque no sean elementos de bloque: un formulario no es una frase, y sin
+esa regla el formulario entero se convertía en una sola cadena y los atributos
+de sus controles quedaban absorbidos por ella.
+
+**Red de seguridad, obligatoria.** Tras sustituir, se comprueba que la salida
+conserva el prefijo de doctype y el mismo recuento de bloques `<script>` y
+`<style>` que la entrada. Si el driver lanza una excepción o la comprobación
+falla, **se devuelve el buffer original intacto**. Nunca se sirve una página
+corrupta: ante la duda, se sirve sin traducir.
+
+**La reescritura de enlaces es una pasada aparte**, posterior a la de
+traducción. Un enlace puede vivir dentro de una unidad de bloque ya traducida, y
+hacer ambas cosas en la misma pasada produciría sustituciones solapadas, que el
+empalme rechaza.
 
 ### ADR-02 — Almacenamiento: tablas propias normalizadas, **no** una tabla por idioma
 

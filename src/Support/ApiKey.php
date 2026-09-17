@@ -89,6 +89,7 @@ final class ApiKey {
 	private function encrypt( string $value ): string {
 		$nonce = random_bytes( SODIUM_CRYPTO_SECRETBOX_NONCEBYTES );
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Codificación de un valor cifrado, no ofuscación de código.
 		return base64_encode( $nonce . sodium_crypto_secretbox( $value, $nonce, $this->secret() ) );
 	}
 
@@ -98,6 +99,7 @@ final class ApiKey {
 	 * @param string $value Clave cifrada en base64.
 	 */
 	private function decrypt( string $value ): ?string {
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decodificación de un valor cifrado propio.
 		$raw = base64_decode( $value, true );
 
 		if ( false === $raw || strlen( $raw ) <= SODIUM_CRYPTO_SECRETBOX_NONCEBYTES ) {

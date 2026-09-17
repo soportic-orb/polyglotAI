@@ -1,0 +1,371 @@
+<?php
+/**
+ * Arranque y ensamblaje del plugin.
+ *
+ * @package PolyglotAI
+ */
+
+declare(strict_types=1);
+
+namespace PolyglotAI;
+
+use PolyglotAI\Admin\SettingsPage;
+use PolyglotAI\Bootstrap\Requirements;
+use PolyglotAI\Database\ApiLogRepository;
+use PolyglotAI\Database\SourceRepository;
+use PolyglotAI\Database\TranslationRepository;
+use PolyglotAI\Detection\BotDetector;
+use PolyglotAI\Engines\Claude\ClaudeClient;
+use PolyglotAI\Engines\Claude\ClaudeEngine;
+use PolyglotAI\Engines\Claude\PromptBuilder;
+use PolyglotAI\Engines\Claude\ResponseParser;
+use PolyglotAI\Engines\Claude\RetryPolicy;
+use PolyglotAI\Engines\EngineRegistry;
+use PolyglotAI\Html\BailConditions;
+use PolyglotAI\Html\DocumentProcessor;
+use PolyglotAI\Html\DriverFactory;
+use PolyglotAI\Html\Escaper;
+use PolyglotAI\Html\ExclusionRules;
+use PolyglotAI\Html\OutputBuffer;
+use PolyglotAI\Html\SafetyCheck;
+use PolyglotAI\Html\Splicer;
+use PolyglotAI\Html\TagScanner;
+use PolyglotAI\Languages\Language;
+use PolyglotAI\Languages\LanguageRegistry;
+use PolyglotAI\Routing\HeadTags;
+use PolyglotAI\Routing\LinkRewriter;
+use PolyglotAI\Routing\RequestContext;
+use PolyglotAI\Routing\UrlConverter;
+use PolyglotAI\Support\ApiKey;
+use PolyglotAI\Support\Options;
+use PolyglotAI\Switcher\Shortcode;
+use PolyglotAI\Translation\DictionaryFactory;
+use PolyglotAI\Translation\Hasher;
+use PolyglotAI\Translation\MissingQueue;
+use PolyglotAI\Translation\Normalizer;
+use PolyglotAI\Translation\StatusPrecedence;
+use PolyglotAI\Translation\Validator;
+
+/**
+ * Contenedor y punto de arranque.
+ *
+ * El grafo de objetos se construye a mano y de forma perezosa. No se usa ningún
+ * contenedor de inyección de dependencias: sería una dependencia más en el
+ * vendor de un sitio ajeno a cambio de resolver un problema que aquí no existe.
+ */
+final class Plugin {
+
+	/**
+	 * Instancia única.
+	 *
+	 * @var self|null
+	 */
+	private static ?self $instance = null;
+
+	/**
+	 * Servicios ya construidos.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $services = array();
+
+	/**
+	 * Constructor privado.
+	 */
+	private function __construct() {}
+
+	/**
+	 * Instancia única.
+	 */
+	public static function instance(): self {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
+
+		return self::$instance;
+	}
+
+	/**
+	 * Arranca el plugin.
+	 */
+	public function boot(): void {
+		$requirements = new Requirements( PGAI_MIN_PHP, PGAI_MIN_WP );
+
+		if ( ! $requirements->are_met() ) {
+			add_action( 'admin_notices', array( $requirements, 'show_notice' ) );
+
+			return;
+		}
+
+		add_action( 'init', array( $this, 'load_textdomain' ) );
+		add_action( 'plugins_loaded', array( $this, 'register_services' ), 5 );
+	}
+
+	/**
+	 * Carga las traducciones de la interfaz del propio plugin.
+	 */
+	public function load_textdomain(): void {
+		load_plugin_textdomain( 'polyglot-ai', false, dirname( plugin_basename( PGAI_FILE ) ) . '/languages' );
+	}
+
+	/**
+	 * Engancha los servicios que actúan sobre las peticiones.
+	 */
+	public function register_services(): void {
+		if ( is_admin() ) {
+			$this->settings_page()->register();
+		}
+
+		$this->switcher()->register();
+
+		// Sin driver viable no se procesa nada: es preferible servir el sitio
+		// sin traducir a servirlo corrupto (ver DriverFactory).
+		if ( null === $this->driver() ) {
+			return;
+		}
+
+		$this->head_tags()->register();
+		$this->output_buffer()->register();
+	}
+
+	/**
+	 * Recupera o construye un servicio.
+	 *
+	 * @param string   $key     Clave del servicio.
+	 * @param callable $factory Constructor.
+	 * @return mixed
+	 */
+	private function service( string $key, callable $factory ): mixed {
+		if ( ! array_key_exists( $key, $this->services ) ) {
+			$this->services[ $key ] = $factory();
+		}
+
+		return $this->services[ $key ];
+	}
+
+	/**
+	 * Ajustes.
+	 */
+	public function options(): Options {
+		return $this->service( 'options', static fn(): Options => new Options() );
+	}
+
+	/**
+	 * Idiomas configurados.
+	 */
+	public function languages(): LanguageRegistry {
+		return $this->service(
+			'languages',
+			function (): LanguageRegistry {
+				$options = $this->options();
+
+				/** @var array<string, mixed> $default */
+				$default = (array) $options->get( 'default_language', array() );
+
+				/** @var array<int, array<string, mixed>> $additional */
+				$additional = (array) $options->get( 'languages', array() );
+
+				return new LanguageRegistry(
+					Language::from_array( $default ),
+					array_map( static fn( array $data ): Language => Language::from_array( $data ), $additional )
+				);
+			}
+		);
+	}
+
+	/**
+	 * Conversor de rutas entre idiomas.
+	 */
+	public function url_converter(): UrlConverter {
+		return $this->service(
+			'url_converter',
+			function (): UrlConverter {
+				$base = (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+
+				return new UrlConverter(
+					$this->languages(),
+					'' === $base ? '/' : $base,
+					(bool) $this->options()->get( 'prefix_default', false )
+				);
+			}
+		);
+	}
+
+	/**
+	 * Contexto de la petición.
+	 */
+	public function request(): RequestContext {
+		return $this->service(
+			'request',
+			fn(): RequestContext => new RequestContext( $this->languages(), $this->url_converter() )
+		);
+	}
+
+	/**
+	 * Driver de análisis de HTML, o null si ninguno es viable.
+	 */
+	public function driver(): ?Html\DocumentDriverInterface {
+		return $this->service(
+			'driver',
+			function (): ?Html\DocumentDriverInterface {
+				/** @var string[] $classes */
+				$classes = (array) apply_filters( 'pgai_exclusion_classes', array( 'notranslate' ) );
+
+				return ( new DriverFactory() )->create( new TagScanner(), new ExclusionRules( $classes ) );
+			}
+		);
+	}
+
+	/**
+	 * Motor de traducción activo.
+	 */
+	public function engine(): Engines\TranslationEngineInterface {
+		return $this->engines()->get( (string) $this->options()->get( 'engine', 'anthropic' ) );
+	}
+
+	/**
+	 * Registro de motores.
+	 */
+	public function engines(): EngineRegistry {
+		return $this->service(
+			'engines',
+			function (): EngineRegistry {
+				$registry = new EngineRegistry();
+				$options  = $this->options();
+
+				$registry->register(
+					new ClaudeEngine(
+						new ClaudeClient( new ApiKey(), new RetryPolicy() ),
+						new PromptBuilder(
+							(string) $options->get( 'model', 'claude-sonnet-5' ),
+							(string) $options->get( 'effort', 'low' ),
+							(bool) $options->get( 'thinking', false ),
+							(int) $options->get( 'cache_ttl', 5 )
+						),
+						new ResponseParser( new Validator() )
+					)
+				);
+
+				/**
+				 * Permite registrar motores de traducción adicionales.
+				 *
+				 * @since 0.1.0
+				 *
+				 * @param EngineRegistry $registry Registro de motores.
+				 */
+				do_action( 'pgai_register_engines', $registry );
+
+				return $registry;
+			}
+		);
+	}
+
+	/**
+	 * Calculador de hashes.
+	 */
+	public function hasher(): Hasher {
+		return $this->service( 'hasher', fn(): Hasher => new Hasher( $this->normalizer() ) );
+	}
+
+	/**
+	 * Normalizador de cadenas.
+	 */
+	public function normalizer(): Normalizer {
+		return $this->service( 'normalizer', static fn(): Normalizer => new Normalizer() );
+	}
+
+	/**
+	 * Repositorio de cadenas originales.
+	 */
+	public function sources(): SourceRepository {
+		return $this->service( 'sources', static fn(): SourceRepository => new SourceRepository() );
+	}
+
+	/**
+	 * Repositorio de traducciones.
+	 */
+	public function translations(): TranslationRepository {
+		return $this->service(
+			'translations',
+			static fn(): TranslationRepository => new TranslationRepository( new StatusPrecedence() )
+		);
+	}
+
+	/**
+	 * Registro de consumo de la API.
+	 */
+	public function api_log(): ApiLogRepository {
+		return $this->service( 'api_log', static fn(): ApiLogRepository => new ApiLogRepository() );
+	}
+
+	/**
+	 * Constructor de diccionarios por página.
+	 */
+	public function dictionary(): DictionaryFactory {
+		return $this->service(
+			'dictionary',
+			fn(): DictionaryFactory => new DictionaryFactory( $this->translations(), $this->hasher(), $this->normalizer() )
+		);
+	}
+
+	/**
+	 * Captura de la salida del frontal.
+	 *
+	 * @throws \LogicException Si no hay ningún driver de análisis disponible.
+	 */
+	private function output_buffer(): OutputBuffer {
+		$driver = $this->driver();
+
+		if ( null === $driver ) {
+			throw new \LogicException( 'No se puede capturar la salida sin un driver de análisis.' );
+		}
+
+		return $this->service(
+			'output_buffer',
+			fn(): OutputBuffer => new OutputBuffer(
+				new BailConditions( $this->options() ),
+				$this->request(),
+				new DocumentProcessor( $driver, new Splicer(), new Escaper(), new SafetyCheck() ),
+				$driver,
+				$this->dictionary(),
+				new MissingQueue( $this->sources(), $this->translations(), new BotDetector(), $this->options() ),
+				new LinkRewriter(
+					$this->url_converter(),
+					new TagScanner(),
+					new Splicer(),
+					(string) wp_parse_url( home_url(), PHP_URL_HOST )
+				)
+			)
+		);
+	}
+
+	/**
+	 * Etiquetas de idioma de la cabecera.
+	 */
+	private function head_tags(): HeadTags {
+		return $this->service(
+			'head_tags',
+			fn(): HeadTags => new HeadTags( $this->languages(), $this->request(), $this->url_converter() )
+		);
+	}
+
+	/**
+	 * Selector de idioma.
+	 */
+	private function switcher(): Shortcode {
+		return $this->service(
+			'switcher',
+			fn(): Shortcode => new Shortcode( $this->languages(), $this->request(), $this->url_converter() )
+		);
+	}
+
+	/**
+	 * Pantalla de ajustes.
+	 */
+	private function settings_page(): SettingsPage {
+		return $this->service(
+			'settings_page',
+			fn(): SettingsPage => new SettingsPage( $this->options(), new ApiKey(), $this->engines(), $this->languages() )
+		);
+	}
+}

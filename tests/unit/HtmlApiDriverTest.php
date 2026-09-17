@@ -175,14 +175,14 @@ final class HtmlApiDriverTest extends TestCase {
 	 */
 	public static function proveedor_de_exclusiones(): array {
 		return array(
-			'clase notranslate'   => array( '<div><p class="notranslate">No tocar</p><p>Traducible</p></div>' ),
-			'translate no'        => array( '<div><p translate="no">No tocar</p><p>Traducible</p></div>' ),
-			'atributo propio'     => array( '<div><p data-no-translation>No tocar</p><p>Traducible</p></div>' ),
-			'dentro de code'      => array( '<div><code>No tocar</code><p>Traducible</p></div>' ),
-			'dentro de template'  => array( '<div><template><p>No tocar</p></template><p>Traducible</p></div>' ),
-			'dentro de svg'       => array( '<div><svg><text>No tocar</text></svg><p>Traducible</p></div>' ),
-			'dentro de pre'       => array( '<div><pre>No tocar</pre><p>Traducible</p></div>' ),
-			'anidada heredada'    => array( '<div class="notranslate"><p><em>No tocar</em></p></div><p>Traducible</p>' ),
+			'clase notranslate'  => array( '<div><p class="notranslate">No tocar</p><p>Traducible</p></div>' ),
+			'translate no'       => array( '<div><p translate="no">No tocar</p><p>Traducible</p></div>' ),
+			'atributo propio'    => array( '<div><p data-no-translation>No tocar</p><p>Traducible</p></div>' ),
+			'dentro de code'     => array( '<div><code>No tocar</code><p>Traducible</p></div>' ),
+			'dentro de template' => array( '<div><template><p>No tocar</p></template><p>Traducible</p></div>' ),
+			'dentro de svg'      => array( '<div><svg><text>No tocar</text></svg><p>Traducible</p></div>' ),
+			'dentro de pre'      => array( '<div><pre>No tocar</pre><p>Traducible</p></div>' ),
+			'anidada heredada'   => array( '<div class="notranslate"><p><em>No tocar</em></p></div><p>Traducible</p>' ),
 		);
 	}
 

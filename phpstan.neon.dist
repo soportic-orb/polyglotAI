@@ -7,3 +7,15 @@ parameters:
     scanFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     treatPhpDocTypesAsCertain: false
+    # El valor real de estas constantes depende de la instalación, no del
+    # arranque del análisis: sin esto PHPStan resolvería ABSPATH al valor del
+    # stub e intentaría comprobar rutas de ficheros que aquí no existen.
+    dynamicConstantNames:
+        - ABSPATH
+        - WP_DEBUG
+        - WP_CLI
+        - REST_REQUEST
+        - XMLRPC_REQUEST
+        - PGAI_API_KEY
+        - PGAI_DIR
+        - PGAI_FILE

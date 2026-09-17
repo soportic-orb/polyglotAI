@@ -77,7 +77,7 @@ final class EngineContext {
 					$this->target_locale,
 					$this->formality,
 					$this->site_context,
-					wp_json_encode( $this->glossary ) ?: '',
+					(string) wp_json_encode( $this->glossary ),
 					implode( ',', $this->do_not_translate ),
 				)
 			)

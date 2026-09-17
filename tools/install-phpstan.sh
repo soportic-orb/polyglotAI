@@ -7,7 +7,7 @@
 # descarga por HTTPS normal y es además la vía que recomienda el propio PHPStan.
 set -euo pipefail
 
-VERSION="${PHPSTAN_VERSION:-1.12.34}"
+VERSION="${PHPSTAN_VERSION:-2.2.14}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET="${ROOT}/tools/phpstan.phar"
 STAMP="${ROOT}/tools/.phpstan-version"

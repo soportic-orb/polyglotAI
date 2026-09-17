@@ -175,7 +175,10 @@ final class ClaudeEngineTest extends TestCase {
 		return array(
 			'stop_reason' => $stop_reason,
 			'content'     => array(
-				array( 'type' => 'text', 'text' => (string) json_encode( array( 'translations' => $translations ) ) ),
+				array(
+					'type' => 'text',
+					'text' => (string) json_encode( array( 'translations' => $translations ) ),
+				),
 			),
 			'usage'       => array(
 				'input_tokens'                => 100,
@@ -191,16 +194,29 @@ final class ClaudeEngineTest extends TestCase {
 			$this->respuesta(
 				array(
 					// Deliberadamente desordenadas: el emparejamiento es por id.
-					array( 'id' => '3', 'text' => 'A cat' ),
-					array( 'id' => '1', 'text' => 'Add to cart' ),
-					array( 'id' => '2', 'text' => 'Hello <b>world</b>' ),
+					array(
+						'id'   => '3',
+						'text' => 'A cat',
+					),
+					array(
+						'id'   => '1',
+						'text' => 'Add to cart',
+					),
+					array(
+						'id'   => '2',
+						'text' => 'Hello <b>world</b>',
+					),
 				)
 			),
 			$this->lote()
 		);
 
 		$this->assertSame(
-			array( '3' => 'A cat', '1' => 'Add to cart', '2' => 'Hello <b>world</b>' ),
+			array(
+				'3' => 'A cat',
+				'1' => 'Add to cart',
+				'2' => 'Hello <b>world</b>',
+			),
 			$result->translations
 		);
 		$this->assertSame( array(), $result->failures );
@@ -210,9 +226,18 @@ final class ClaudeEngineTest extends TestCase {
 		$result = $this->parser()->parse(
 			$this->respuesta(
 				array(
-					array( 'id' => '1', 'text' => 'Add to cart' ),
-					array( 'id' => '2', 'text' => 'Hello world' ),
-					array( 'id' => '3', 'text' => 'A cat' ),
+					array(
+						'id'   => '1',
+						'text' => 'Add to cart',
+					),
+					array(
+						'id'   => '2',
+						'text' => 'Hello world',
+					),
+					array(
+						'id'   => '3',
+						'text' => 'A cat',
+					),
 				)
 			),
 			$this->lote()
@@ -228,7 +253,14 @@ final class ClaudeEngineTest extends TestCase {
 
 	public function test_marca_como_ausentes_las_cadenas_que_no_vuelven(): void {
 		$result = $this->parser()->parse(
-			$this->respuesta( array( array( 'id' => '1', 'text' => 'Add to cart' ) ) ),
+			$this->respuesta(
+				array(
+					array(
+						'id'   => '1',
+						'text' => 'Add to cart',
+					),
+				)
+			),
 			$this->lote()
 		);
 
@@ -238,7 +270,15 @@ final class ClaudeEngineTest extends TestCase {
 
 	public function test_distingue_una_respuesta_truncada(): void {
 		$result = $this->parser()->parse(
-			$this->respuesta( array( array( 'id' => '1', 'text' => 'Add to cart' ) ), 'max_tokens' ),
+			$this->respuesta(
+				array(
+					array(
+						'id'   => '1',
+						'text' => 'Add to cart',
+					),
+				),
+				'max_tokens'
+			),
 			$this->lote()
 		);
 
@@ -249,8 +289,14 @@ final class ClaudeEngineTest extends TestCase {
 		$result = $this->parser()->parse(
 			$this->respuesta(
 				array(
-					array( 'id' => '1', 'text' => 'Add to cart' ),
-					array( 'id' => '999', 'text' => 'Inventada' ),
+					array(
+						'id'   => '1',
+						'text' => 'Add to cart',
+					),
+					array(
+						'id'   => '999',
+						'text' => 'Inventada',
+					),
 				)
 			),
 			$this->lote()
@@ -272,7 +318,11 @@ final class ClaudeEngineTest extends TestCase {
 		$this->expectException( EngineException::class );
 
 		$this->parser()->parse(
-			array( 'stop_reason' => 'refusal', 'content' => array(), 'usage' => array() ),
+			array(
+				'stop_reason' => 'refusal',
+				'content'     => array(),
+				'usage'       => array(),
+			),
 			$this->lote()
 		);
 	}
@@ -281,7 +331,12 @@ final class ClaudeEngineTest extends TestCase {
 		$result = $this->parser()->parse(
 			array(
 				'stop_reason' => 'end_turn',
-				'content'     => array( array( 'type' => 'text', 'text' => 'esto no es json' ) ),
+				'content'     => array(
+					array(
+						'type' => 'text',
+						'text' => 'esto no es json',
+					),
+				),
 				'usage'       => array(),
 			),
 			$this->lote()

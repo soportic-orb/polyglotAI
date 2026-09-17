@@ -40,16 +40,16 @@ final class TagScannerTest extends TestCase {
 	 */
 	public static function proveedor_de_atributos(): array {
 		return array(
-			'comillas dobles'       => array( '<img alt="Un gat" src="a.png">', 'alt', '"Un gat"' ),
-			'comillas simples'      => array( "<img alt='Un gat'>", 'alt', "'Un gat'" ),
-			'sin comillas'          => array( '<img alt=gat>', 'alt', 'gat' ),
-			'mayusculas'            => array( '<IMG ALT="Un gat">', 'alt', '"Un gat"' ),
-			'espacios alrededor'    => array( '<img  alt = "Un gat" >', 'alt', '"Un gat"' ),
-			'tras booleano'         => array( '<input disabled placeholder="Nom">', 'placeholder', '"Nom"' ),
-			'con entidades'         => array( '<img alt="Tom &amp; Jerry">', 'alt', '"Tom &amp; Jerry"' ),
-			'comillas en el valor'  => array( '<img alt="Diu \'hola\'">', 'alt', '"Diu \'hola\'"' ),
-			'autocerrada'           => array( '<img alt="Un gat"/>', 'alt', '"Un gat"' ),
-			'con salto de linea'    => array( "<img\n  alt=\"Un gat\"\n>", 'alt', '"Un gat"' ),
+			'comillas dobles'      => array( '<img alt="Un gat" src="a.png">', 'alt', '"Un gat"' ),
+			'comillas simples'     => array( "<img alt='Un gat'>", 'alt', "'Un gat'" ),
+			'sin comillas'         => array( '<img alt=gat>', 'alt', 'gat' ),
+			'mayusculas'           => array( '<IMG ALT="Un gat">', 'alt', '"Un gat"' ),
+			'espacios alrededor'   => array( '<img  alt = "Un gat" >', 'alt', '"Un gat"' ),
+			'tras booleano'        => array( '<input disabled placeholder="Nom">', 'placeholder', '"Nom"' ),
+			'con entidades'        => array( '<img alt="Tom &amp; Jerry">', 'alt', '"Tom &amp; Jerry"' ),
+			'comillas en el valor' => array( '<img alt="Diu \'hola\'">', 'alt', '"Diu \'hola\'"' ),
+			'autocerrada'          => array( '<img alt="Un gat"/>', 'alt', '"Un gat"' ),
+			'con salto de linea'   => array( "<img\n  alt=\"Un gat\"\n>", 'alt', '"Un gat"' ),
 		);
 	}
 

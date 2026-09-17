@@ -58,8 +58,8 @@ final class ResponseParser {
 			);
 		}
 
-		$decoded = $this->decode_payload( $response );
-		$results = array();
+		$decoded  = $this->decode_payload( $response );
+		$results  = array();
 		$failures = array();
 
 		foreach ( $decoded as $entry ) {
