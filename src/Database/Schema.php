@@ -19,7 +19,7 @@ namespace PolyglotAI\Database;
 final class Schema {
 
 	/** Versión del esquema. Súbela al cambiar cualquier tabla. */
-	public const VERSION = 1;
+	public const VERSION = 2;
 
 	/** Opción donde se guarda la versión instalada. */
 	private const VERSION_OPTION = 'pgai_schema_version';
@@ -56,6 +56,8 @@ final class Schema {
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$this->prepare_upgrade( (int) get_option( self::VERSION_OPTION, 0 ) );
 
 		foreach ( $this->statements() as $statement ) {
 			dbDelta( $statement );
@@ -130,6 +132,35 @@ final class Schema {
 	}
 
 	/**
+	 * Cambios que dbDelta no sabe hacer por su cuenta.
+	 *
+	 * Los índices se comparan por nombre: si ya existe uno que se llama igual,
+	 * dbDelta lo da por bueno aunque sus columnas hayan cambiado. Un índice cuya
+	 * definición cambia hay que tirarlo a mano antes.
+	 *
+	 * @param int $from Versión instalada. 0 si es una instalación nueva.
+	 */
+	private function prepare_upgrade( int $from ): void {
+		global $wpdb;
+
+		if ( 0 === $from || $from >= 2 ) {
+			return;
+		}
+
+		// v2: la clave única de pgai_slugs pasó a incluir object_subtype. Sin
+		// él, todas las bases (categoría, etiqueta, tipo de contenido) comparten
+		// object_type='base' y object_id=0, de modo que solo cabía una por
+		// idioma y la segunda chocaba con la primera.
+		$slugs = self::table( 'slugs' );
+
+		$suppressed = $wpdb->suppress_errors( true );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( "ALTER TABLE `{$slugs}` DROP INDEX `object_language`" );
+		$wpdb->last_error = '';
+		$wpdb->suppress_errors( $suppressed );
+	}
+
+	/**
 	 * Sentencias CREATE TABLE para dbDelta.
 	 *
 	 * @return string[]
@@ -185,7 +216,7 @@ final class Schema {
 			"CREATE TABLE {$slugs} (
 	id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 	object_type varchar(30) NOT NULL,
-	object_subtype varchar(60) DEFAULT NULL,
+	object_subtype varchar(60) NOT NULL DEFAULT '',
 	object_id bigint(20) unsigned NOT NULL DEFAULT 0,
 	language varchar(20) NOT NULL,
 	original_slug varchar(200) NOT NULL,
@@ -193,7 +224,7 @@ final class Schema {
 	status varchar(20) NOT NULL DEFAULT 'automatic',
 	updated_at datetime NOT NULL,
 	PRIMARY KEY  (id),
-	UNIQUE KEY object_language (object_type,object_id,language),
+	UNIQUE KEY object_language (object_type,object_subtype,object_id,language),
 	KEY language_translated (language,translated_slug),
 	KEY language_original (language,original_slug)
 ) {$collate};",
