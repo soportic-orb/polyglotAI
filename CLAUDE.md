@@ -510,7 +510,19 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 |---|---|
 | 1. Base | Completa |
 | 2. Editor visual y API REST | Completa |
-| 3–8 | Sin empezar |
+| 3. Gettext, contenido dinámico y correos | Completa |
+| 4–8 | Sin empezar |
+
+Dos puntos del encargo que caen en la fase 3 pertenecen en realidad a fases
+posteriores y se dejan ahí a propósito:
+
+- **Editar desde el panel las cadenas de gettext que nunca llegan a una
+  página.** Las que sí aparecen ya se editan desde el editor visual; el resto
+  quedan anotadas y esperan al gestor de cadenas de la fase 6.
+- **Idioma del pedido y respuestas de `admin-ajax.php`.** El observador de
+  mutaciones ya traduce el resultado visible de esas respuestas, y el filtro
+  `pgai_recipient_language` es el punto de entrada para el idioma del pedido.
+  La integración concreta con WooCommerce es de la fase 8.
 
 ## 7. Decisiones confirmadas y pendientes
 

@@ -4,9 +4,10 @@ Plugin de WordPress que traduce el sitio entero a los idiomas que configures,
 con motor de inteligencia artificial, URLs por idioma y corrección manual que la
 traducción automática no pisa nunca.
 
-> Estado: **fase 2 de 8**. Están la base de traducción, el enrutado por idioma,
-> el motor, el selector básico y el editor visual. El SEO Pack y el resto llegan
-> en las fases siguientes (ver `CLAUDE.md`).
+> Estado: **fase 3 de 8**. Están la base de traducción, el enrutado por idioma,
+> el motor, el selector, el editor visual, las cadenas de temas y plugins, el
+> contenido dinámico y los correos. El SEO Pack y el resto llegan en las fases
+> siguientes (ver `CLAUDE.md`).
 
 ## Cómo funciona
 
@@ -79,6 +80,23 @@ nonce válido.
 Lo que escribas a mano pasa por la **misma validación estructural** que lo que
 devuelve el motor: si pierdes una etiqueta, un `%s` o una URL, se rechaza y se te
 dice por qué.
+
+### Contenido que aparece después
+
+Un filtro por AJAX, un carrito que se actualiza o un carrusel que monta su
+contenido con JavaScript se saltan la traducción del HTML, porque cuando esta
+ocurrió ese texto todavía no existía. Un observador ligero los detecta y aplica
+la traducción que ya exista, con caché en la propia pestaña. Se puede desactivar
+en los ajustes.
+
+### Correos
+
+Los correos se envían en el idioma del **destinatario**, no en el de quien
+provoca el envío: si un administrador cambia el estado de un pedido desde el
+escritorio en español, el cliente sigue recibiendo su aviso en inglés.
+
+El idioma de cada usuario se guarda solo al navegar por el sitio, y puede
+fijarse a mano en su perfil.
 
 ### Traducción en segundo plano
 
