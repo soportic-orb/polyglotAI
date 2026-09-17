@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace PolyglotAI\Engines\Claude;
 
 use PolyglotAI\Engines\EngineException;
-use PolyglotAI\Support\ApiKey;
+use PolyglotAI\Support\ApiKeyInterface;
 use WP_Error;
 
 /**
@@ -31,12 +31,12 @@ final class ClaudeClient {
 	/**
 	 * Constructor.
 	 *
-	 * @param ApiKey      $api_key Custodia de la clave.
-	 * @param RetryPolicy $retry   Política de reintentos.
-	 * @param int         $timeout Tiempo de espera en segundos.
+	 * @param ApiKeyInterface $api_key Custodia de la clave.
+	 * @param RetryPolicy     $retry   Política de reintentos.
+	 * @param int             $timeout Tiempo de espera en segundos.
 	 */
 	public function __construct(
-		private readonly ApiKey $api_key,
+		private readonly ApiKeyInterface $api_key,
 		private readonly RetryPolicy $retry,
 		private readonly int $timeout = 120
 	) {}
@@ -51,16 +51,90 @@ final class ClaudeClient {
 	 * @throws EngineException Si la llamada falla tras agotar los reintentos.
 	 */
 	public function post( string $path, array $body ): array {
+		return $this->decode( $this->request( 'POST', self::BASE_URL . $path, $body ) );
+	}
+
+	/**
+	 * Hace una petición GET y devuelve el cuerpo decodificado.
+	 *
+	 * @param string $path Ruta relativa, p. ej. /v1/messages/batches/msgbatch_1.
+	 * @return array<string, mixed>
+	 *
+	 * @throws EngineException Si la llamada falla tras agotar los reintentos.
+	 */
+	public function get( string $path ): array {
+		return $this->decode( $this->request( 'GET', self::BASE_URL . $path, null ) );
+	}
+
+	/**
+	 * Descarga un cuerpo sin decodificar.
+	 *
+	 * La usan los resultados de un lote, que llegan en JSONL —una línea por
+	 * respuesta— y no como un JSON único: decodificarlo entero fallaría.
+	 *
+	 * @param string $url URL absoluta que devuelve la propia API.
+	 * @return string Cuerpo tal cual.
+	 *
+	 * @throws EngineException Si la llamada falla tras agotar los reintentos.
+	 */
+	public function download( string $url ): string {
+		return (string) wp_remote_retrieve_body( $this->request( 'GET', $url, null ) );
+	}
+
+	/**
+	 * Decodifica el cuerpo de una respuesta.
+	 *
+	 * @param array<string, mixed> $response Respuesta correcta.
+	 * @return array<string, mixed>
+	 *
+	 * @throws EngineException Si el cuerpo no es JSON.
+	 */
+	private function decode( array $response ): array {
+		/** @var array<string, mixed>|null $decoded */
+		$decoded = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+
+		if ( ! is_array( $decoded ) ) {
+			throw new EngineException( 'La API ha devuelto una respuesta que no es JSON.', 0, false );
+		}
+
+		return $decoded;
+	}
+
+	/**
+	 * Hace la llamada, con reintentos, y devuelve la respuesta correcta.
+	 *
+	 * @param string                    $method Método HTTP.
+	 * @param string                    $url    URL absoluta.
+	 * @param array<string, mixed>|null $body   Cuerpo, si lo hay.
+	 * @return array<string, mixed>
+	 *
+	 * @throws EngineException Si la llamada falla tras agotar los reintentos.
+	 */
+	private function request( string $method, string $url, ?array $body ): array {
 		$key = $this->api_key->get();
 
 		if ( null === $key ) {
 			throw new EngineException( 'No hay ninguna clave de API configurada.', 0, false );
 		}
 
-		$payload = wp_json_encode( $body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+		$arguments = array(
+			'method'  => $method,
+			'timeout' => $this->timeout,
+			'headers' => array(
+				'content-type'      => 'application/json',
+				'x-api-key'         => $key,
+				'anthropic-version' => self::API_VERSION,
+			),
+		);
 
-		if ( false === $payload ) {
-			throw new EngineException( 'No se ha podido serializar la petición.', 0, false );
+		if ( null !== $body ) {
+			$payload = wp_json_encode( $body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+
+			if ( false === $payload ) {
+				throw new EngineException( 'No se ha podido serializar la petición.', 0, false );
+			}
+
+			$arguments['body'] = $payload;
 		}
 
 		$attempt = 0;
@@ -68,30 +142,13 @@ final class ClaudeClient {
 		while ( true ) {
 			++$attempt;
 
-			$response = wp_remote_post(
-				self::BASE_URL . $path,
-				array(
-					'timeout' => $this->timeout,
-					'headers' => array(
-						'content-type'      => 'application/json',
-						'x-api-key'         => $key,
-						'anthropic-version' => self::API_VERSION,
-					),
-					'body'    => $payload,
-				)
-			);
+			$response = wp_remote_request( $url, $arguments );
 
 			$failure = $this->failure_from( $response );
 
 			if ( null === $failure ) {
-				/** @var array<string, mixed> $decoded */
-				$decoded = json_decode( (string) wp_remote_retrieve_body( $response ), true );
-
-				if ( ! is_array( $decoded ) ) {
-					throw new EngineException( 'La API ha devuelto una respuesta que no es JSON.', 0, false );
-				}
-
-				return $decoded;
+				/** @var array<string, mixed> $response */
+				return $response;
 			}
 
 			if ( ! $failure->retryable ) {
@@ -125,7 +182,7 @@ final class ClaudeClient {
 	/**
 	 * Traduce una respuesta de WordPress en un fallo, si lo es.
 	 *
-	 * @param array<string, mixed>|WP_Error $response Respuesta de wp_remote_post.
+	 * @param array<string, mixed>|WP_Error $response Respuesta de wp_remote_request.
 	 * @return EngineException|null Null si la respuesta es correcta.
 	 */
 	private function failure_from( array|WP_Error $response ): ?EngineException {

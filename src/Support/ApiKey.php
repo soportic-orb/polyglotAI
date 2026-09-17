@@ -16,7 +16,7 @@ namespace PolyglotAI\Support;
  * en la base de datos y no viaja en copias de seguridad ni en exportaciones. Si
  * se guarda desde el panel, se cifra con las sales de la instalación.
  */
-final class ApiKey {
+final class ApiKey implements ApiKeyInterface {
 
 	/** Opción donde se guarda la clave cifrada. */
 	private const OPTION = 'pgai_api_key';
