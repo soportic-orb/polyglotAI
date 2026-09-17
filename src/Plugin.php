@@ -49,6 +49,7 @@ use PolyglotAI\Rest\DynamicController;
 use PolyglotAI\Rest\MergesController;
 use PolyglotAI\Rest\SlugsController;
 use PolyglotAI\Seo\HeadUrls;
+use PolyglotAI\Seo\StructuredData;
 use PolyglotAI\Rest\StringsController;
 use PolyglotAI\Rest\SuggestController;
 use PolyglotAI\Routing\HeadTags;
@@ -509,6 +510,7 @@ final class Plugin {
 				$this->missing_queue(),
 				new LinkRewriter( $this->internal_urls(), new TagScanner(), new Splicer() ),
 				new HeadUrls( $this->internal_urls(), new TagScanner(), new Splicer() ),
+				new StructuredData( $this->lookup(), $this->internal_urls(), new TagScanner(), new Splicer() ),
 				$this->preview()
 			)
 		);

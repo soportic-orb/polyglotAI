@@ -21,7 +21,7 @@ use PolyglotAI\Html\ExtractedString;
  * un asunto de correo nuevo aparece en el gestor de cadenas la primera vez que
  * se envía.
  */
-final class TranslationLookup {
+final class TranslationLookup implements TextLookupInterface {
 
 	/**
 	 * Constructor.
@@ -46,6 +46,60 @@ final class TranslationLookup {
 	 */
 	public function text( string $text, string $language ): string {
 		return $this->translate( $text, StringType::Text, null, $language );
+	}
+
+	/**
+	 * Traducción de varios textos con una sola consulta.
+	 *
+	 * La usan los datos estructurados: un JSON-LD trae una decena de textos y
+	 * aparece en todas las páginas del sitio, así que preguntar uno a uno sería
+	 * una decena de consultas por visita.
+	 *
+	 * @param string[] $texts    Textos.
+	 * @param string   $language Locale.
+	 * @return array<string, string> Texto original => traducción (o el original).
+	 */
+	public function texts( array $texts, string $language ): array {
+		$hashes = array();
+
+		foreach ( $texts as $text ) {
+			$text = (string) $text;
+
+			if ( isset( $hashes[ $text ] ) || ! $this->normalizer->is_translatable( $this->normalizer->normalize( $text ) ) ) {
+				continue;
+			}
+
+			$hashes[ $text ] = $this->hasher->hash( $text, StringType::Text, null );
+		}
+
+		if ( array() === $hashes ) {
+			return array();
+		}
+
+		$found  = $this->translations->lookup( array_values( $hashes ), $language );
+		$result = array();
+		$new    = array();
+
+		foreach ( $hashes as $text => $hash ) {
+			$text = (string) $text;
+
+			if ( isset( $found[ $hash ] ) ) {
+				$result[ $text ] = $found[ $hash ];
+
+				continue;
+			}
+
+			$result[ $text ] = $text;
+			$new[]           = $this->sources->remember( $hash, $text, StringType::Text, null );
+		}
+
+		if ( array() !== $new ) {
+			// Lo que falta queda anotado para traducirlo en segundo plano, como
+			// cualquier otra cadena de la página (ADR-13).
+			$this->translations->mark_pending( $new, $language );
+		}
+
+		return $result;
 	}
 
 	/**

@@ -12,6 +12,7 @@ namespace PolyglotAI\Html;
 use PolyglotAI\Editor\PreviewRenderer;
 use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Seo\HeadUrls;
+use PolyglotAI\Seo\StructuredData;
 use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Translation\DictionaryFactory;
 use PolyglotAI\Translation\MissingQueue;
@@ -35,6 +36,7 @@ final class OutputBuffer {
 	 * @param MissingQueue            $queue      Cola de cadenas sin traducir.
 	 * @param LinkRewriter            $links      Reescritor de enlaces internos.
 	 * @param HeadUrls                $head_urls  Reescritor de las URLs de la cabecera.
+	 * @param StructuredData          $json_ld    Traductor de los datos estructurados.
 	 * @param PreviewRenderer|null    $preview    Vista previa del editor visual.
 	 */
 	public function __construct(
@@ -46,6 +48,7 @@ final class OutputBuffer {
 		private readonly MissingQueue $queue,
 		private readonly LinkRewriter $links,
 		private readonly HeadUrls $head_urls,
+		private readonly StructuredData $json_ld,
 		private readonly ?PreviewRenderer $preview = null
 	) {}
 
@@ -129,7 +132,11 @@ final class OutputBuffer {
 		// Van aparte de los enlaces navegables porque la regla es distinta —ahí
 		// manda el rel, no la etiqueta— y porque rel="alternate" hay que dejarlo
 		// en paz.
-		return $this->head_urls->rewrite( $html, $language );
+		$html = $this->head_urls->rewrite( $html, $language );
+
+		// Y cuarta: el JSON-LD, que vive dentro de un <script> y por eso el
+		// barrido no lo ve. No es código, es contenido.
+		return $this->json_ld->rewrite( $html, $language );
 	}
 
 	/**
