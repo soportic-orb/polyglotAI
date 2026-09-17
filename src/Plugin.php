@@ -69,6 +69,7 @@ use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Options;
 use PolyglotAI\Switcher\Shortcode;
+use PolyglotAI\Switcher\SwitcherRenderer;
 use PolyglotAI\Translation\DictionaryFactory;
 use PolyglotAI\Translation\Hasher;
 use PolyglotAI\Html\MergingDriver;
@@ -447,6 +448,21 @@ final class Plugin {
 	}
 
 	/**
+	 * Pintado del selector de idioma.
+	 */
+	public function switcher_renderer(): SwitcherRenderer {
+		return $this->service(
+			'switcher_renderer',
+			fn(): SwitcherRenderer => new SwitcherRenderer(
+				$this->languages(),
+				$this->request(),
+				$this->url_converter(),
+				$this->slug_resolver()
+			)
+		);
+	}
+
+	/**
 	 * Conversor de URLs internas.
 	 */
 	public function internal_urls(): InternalUrl {
@@ -767,7 +783,7 @@ final class Plugin {
 	private function switcher(): Shortcode {
 		return $this->service(
 			'switcher',
-			fn(): Shortcode => new Shortcode( $this->languages(), $this->request(), $this->url_converter() )
+			fn(): Shortcode => new Shortcode( $this->switcher_renderer() )
 		);
 	}
 
