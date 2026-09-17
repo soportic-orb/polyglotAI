@@ -4,8 +4,8 @@ Plugin de WordPress que traduce el sitio entero a los idiomas que configures,
 con motor de inteligencia artificial, URLs por idioma y corrección manual que la
 traducción automática no pisa nunca.
 
-> Estado: **fase 1 de 8**. Están la base de traducción, el enrutado por idioma,
-> el motor y el selector básico. El editor visual, el SEO Pack y el resto llegan
+> Estado: **fase 2 de 8**. Están la base de traducción, el enrutado por idioma,
+> el motor, el selector básico y el editor visual. El SEO Pack y el resto llegan
 > en las fases siguientes (ver `CLAUDE.md`).
 
 ## Cómo funciona
@@ -57,6 +57,29 @@ Coloca el selector de idioma con el shortcode:
 Las páginas traducidas viven en un subdirectorio por idioma: `/en/`, `/ca/`,
 `/pt-br/`. Los enlaces internos se reescriben solos.
 
+### El editor visual
+
+Con el sitio abierto en el navegador, **Traducir página** en la barra de
+administración abre el editor: el sitio real dentro de un iframe a la derecha y
+el panel de traducción a la izquierda.
+
+- Pasa el ratón por encima de cualquier texto y púlsalo para cargarlo en el panel.
+- La lista lateral agrupa todas las cadenas de la página —contenido, atributos,
+  metas de SEO, título— y se puede buscar en ella.
+- `Ctrl+S` guarda. `Ctrl+Intro` guarda y pasa a la siguiente.
+- **Sugerir con IA** rellena el campo sin guardar: la traducción no se aplica
+  hasta que la aceptas.
+- Navegar por el sitio dentro del iframe mantiene el modo de edición.
+
+El marcado que el editor añade a la página **solo existe dentro del iframe**. Una
+visita normal recibe el HTML limpio, y para entrar en modo edición hacen falta
+las tres cosas a la vez: el parámetro en la URL, la capacidad de traducir y un
+nonce válido.
+
+Lo que escribas a mano pasa por la **misma validación estructural** que lo que
+devuelve el motor: si pierdes una etiqueta, un `%s` o una URL, se rechaza y se te
+dice por qué.
+
 ### Traducción en segundo plano
 
 Por defecto, cuando alguien visita una página con cadenas sin traducir se
@@ -97,16 +120,26 @@ mostrando el texto original.
 composer install
 npm install
 
-composer test      # PHPUnit
-composer phpcs     # WordPress Coding Standards
-composer phpstan   # Análisis estático, nivel 6
-npm run build      # Assets
+composer test           # PHPUnit, suite unitaria
+composer test:install   # Descarga WordPress y su biblioteca de tests
+composer test:integration  # PHPUnit contra WordPress y MySQL reales
+composer phpcs          # WordPress Coding Standards
+composer phpstan        # Análisis estático, nivel 6
+
+npm run build      # Compila el editor y la vista previa
+npm run test:js    # Jest
+npm run lint:js    # ESLint
 npm run env:start  # WordPress local con wp-env
 ```
 
 La suite unitaria corre **sin Docker y sin una instalación de WordPress**:
 descarga la HTML API real del WordPress mínimo soportado y prueba el analizador
-contra el parser de verdad, no contra una imitación.
+contra el parser de verdad, no contra una imitación. La de integración sí
+necesita MySQL y corre contra un WordPress completo.
+
+El editor no funciona desde una copia del repositorio sin compilar: los recursos
+de `assets/build/` no se versionan. Si faltan, la pantalla del editor lo dice en
+lugar de quedarse en blanco.
 
 Documentación de hooks, filtros y capacidades en [`docs/hooks.md`](docs/hooks.md).
 Decisiones de arquitectura en [`CLAUDE.md`](CLAUDE.md).
