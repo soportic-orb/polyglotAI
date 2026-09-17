@@ -33,7 +33,7 @@ el comportamiento observable desde cero.
 
 | Pieza | Versión |
 |---|---|
-| WordPress | 6.4+ (ver ADR-01: interesa subir el mínimo) |
+| WordPress | **6.6+** (ver ADR-01) |
 | PHP | 8.1+ (desarrollo sobre 8.4) |
 | MySQL / MariaDB | 5.7+ / 10.4+ |
 | Node | 20+ |
@@ -95,10 +95,15 @@ entrada. Si el driver lanza una excepción o la comprobación falla, **se devuel
 buffer original intacto**. Nunca se sirve una página corrupta: ante la duda, se sirve
 sin traducir.
 
+**Mínimo de WordPress: 6.6.** Decidido para este ADR: en 6.6 están disponibles
+`WP_HTML_Processor::next_token()` y `get_modifiable_text()`, que es justo lo que
+necesita el barrido de nodos de texto. Con 6.4 habría que mantener el camino de reserva
+como vía real y no como red de seguridad. No usamos `set_modifiable_text()` (6.7+): las
+sustituciones se hacen con el empalme por desplazamientos de byte descrito arriba, que
+además es lo que necesitamos para los bloques en línea.
+
 **Pendiente de la Fase 1:** un *spike* con banco de pruebas (páginas reales de Divi,
-Elementor y WooCommerce) que mida los tres drivers y fije el primario con números. La
-disponibilidad de `next_token()` / `get_modifiable_text()` varía entre WP 6.4 y 6.7;
-verificar contra el mínimo que fijemos antes de comprometerse.
+Elementor y WooCommerce) que mida los tres drivers y confirme el primario con números.
 
 ### ADR-02 — Almacenamiento: tablas propias normalizadas, **no** una tabla por idioma
 
@@ -315,13 +320,64 @@ El rol "Traductor" recibe `pgai_translate` y `read`, y **no** accede al escritor
   `esc_*` a la salida, siempre en el punto de uso.
 - Traducciones manuales con HTML: `wp_kses` con lista blanca propia
   (`pgai_allowed_html`), nunca `wp_kses_post` a secas en contexto de traductor.
-- **Sin llamadas a la API en páginas vistas por visitantes** si la traducción en tiempo
-  real está desactivada (que es el valor por defecto propuesto; ver §7).
+- Las llamadas a la API provocadas por tráfico de visitantes **nunca bloquean la
+  carga** y están acotadas por presupuesto y por filtro de bots (ADR-13).
 - **Nunca se envían datos personales a la API.** Exclusión por defecto de las rutas de
   cuenta, carrito, checkout, pedidos y de los datos enviados en formularios. Lista en
   `Compat\PrivacyExclusions`, documentada para el RGPD.
 - Desinstalación limpia opcional (`uninstall.php` borra tablas y opciones solo si el
   administrador lo ha marcado).
+
+### ADR-13 — Traducción en tiempo real: activada, en segundo plano
+
+Cuando un visitante pide una página en un idioma activo y hay cadenas sin traducir:
+
+1. Se sirve **el original** para esas cadenas. La carga **no se bloquea nunca** y no se
+   hace ninguna llamada a la API dentro de la petición del visitante.
+2. Las cadenas nuevas ya quedan escritas en `pgai_sources` por el propio barrido, con
+   su `pgai_translations` en estado `pending`. "Encolar" es por tanto una inserción
+   barata con `INSERT IGNORE`, sin cola aparte.
+3. Se programa (con `as_enqueue_async_action`, desduplicada por idioma) una tarea de
+   Action Scheduler que traduce lo pendiente por lotes.
+4. La traducción aparece en la visita siguiente.
+
+Salvaguardas, todas obligatorias porque aquí se gasta dinero con tráfico que no
+controlamos:
+
+- **Filtro de bots.** `Detection\BotDetector` con lista de user-agents conocidos, más
+  peticiones sin `Accept-Language` y peticiones a `robots.txt`/sitemaps. Un bot **nunca**
+  encola nada. Sin esto, un rastreo completo del sitio dispara la factura.
+- **Tope de presupuesto.** El límite mensual de tokens de los ajustes corta el encolado,
+  no solo las llamadas: al alcanzarlo se sigue sirviendo el original y se avisa en el
+  panel.
+- **Límite por petición.** Un máximo configurable de cadenas nuevas encoladas por
+  página, para que una página enorme no genere un lote desproporcionado.
+- **Exclusiones de privacidad.** Las rutas de ADR-12 (cuenta, carrito, checkout,
+  pedidos, datos de formularios) no encolan nunca.
+- Interruptor en el panel para desactivarlo por completo y volver a traducción solo
+  manual o por lotes.
+
+### ADR-14 — Distribución comercial
+
+El plugin se distribuye de forma **comercial/privada**, no por WordPress.org.
+Consecuencias prácticas:
+
+- Un único plugin con toda la funcionalidad; los "add-ons" de la paridad con
+  TranslatePress Business son módulos internos activables, no plugins separados.
+- Libertad para empaquetar dependencias en `vendor/`; aun así se mantiene el criterio
+  de ADR-05 de no arrastrar árboles de dependencias innecesarios, porque el problema
+  real son las colisiones de versiones con otros plugins del sitio, no la política del
+  repositorio.
+- Hace falta un **mecanismo propio de actualización y licencias** (no hay
+  `wp.org` que sirva las actualizaciones). Se decide en la Fase 8; no condiciona nada
+  de las fases 1-7.
+- Se entrega igualmente el `readme.txt` en formato WordPress.org que pide el encargo:
+  sirve como ficha de producto y deja la puerta abierta a publicar una versión gratuita
+  reducida.
+- Sin las restricciones de wp.org, el consentimiento para llamar a un servicio externo
+  no es una obligación del repositorio, pero **se mantiene igualmente** el aviso
+  explícito en el asistente de configuración: el administrador debe saber que el
+  contenido de su sitio se envía a un tercero (y es lo que exige el RGPD).
 
 ---
 
@@ -398,20 +454,21 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 
 ---
 
-## 7. Decisiones pendientes de confirmar
+## 7. Decisiones confirmadas y pendientes
 
-No dar por cerradas hasta que el propietario del proyecto responda:
+**Confirmadas** (2026-09-17), ya incorporadas arriba:
 
-1. **Mínimo de WordPress.** El encargo dice 6.4+. La HTML API del core es
-   sustancialmente más capaz en 6.6/6.7 (`next_token()`, `set_modifiable_text()`).
-   Subir el mínimo simplifica ADR-01; mantener 6.4 obliga a más código de reserva.
-2. **GeoIP.** MaxMind GeoLite2 exige cuenta y clave de licencia y tiene términos
-   propios; alternativas: cabecera `CF-IPCountry` de Cloudflare, un servicio externo o
-   no incluir GeoIP en la v1 y detectar solo por idioma del navegador.
-3. **Distribución.** WordPress.org (GPL, readme.txt, consentimiento explícito
-   documentado para las llamadas a un servicio externo) o comercial/privada. Afecta a
-   qué se puede empaquetar y a si los "add-ons" son plugins separados.
-4. **Traducción en tiempo real para visitantes**: valor por defecto (propuesta:
-   desactivada; la traducción se genera desde el panel o por lotes).
-5. **Licencias para pruebas de compatibilidad**: Divi y Elementor Pro son de pago y
-   hacen falta en `wp-env` para las pruebas E2E de la Fase 8.
+1. Mínimo de WordPress **6.6+** → ADR-01.
+2. Detección del visitante: **solo por idioma del navegador** (`Accept-Language`) en la
+   v1. Nada de MaxMind ni de descarga de bases de datos. `Detection\ProviderInterface`
+   se deja preparada para añadir GeoIP más adelante sin tocar el resto.
+3. Distribución **comercial/privada** → ADR-14.
+4. Traducción en tiempo real **activada, en segundo plano** → ADR-13.
+
+**Pendientes**, no bloquean las fases 1-7:
+
+5. **Mecanismo de actualización y licencias** (Fase 8): servidor propio, EDD Software
+   Licensing, Freemius u otro.
+6. **Licencias para pruebas de compatibilidad** (Fase 8): Divi y Elementor Pro son de
+   pago y hacen falta en `wp-env` para las pruebas E2E. Con las versiones gratuitas se
+   cubren Elementor, Gutenberg, Astra y GeneratePress; Divi y Beaver/Bricks no.
