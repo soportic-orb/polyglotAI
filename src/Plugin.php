@@ -53,6 +53,7 @@ use PolyglotAI\Routing\HeadTags;
 use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Database\SlugRepository;
+use PolyglotAI\Routing\PermalinkTranslator;
 use PolyglotAI\Routing\RequestRouter;
 use PolyglotAI\Routing\SlugResolver;
 use PolyglotAI\Routing\UrlConverter;
@@ -138,6 +139,10 @@ final class Plugin {
 		// Lo primero de todo: WordPress no sabe nada de /en/, así que hay que
 		// quitarle el prefijo a la petición antes de que la analice.
 		( new RequestRouter( $this->languages(), $this->url_converter(), $this->request(), $this->slug_resolver() ) )->register();
+
+		// Y la vuelta: los enlaces que genere WordPress tienen que apuntar al
+		// slug traducido, también los que no pasan por el HTML de la página.
+		$this->permalink_translator()->register();
 
 		if ( is_admin() ) {
 			$this->settings_page()->register();
@@ -413,6 +418,16 @@ final class Plugin {
 		return $this->service(
 			'slug_resolver',
 			fn(): SlugResolver => new SlugResolver( $this->slugs() )
+		);
+	}
+
+	/**
+	 * Traductor de enlaces permanentes.
+	 */
+	public function permalink_translator(): PermalinkTranslator {
+		return $this->service(
+			'permalink_translator',
+			fn(): PermalinkTranslator => new PermalinkTranslator( $this->slugs(), $this->request() )
 		);
 	}
 

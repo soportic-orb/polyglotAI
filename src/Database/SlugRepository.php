@@ -150,6 +150,41 @@ final class SlugRepository {
 	}
 
 	/**
+	 * Bases reescritas de un idioma, por su slug original.
+	 *
+	 * El panel las quiere indexadas por subtipo y así las devuelve bases(). La
+	 * reescritura de enlaces, en cambio, trabaja sobre segmentos de ruta y
+	 * necesita buscarlas por el slug que aparece en la URL.
+	 *
+	 * @param string $language Locale.
+	 * @return array<string, string> Slug original => slug traducido.
+	 */
+	public function base_slugs( string $language ): array {
+		global $wpdb;
+
+		$table = Schema::table( 'slugs' );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT original_slug, translated_slug FROM {$table}
+				WHERE object_type = 'base' AND language = %s AND translated_slug <> ''",
+				$language
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$map = array();
+
+		foreach ( (array) $rows as $row ) {
+			$map[ (string) $row['original_slug'] ] = (string) $row['translated_slug'];
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Devuelve los slugs originales de unos slugs traducidos.
 	 *
 	 * Es el enrutado inverso: se le pasan todos los segmentos de la ruta pedida
