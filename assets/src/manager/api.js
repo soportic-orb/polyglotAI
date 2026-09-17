@@ -64,3 +64,30 @@ export function applyBulk( action, sourceIds, language ) {
 		data: { language, action, source_ids: sourceIds },
 	} );
 }
+
+/**
+ * Estado de la traducción de sitio completo.
+ *
+ * @param {string} language Locale.
+ * @return {Promise<Object>} Estado.
+ */
+export function fetchSiteRun( language ) {
+	return apiFetch( {
+		path: `site?language=${ encodeURIComponent( language ) }`,
+	} );
+}
+
+/**
+ * Arranca, para, reanuda o cancela la traducción de sitio completo.
+ *
+ * @param {string} command  start, pause, resume o cancel.
+ * @param {string} language Locale.
+ * @return {Promise<Object>} Estado resultante.
+ */
+export function commandSiteRun( command, language ) {
+	return apiFetch( {
+		path: 'site',
+		method: 'POST',
+		data: { language, command },
+	} );
+}

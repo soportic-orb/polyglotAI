@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useState } from '@wordpress/element';
 
 import Row from './Row';
+import SiteRun from './SiteRun';
 import { applyBulk, fetchStrings, saveTranslation } from './api';
 
 const boot = window.pgaiManager || {};
@@ -271,6 +272,8 @@ export default function App() {
 					{ message }
 				</Notice>
 			) }
+
+			<SiteRun language={ language } onFinish={ load } />
 
 			<div className="pgai-manager__bulk">
 				<span>

@@ -52,6 +52,48 @@ final class SourceRepository {
 	}
 
 	/**
+	 * Cadenas originales por identificador.
+	 *
+	 * La usa la recogida de un lote asíncrono: para emparejar lo que devuelve
+	 * la API con lo que se envió hace horas hace falta el texto original otra
+	 * vez, y pedirlo de uno en uno serían miles de consultas.
+	 *
+	 * @param int[] $ids Identificadores.
+	 * @return array<int, array{original:string, type:string, context:string|null}>
+	 */
+	public function by_ids( array $ids ): array {
+		global $wpdb;
+
+		$ids = array_values( array_unique( array_map( 'intval', $ids ) ) );
+
+		if ( array() === $ids ) {
+			return array();
+		}
+
+		$table        = Schema::table( 'sources' );
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT id, original, type, context FROM {$table} WHERE id IN ({$placeholders})", $ids ),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$map = array();
+
+		foreach ( (array) $rows as $row ) {
+			$map[ (int) $row['id'] ] = array(
+				'original' => (string) $row['original'],
+				'type'     => (string) $row['type'],
+				'context'  => null === $row['context'] ? null : (string) $row['context'],
+			);
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Detalle completo de unas cadenas, con su traducción en un idioma.
 	 *
 	 * Es la consulta que alimenta el editor visual: en una sola pasada devuelve

@@ -30,6 +30,8 @@ use PolyglotAI\Editor\EditorPage;
 use PolyglotAI\Editor\MarkerDecorator;
 use PolyglotAI\Editor\PreviewAs;
 use PolyglotAI\Editor\PreviewRenderer;
+use PolyglotAI\Engines\AsyncBatchEngineInterface;
+use PolyglotAI\Engines\Claude\Batches;
 use PolyglotAI\Engines\Claude\ClaudeClient;
 use PolyglotAI\Engines\Claude\ClaudeEngine;
 use PolyglotAI\Engines\Claude\PromptBuilder;
@@ -50,6 +52,7 @@ use PolyglotAI\Html\TagScanner;
 use PolyglotAI\Jobs\Budget;
 use PolyglotAI\Jobs\ContextFactory;
 use PolyglotAI\Jobs\PendingTranslator;
+use PolyglotAI\Jobs\SiteTranslator;
 use PolyglotAI\Jobs\SlugTranslator;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
@@ -59,6 +62,7 @@ use PolyglotAI\Mail\MailTranslator;
 use PolyglotAI\Rest\DynamicController;
 use PolyglotAI\Rest\ManagerController;
 use PolyglotAI\Rest\MergesController;
+use PolyglotAI\Rest\SiteController;
 use PolyglotAI\Rest\SlugsController;
 use PolyglotAI\Seo\HeadUrls;
 use PolyglotAI\Seo\Sitemaps;
@@ -241,6 +245,12 @@ final class Plugin {
 		$this->pending_translator()->register();
 		$this->slug_translator()->register();
 
+		$site = $this->site_translator();
+
+		if ( null !== $site ) {
+			$site->register();
+		}
+
 		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( \WP_CLI::class ) ) {
 			$this->commands()->register();
 		}
@@ -289,6 +299,8 @@ final class Plugin {
 			$this->string_manager(),
 			$this->translations()
 		) )->register_routes();
+
+		( new SiteController( $this->languages(), $this->site_translator() ) )->register_routes();
 
 		( new SlugsController(
 			$this->languages(),
@@ -428,17 +440,19 @@ final class Plugin {
 			function (): EngineRegistry {
 				$registry = new EngineRegistry();
 				$options  = $this->options();
+				$client   = new ClaudeClient( new ApiKey(), new RetryPolicy() );
 
 				$registry->register(
 					new ClaudeEngine(
-						new ClaudeClient( new ApiKey(), new RetryPolicy() ),
+						$client,
 						new PromptBuilder(
 							(string) $options->get( 'model', 'claude-sonnet-5' ),
 							(string) $options->get( 'effort', 'low' ),
 							(bool) $options->get( 'thinking', false ),
 							(int) $options->get( 'cache_ttl', 5 )
 						),
-						new ResponseParser( new Validator() )
+						new ResponseParser( new Validator() ),
+						new Batches( $client )
 					)
 				);
 
@@ -816,6 +830,36 @@ final class Plugin {
 				$this->budget(),
 				$this->engine_contexts()
 			)
+		);
+	}
+
+	/**
+	 * Traductor de sitio completo, si el motor admite lotes asíncronos.
+	 */
+	public function site_translator(): ?SiteTranslator {
+		return $this->service(
+			'site_translator',
+			function (): ?SiteTranslator {
+				$engine = $this->engine();
+
+				// No todo motor admite envío en diferido. El que no lo admita
+				// no tiene traducción de sitio completo, y es mejor que la
+				// pantalla lo diga a que un botón no haga nada.
+				if ( ! $engine instanceof AsyncBatchEngineInterface ) {
+					return null;
+				}
+
+				return new SiteTranslator(
+					$engine,
+					$this->translations(),
+					$this->sources(),
+					$this->api_log(),
+					$this->languages(),
+					$this->options(),
+					$this->budget(),
+					$this->engine_contexts()
+				);
+			}
 		);
 	}
 

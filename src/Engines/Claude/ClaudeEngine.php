@@ -9,9 +9,11 @@ declare(strict_types=1);
 
 namespace PolyglotAI\Engines\Claude;
 
+use PolyglotAI\Engines\AsyncBatchEngineInterface;
 use PolyglotAI\Engines\BatchResult;
 use PolyglotAI\Engines\EngineContext;
-use PolyglotAI\Engines\TranslationEngineInterface;
+use PolyglotAI\Engines\EngineException;
+use PolyglotAI\Engines\TranslationRequest;
 use PolyglotAI\Engines\Usage;
 
 /**
@@ -20,7 +22,7 @@ use PolyglotAI\Engines\Usage;
  * El nombre del proveedor solo aparece aquí dentro: el resto del plugin habla
  * con TranslationEngineInterface y no sabe qué hay detrás.
  */
-final class ClaudeEngine implements TranslationEngineInterface {
+final class ClaudeEngine implements AsyncBatchEngineInterface {
 
 	/**
 	 * Cadenas por llamada.
@@ -36,11 +38,13 @@ final class ClaudeEngine implements TranslationEngineInterface {
 	 * @param ClaudeClient   $client  Cliente HTTP.
 	 * @param PromptBuilder  $prompt  Constructor de peticiones.
 	 * @param ResponseParser $parser  Lector de respuestas.
+	 * @param Batches        $batches Lotes asíncronos.
 	 */
 	public function __construct(
 		private readonly ClaudeClient $client,
 		private readonly PromptBuilder $prompt,
-		private readonly ResponseParser $parser
+		private readonly ResponseParser $parser,
+		private readonly Batches $batches
 	) {}
 
 	/**
@@ -81,8 +85,8 @@ final class ClaudeEngine implements TranslationEngineInterface {
 	/**
 	 * Traduce un lote de cadenas.
 	 *
-	 * @param \PolyglotAI\Engines\TranslationRequest[] $requests Cadenas a traducir.
-	 * @param EngineContext                            $context  Contexto lingüístico.
+	 * @param TranslationRequest[] $requests Cadenas a traducir.
+	 * @param EngineContext        $context  Contexto lingüístico.
 	 * @return BatchResult
 	 */
 	public function translate( array $requests, EngineContext $context ): BatchResult {
@@ -104,5 +108,95 @@ final class ClaudeEngine implements TranslationEngineInterface {
 		}
 
 		return new BatchResult( $translations, $failures, $usage );
+	}
+	/**
+	 * Envía un lote asíncrono.
+	 *
+	 * @param array<string, TranslationRequest[]> $chunks  Trozos, por identificador propio.
+	 * @param EngineContext                       $context Contexto lingüístico.
+	 * @return string Identificador del lote.
+	 *
+	 * @throws EngineException Si el lote no se puede crear.
+	 */
+	public function create_batch( array $chunks, EngineContext $context ): string {
+		$requests = array();
+
+		foreach ( $chunks as $custom_id => $chunk ) {
+			$requests[] = array(
+				'custom_id' => (string) $custom_id,
+				'params'    => $this->prompt->build( $chunk, $context ),
+			);
+		}
+
+		return $this->batches->create( $requests );
+	}
+
+	/**
+	 * Estado de un lote.
+	 *
+	 * @param string $batch_id Identificador.
+	 *
+	 * @throws EngineException Si no se puede consultar.
+	 */
+	public function batch_status( string $batch_id ): string {
+		return $this->batches->status( $batch_id )['status'];
+	}
+
+	/**
+	 * Si un estado significa que el lote ha terminado.
+	 *
+	 * @param string $status Estado.
+	 */
+	public function batch_has_ended( string $status ): bool {
+		return Batches::ENDED === $status;
+	}
+
+	/**
+	 * Recoge los resultados de un lote terminado.
+	 *
+	 * @param string                              $batch_id Identificador.
+	 * @param array<string, TranslationRequest[]> $chunks   Los mismos trozos que se enviaron.
+	 * @return array<string, BatchResult>
+	 *
+	 * @throws EngineException Si el lote no tiene resultados que leer.
+	 */
+	public function collect_batch( string $batch_id, array $chunks ): array {
+		$status = $this->batches->status( $batch_id );
+
+		if ( null === $status['results_url'] ) {
+			throw new EngineException( 'El lote ha terminado sin resultados que leer.', 0, false );
+		}
+
+		$raw       = $this->batches->results( $status['results_url'] );
+		$collected = array();
+
+		foreach ( $chunks as $custom_id => $chunk ) {
+			$entry = $raw[ (string) $custom_id ] ?? null;
+
+			// Un trozo sin respuesta no es un trozo traducido: se deja fuera y
+			// sus cadenas se quedan pendientes para el siguiente intento.
+			if ( ! is_array( $entry ) || ! is_array( $entry['result'] ?? null ) ) {
+				continue;
+			}
+
+			$result = $entry['result'];
+
+			if ( 'succeeded' !== ( $result['type'] ?? '' ) || ! is_array( $result['message'] ?? null ) ) {
+				continue;
+			}
+
+			$collected[ (string) $custom_id ] = $this->parser->parse( $result['message'], $chunk );
+		}
+
+		return $collected;
+	}
+
+	/**
+	 * Cancela un lote en curso.
+	 *
+	 * @param string $batch_id Identificador.
+	 */
+	public function cancel_batch( string $batch_id ): void {
+		$this->batches->cancel( $batch_id );
 	}
 }

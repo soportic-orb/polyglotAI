@@ -192,6 +192,23 @@ Crea y deshace bloques de traducción fusionados. Capacidad: `pgai_translate`.
 Una fusión cambia cómo se trocea la página para todos los idiomas, así que no
 recibe un idioma.
 
+### `GET /wp-json/pgai/v1/site` y `POST /wp-json/pgai/v1/site`
+
+Traducción de sitio completo. Capacidad: `pgai_run_auto_translate`, **no**
+`pgai_translate`: esto gasta dinero, y mucho de golpe.
+
+`GET` devuelve `supported` —si el motor configurado admite lotes asíncronos— y
+la pasada en curso, si la hay, con su estado, el progreso y los recuentos.
+
+`POST` acepta `command`:
+
+| `command` | Qué hace |
+|---|---|
+| `start` | Arranca con lo pendiente de ese idioma. Devuelve 400 si no queda nada. |
+| `pause` | Deja de enviar y de preguntar. El lote en vuelo sigue en el proveedor y se cobra igual. |
+| `resume` | Vuelve a esperar por el mismo lote, sin reenviarlo. |
+| `cancel` | Cancela el lote en vuelo y olvida la pasada. |
+
 ### `GET /wp-json/pgai/v1/manager`
 
 Busca entre **todas** las cadenas del sitio, no solo las de una página.
