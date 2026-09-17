@@ -41,32 +41,39 @@ final class Options {
 	 */
 	public static function defaults(): array {
 		return array(
-			'default_language'       => array(
+			'default_language'        => array(
 				'locale' => 'es_ES',
 				'slug'   => 'es',
 				'label'  => 'Español',
 			),
-			'languages'              => array(),
-			'prefix_default'         => false,
-			'engine'                 => 'anthropic',
-			'model'                  => 'claude-sonnet-5',
-			'effort'                 => 'low',
-			'thinking'               => false,
-			'cache_ttl'              => 5,
-			'site_context'           => '',
+			'languages'               => array(),
+			'prefix_default'          => false,
+			'engine'                  => 'anthropic',
+			'model'                   => 'claude-sonnet-5',
+			'effort'                  => 'low',
+			'thinking'                => false,
+			'cache_ttl'               => 5,
+			'site_context'            => '',
 
 			// Traducción en tiempo real en segundo plano (ADR-13): activada,
 			// pero nunca bloquea la carga ni traduce para bots.
-			'realtime'               => true,
-			'realtime_max_queued'    => 50,
+			'realtime'                => true,
+			'realtime_max_queued'     => 50,
+
+			// Redirección al idioma del navegador en la primera visita.
+			// Desactivada a propósito: ver Detection\VisitorRedirect.
+			'detect_visitor_language' => false,
+
+			// Menús por idioma: locale => (ubicación => id de menú).
+			'menus'                   => array(),
 
 			// Traducción del texto que aparece después de cargar la página.
-			'dynamic'                => true,
+			'dynamic'                 => true,
 
 			// Tope mensual de tokens. 0 = sin tope.
-			'monthly_token_limit'    => 0,
+			'monthly_token_limit'     => 0,
 
-			'excluded_paths'         => array(
+			'excluded_paths'          => array(
 				// Exclusiones de privacidad por defecto (ADR-12): estas rutas
 				// contienen datos personales que no deben salir del sitio.
 				'/mi-cuenta',
@@ -77,8 +84,8 @@ final class Options {
 				'/checkout',
 				'/wp-admin',
 			),
-			'excluded_selectors'     => array(),
-			'uninstall_removes_data' => false,
+			'excluded_selectors'      => array(),
+			'uninstall_removes_data'  => false,
 		);
 	}
 

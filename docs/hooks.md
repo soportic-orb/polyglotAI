@@ -230,6 +230,23 @@ tiene que funcionar para cualquiera que navegue el sitio. Es de solo lectura, no
 llama a ninguna API y solo devuelve traducciones que ya se muestran
 públicamente. Se puede cerrar con el filtro `pgai_allow_dynamic_translation`.
 
+### `pgai_detected_language`
+
+Filtra el idioma al que se redirige a un visitante nuevo cuando la detección por
+navegador está activada. Devolver `null` cancela la redirección.
+
+```php
+// No redirigir nunca desde la portada.
+add_filter( 'pgai_detected_language', function ( $language ) {
+	return is_front_page() ? null : $language;
+} );
+```
+
+| Argumento | Qué es |
+|---|---|
+| `$language` | `PolyglotAI\Languages\Language` detectado, o `null`. |
+| `$header` | Cabecera `Accept-Language` recibida. |
+
 ## Funciones públicas
 
 | Función | Devuelve |

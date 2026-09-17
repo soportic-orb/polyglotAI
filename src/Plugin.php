@@ -16,6 +16,8 @@ use PolyglotAI\Database\ApiLogRepository;
 use PolyglotAI\Database\SourceRepository;
 use PolyglotAI\Database\TranslationRepository;
 use PolyglotAI\Detection\BotDetector;
+use PolyglotAI\Detection\BrowserLanguage;
+use PolyglotAI\Detection\VisitorRedirect;
 use PolyglotAI\Editor\AdminBar;
 use PolyglotAI\Editor\EditMode;
 use PolyglotAI\Editor\EditorPage;
@@ -175,6 +177,17 @@ final class Plugin {
 		// Selector de idioma dentro de los menús, y menús distintos por idioma.
 		( new NavMenu( $this->switcher_renderer(), $this->request() ) )->register();
 		$this->menu_locations()->register();
+
+		if ( ! is_admin() ) {
+			( new VisitorRedirect(
+				$this->options(),
+				$this->request(),
+				$this->url_converter(),
+				$this->slug_resolver(),
+				new BrowserLanguage( $this->languages() ),
+				new BotDetector()
+			) )->register();
+		}
 
 		if ( is_admin() ) {
 			( new NavMenuMetaBox( $this->languages() ) )->register();
