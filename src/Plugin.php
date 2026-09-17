@@ -687,7 +687,7 @@ final class Plugin {
 	private function head_tags(): HeadTags {
 		return $this->service(
 			'head_tags',
-			fn(): HeadTags => new HeadTags( $this->languages(), $this->request(), $this->url_converter() )
+			fn(): HeadTags => new HeadTags( $this->languages(), $this->request(), $this->url_converter(), $this->slug_resolver() )
 		);
 	}
 

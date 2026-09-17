@@ -150,6 +150,63 @@ final class SlugRepository {
 	}
 
 	/**
+	 * Slugs traducidos de varios idiomas a la vez.
+	 *
+	 * La alimentan los hreflang: una página en ocho idiomas son ocho enlaces
+	 * alternativos, y pedir los slugs idioma a idioma serían ocho consultas en
+	 * cada página del sitio.
+	 *
+	 * @param string[] $languages Locales.
+	 * @param string[] $slugs     Slugs originales.
+	 * @return array<string, array<string, string>> Locale => (original => traducido).
+	 */
+	public function translations_by_language( array $languages, array $slugs ): array {
+		global $wpdb;
+
+		$languages = array_values( array_unique( array_map( 'strval', $languages ) ) );
+		$slugs     = array_values(
+			array_unique(
+				array_filter( array_map( 'strval', $slugs ), static fn ( string $slug ): bool => '' !== $slug )
+			)
+		);
+
+		if ( array() === $languages || array() === $slugs ) {
+			return array();
+		}
+
+		$table     = Schema::table( 'slugs' );
+		$in_langs  = implode( ',', array_fill( 0, count( $languages ), '%s' ) );
+		$in_slugs  = implode( ',', array_fill( 0, count( $slugs ), '%s' ) );
+		$arguments = array_merge( $languages, $slugs );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT language, original_slug, translated_slug FROM {$table}
+				WHERE language IN ({$in_langs}) AND original_slug IN ({$in_slugs})
+				AND translated_slug <> ''
+				ORDER BY id ASC",
+				$arguments
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$map = array();
+
+		foreach ( (array) $rows as $row ) {
+			$language = (string) $row['language'];
+			$original = (string) $row['original_slug'];
+
+			if ( ! isset( $map[ $language ][ $original ] ) ) {
+				$map[ $language ][ $original ] = (string) $row['translated_slug'];
+			}
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Bases reescritas de un idioma, por su slug original.
 	 *
 	 * El panel las quiere indexadas por subtipo y así las devuelve bases(). La
