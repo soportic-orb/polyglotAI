@@ -14,6 +14,7 @@ use PolyglotAI\Html\ExtractedString;
 use PolyglotAI\Html\HtmlApiDriver;
 use PolyglotAI\Html\OffsetTagProcessor;
 use PolyglotAI\Html\SafetyCheck;
+use PolyglotAI\Html\Replacement;
 use PolyglotAI\Html\Splicer;
 use PolyglotAI\Html\TagScanner;
 use PHPUnit\Framework\TestCase;
@@ -27,12 +28,16 @@ use PHPUnit\Framework\TestCase;
  * razón no depende de la máquina: si el CI va a la mitad de velocidad, los dos
  * lados de la comparación se ralentizan igual.
  *
- * El umbral está calibrado con mediciones reales sobre un documento de 128 KB,
- * no a ojo: el barrido lineal da una razón de 3,6 y una regresión cuadrática
- * introducida a propósito la sube a 7,0. El límite de 5,0 deja margen de sobra
- * para el ruido y sigue separando ambos casos.
+ * Los umbrales están calibrados con mediciones reales, no a ojo. El del barrido,
+ * sobre un documento de 128 KB: lineal da una razón de 3,6 y una regresión
+ * cuadrática introducida a propósito la sube a 7,0, así que el límite de 5,0
+ * separa ambos casos con margen para el ruido. El del empalme, volviendo a
+ * poner la implementación que aplicaba cada sustitución sobre el documento
+ * entero: lineal crece x4 al cuadruplicar el tamaño y aquella crecía x14,8, con
+ * el límite en 8,0.
  *
  * @covers \PolyglotAI\Html\HtmlApiDriver
+ * @covers \PolyglotAI\Html\Splicer
  */
 final class PerformanceTest extends TestCase {
 
@@ -146,6 +151,48 @@ final class PerformanceTest extends TestCase {
 			$full_ms,
 			sprintf( 'Traducir entero cuesta %.2f ms frente a %.2f ms de solo extraer.', $full_ms, $extract_ms )
 		);
+	}
+
+	public function test_empalmar_cuesta_lo_que_el_documento_y_no_lo_que_el_documento_por_las_sustituciones(): void {
+		// Aplicar cada sustitución sobre el documento entero cuesta
+		// O(sustituciones x documento): con cuatro veces más página y cuatro
+		// veces más sustituciones, dieciséis veces más trabajo. Montarlo por
+		// trozos cuesta cuatro. El umbral separa los dos casos con holgura.
+		$splicer = new Splicer();
+
+		$small = $this->measure( fn() => $splicer->apply( ...$this->splice_case( 400 ) ) );
+		$large = $this->measure( fn() => $splicer->apply( ...$this->splice_case( 1600 ) ) );
+
+		$growth = $large / max( $small, 0.001 );
+
+		$this->assertLessThan(
+			8.0,
+			$growth,
+			sprintf(
+				'Cuadruplicar el tamaño multiplica por %.1f el coste de empalmar (%.2f ms frente a %.2f ms). ' .
+				'Cerca de 4 es lineal; cerca de 16, que se está copiando el documento en cada sustitución.',
+				$growth,
+				$large,
+				$small
+			)
+		);
+	}
+
+	/**
+	 * Un documento con una sustitución cada 64 bytes.
+	 *
+	 * @param int $count Número de sustituciones.
+	 * @return array{0:string, 1:Replacement[]}
+	 */
+	private function splice_case( int $count ): array {
+		$subject      = str_repeat( str_pad( 'palabra', 64, '.' ), $count );
+		$replacements = array();
+
+		for ( $i = 0; $i < $count; $i++ ) {
+			$replacements[] = new Replacement( $i * 64, 7, 'traducida' );
+		}
+
+		return array( $subject, $replacements );
 	}
 
 	public function test_una_pagina_sin_traducciones_no_copia_el_documento(): void {

@@ -70,9 +70,12 @@ tiempo de ejecución:
    tocamos sale idéntico — doctype, codificación, `<script>`, `<style>`,
    JSON-LD, `<template>`, elementos personalizados. Cero dependencias,
    mantenida por el core y alineada con la especificación HTML5.
-2. **`Dom\HTMLDocument` (PHP 8.4+) — ACELERADO/OPCIONAL.** Parser HTML5
-   conforme implementado en C. Pendiente de la fase de rendimiento; solo se
-   activaría si el banco de pruebas demuestra que hace falta.
+2. **`Dom\HTMLDocument` (PHP 8.4+) — DESCARTADO.** Parser HTML5 conforme
+   implementado en C. Se dejó apuntado como posible acelerador para las
+   páginas grandes, pero al medirlas resultó que el coste que crecía estaba en
+   el empalme y no en el análisis (ADR-08), y que re-serializa el documento al
+   guardarlo, que es justo lo que este ADR descarta por construcción. No se va
+   a usar.
 3. **`masterminds/html5` — RESERVA.** Puro PHP, conforme, lento. En
    `require-dev` como oráculo de tests diferenciales, no en producción.
 4. **`DOMDocument::loadHTML()` (libxml/HTML4) — PROHIBIDO.** Destroza HTML5
@@ -319,22 +322,41 @@ encargo, no un detalle: cualquier ruta de escritura pasa por
   horas, y **entera**, porque una misma cadena puede salir en cualquier página y
   averiguar en cuáles costaría más que regenerarlas.
 
-**Rendimiento medido** (no estimado; `tests/unit/PerformanceTest.php`):
+**Rendimiento medido** (no estimado; `tests/unit/PerformanceTest.php`), sobre la
+misma máquina antes y después de arreglar el empalme:
 
-| HTML | Extraer | Traducir entero |
-|---|---:|---:|
-| 21 KB | 8,2 ms | 8,5 ms |
-| 128 KB | 47 ms | 49 ms |
+| HTML | Traducir entero, antes | Después | ms/KB antes | Después |
+|---|---:|---:|---:|---:|
+| 65 KB | 20,1 ms | 17,7 ms | 0,309 | 0,273 |
+| 128 KB | 40,9 ms | 34,3 ms | 0,319 | 0,268 |
+| 254 KB | 90,4 ms | 68,6 ms | 0,356 | 0,270 |
 
-Son **0,37 ms por KB**, de los cuales una cuarta parte es el propio
-`WP_HTML_Tag_Processor` del core y el resto lógica nuestra. El empalme es
-marginal frente al barrido, como debe ser.
+Lo importante de esa tabla no es el 24 % que se ahorra en la página grande, que
+depende de la máquina: es que **el coste por KB ha dejado de crecer**. Antes
+subía de 0,309 a 0,356 conforme crecía la página, porque el empalme aplicaba
+cada sustitución sobre el documento entero y por tanto costaba
+O(sustituciones × documento) —200 MB de copias en una página de 128 KB, casi
+800 MB en una de 254 KB—. Montando el resultado por trozos, cada byte se copia
+una vez y el coste por KB se queda plano en 0,270 a cualquier tamaño.
 
-Eso sitúa el objetivo de < 50 ms en páginas de **hasta unos 128 KB de HTML**. Se
-cumple con holgura en una página de blog o de tienda corriente. **No se cumple**
-en páginas grandes de Divi o Elementor, que pasan a menudo de 200 KB: ahí el
-sobrecoste ronda los 75 ms. Queda como trabajo de la fase 8, y es el escenario
-que justificaría activar el driver de `Dom\HTMLDocument` del ADR-01.
+Del coste que queda, una cuarta parte es el propio `WP_HTML_Tag_Processor` del
+core, un 9 % leer la posición de cada token y **algo más de la mitad es lógica
+nuestra**: la pila de elementos, las exclusiones y el reparto de atributos. El
+empalme ya es marginal: 0,9 ms de los 34 en una página de 128 KB.
+
+Eso sitúa el objetivo de < 50 ms en páginas de **hasta unos 190 KB de HTML**. Se
+cumple de sobra en una página de blog o de tienda corriente y también en muchas
+de constructor. **Sigue sin cumplirse** en las páginas más grandes de Divi o
+Elementor, que pasan de 250 KB: ahí se ronda los 70 ms. Lo que queda por ganar
+está en el barrido, no en el empalme, así que es trabajo de perfilar nuestra
+propia lógica.
+
+**Lo que no era.** El ADR-01 y una versión anterior de este ADR daban por hecho
+que el remedio para las páginas grandes sería activar el driver de
+`Dom\HTMLDocument`. No lo era, por dos motivos que solo se ven al medir: el
+coste que crecía estaba en el empalme, donde el analizador no interviene, y
+`Dom\HTMLDocument` re-serializa el documento al guardarlo, que es justo lo que
+el ADR-01 descarta por construcción. Queda descartado también como acelerador.
 
 El test de rendimiento **no mide milisegundos absolutos**, que dependen de la
 máquina de CI: mide el coste del driver en relación con el del barrido en crudo
