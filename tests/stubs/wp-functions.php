@@ -140,3 +140,26 @@ if ( ! function_exists( 'delete_option' ) ) {
 		return true;
 	}
 }
+
+if ( ! function_exists( 'esc_url' ) ) {
+	/**
+	 * Versión mínima de esc_url para las pruebas unitarias.
+	 *
+	 * @param string $url URL.
+	 */
+	function esc_url( $url ) { // phpcs:ignore
+		return str_replace( array( '"', '<', '>' ), array( '&quot;', '&lt;', '&gt;' ), (string) $url );
+	}
+}
+
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	/**
+	 * Versión mínima de wp_parse_url para las pruebas unitarias.
+	 *
+	 * @param string $url       URL.
+	 * @param int    $component Componente.
+	 */
+	function wp_parse_url( $url, $component = -1 ) { // phpcs:ignore
+		return parse_url( (string) $url, (int) $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+	}
+}

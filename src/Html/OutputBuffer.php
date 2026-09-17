@@ -11,6 +11,7 @@ namespace PolyglotAI\Html;
 
 use PolyglotAI\Editor\PreviewRenderer;
 use PolyglotAI\Routing\LinkRewriter;
+use PolyglotAI\Seo\HeadUrls;
 use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Translation\DictionaryFactory;
 use PolyglotAI\Translation\MissingQueue;
@@ -33,6 +34,7 @@ final class OutputBuffer {
 	 * @param DictionaryFactory       $dictionary Constructor de diccionarios.
 	 * @param MissingQueue            $queue      Cola de cadenas sin traducir.
 	 * @param LinkRewriter            $links      Reescritor de enlaces internos.
+	 * @param HeadUrls                $head_urls  Reescritor de las URLs de la cabecera.
 	 * @param PreviewRenderer|null    $preview    Vista previa del editor visual.
 	 */
 	public function __construct(
@@ -43,6 +45,7 @@ final class OutputBuffer {
 		private readonly DictionaryFactory $dictionary,
 		private readonly MissingQueue $queue,
 		private readonly LinkRewriter $links,
+		private readonly HeadUrls $head_urls,
 		private readonly ?PreviewRenderer $preview = null
 	) {}
 
@@ -120,7 +123,13 @@ final class OutputBuffer {
 		// Segunda pasada, independiente: un enlace puede vivir dentro de una
 		// unidad de bloque ya traducida, y hacer ambas cosas a la vez produciría
 		// sustituciones solapadas.
-		return $this->links->rewrite( $html, $language );
+		$html = $this->links->rewrite( $html, $language );
+
+		// Tercera pasada: las URLs que emiten los plugins de SEO en la cabecera.
+		// Van aparte de los enlaces navegables porque la regla es distinta —ahí
+		// manda el rel, no la etiqueta— y porque rel="alternate" hay que dejarlo
+		// en paz.
+		return $this->head_urls->rewrite( $html, $language );
 	}
 
 	/**

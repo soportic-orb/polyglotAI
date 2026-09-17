@@ -48,9 +48,11 @@ use PolyglotAI\Mail\MailTranslator;
 use PolyglotAI\Rest\DynamicController;
 use PolyglotAI\Rest\MergesController;
 use PolyglotAI\Rest\SlugsController;
+use PolyglotAI\Seo\HeadUrls;
 use PolyglotAI\Rest\StringsController;
 use PolyglotAI\Rest\SuggestController;
 use PolyglotAI\Routing\HeadTags;
+use PolyglotAI\Routing\InternalUrl;
 use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Database\SlugRepository;
@@ -435,6 +437,19 @@ final class Plugin {
 	}
 
 	/**
+	 * Conversor de URLs internas.
+	 */
+	public function internal_urls(): InternalUrl {
+		return $this->service(
+			'internal_urls',
+			fn(): InternalUrl => new InternalUrl(
+				$this->url_converter(),
+				(string) wp_parse_url( home_url(), PHP_URL_HOST )
+			)
+		);
+	}
+
+	/**
 	 * Traductor de enlaces permanentes.
 	 */
 	public function permalink_translator(): PermalinkTranslator {
@@ -492,12 +507,8 @@ final class Plugin {
 				$driver,
 				$this->dictionary(),
 				$this->missing_queue(),
-				new LinkRewriter(
-					$this->url_converter(),
-					new TagScanner(),
-					new Splicer(),
-					(string) wp_parse_url( home_url(), PHP_URL_HOST )
-				),
+				new LinkRewriter( $this->internal_urls(), new TagScanner(), new Splicer() ),
+				new HeadUrls( $this->internal_urls(), new TagScanner(), new Splicer() ),
 				$this->preview()
 			)
 		);

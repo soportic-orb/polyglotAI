@@ -44,25 +44,16 @@ final class LinkRewriter {
 	);
 
 	/**
-	 * Rutas que nunca llevan prefijo de idioma.
-	 *
-	 * @var string[]
-	 */
-	private const SKIP_PATHS = array( '/wp-admin', '/wp-login.php', '/wp-json', '/wp-content', '/wp-includes', '/xmlrpc.php', '/feed' );
-
-	/**
 	 * Constructor.
 	 *
-	 * @param UrlConverter $converter Conversor de rutas.
-	 * @param TagScanner   $scanner   Analizador de etiquetas.
-	 * @param Splicer      $splicer   Aplicador de sustituciones.
-	 * @param string       $host      Host del sitio.
+	 * @param InternalUrl $urls    Conversor de URLs internas.
+	 * @param TagScanner  $scanner Analizador de etiquetas.
+	 * @param Splicer     $splicer Aplicador de sustituciones.
 	 */
 	public function __construct(
-		private readonly UrlConverter $converter,
+		private readonly InternalUrl $urls,
 		private readonly TagScanner $scanner,
-		private readonly Splicer $splicer,
-		private readonly string $host
+		private readonly Splicer $splicer
 	) {}
 
 	/**
@@ -105,7 +96,7 @@ final class LinkRewriter {
 					continue;
 				}
 
-				$rewritten = $this->convert( $value, $language );
+				$rewritten = $this->urls->convert( $value, $language );
 
 				if ( null === $rewritten ) {
 					continue;
@@ -130,72 +121,5 @@ final class LinkRewriter {
 		}
 
 		return $this->splicer->apply( $html, $replacements );
-	}
-
-	/**
-	 * Convierte una URL al idioma dado, o null si no hay que tocarla.
-	 *
-	 * @param string   $url      URL original.
-	 * @param Language $language Idioma de destino.
-	 */
-	private function convert( string $url, Language $language ): ?string {
-		$url = trim( $url );
-
-		if ( '' === $url || str_starts_with( $url, '#' ) ) {
-			return null;
-		}
-
-		foreach ( array( 'mailto:', 'tel:', 'javascript:', 'data:', 'sms:', 'whatsapp:' ) as $scheme ) {
-			if ( str_starts_with( strtolower( $url ), $scheme ) ) {
-				return null;
-			}
-		}
-
-		$parts = wp_parse_url( $url );
-
-		if ( false === $parts ) {
-			return null;
-		}
-
-		// Enlace externo.
-		if ( isset( $parts['host'] ) && strtolower( $parts['host'] ) !== strtolower( $this->host ) ) {
-			return null;
-		}
-
-		$path = $parts['path'] ?? '/';
-
-		if ( ! str_starts_with( $path, '/' ) ) {
-			// URL relativa al documento: el navegador ya la resuelve dentro del
-			// idioma en curso, así que tocarla la rompería.
-			return null;
-		}
-
-		foreach ( self::SKIP_PATHS as $skip ) {
-			if ( str_starts_with( $path, $skip ) ) {
-				return null;
-			}
-		}
-
-		$converted = $this->converter->convert( $path, $language );
-
-		if ( $converted === $path ) {
-			return null;
-		}
-
-		$rebuilt = $converted;
-
-		if ( isset( $parts['query'] ) ) {
-			$rebuilt .= '?' . $parts['query'];
-		}
-
-		if ( isset( $parts['fragment'] ) ) {
-			$rebuilt .= '#' . $parts['fragment'];
-		}
-
-		if ( isset( $parts['host'] ) ) {
-			$rebuilt = ( $parts['scheme'] ?? 'https' ) . '://' . $parts['host'] . $rebuilt;
-		}
-
-		return $rebuilt;
 	}
 }

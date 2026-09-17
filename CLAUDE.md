@@ -429,6 +429,45 @@ Consecuencias prácticas:
   explícito en el asistente de configuración: el administrador debe saber que el
   contenido de su sitio se envía a un tercero (y es lo que exige el RGPD).
 
+### ADR-15 — Integración con los plugins de SEO: sobre la salida, no sobre sus hooks
+
+Yoast, Rank Math, SEOPress y All in One SEO emiten el `<title>`, la
+`meta description`, las etiquetas Open Graph y su propia URL canónica. Hay dos
+formas de adaptarlos a un sitio multilingüe:
+
+1. Engancharse a los filtros de cada uno (`wpseo_canonical`,
+   `rank_math/frontend/canonical`, `seopress_titles_canonical`,
+   `aioseo_canonical_url`…).
+2. Corregir el HTML final, que es donde ya estamos trabajando (ADR-01).
+
+Se elige la segunda, y no por comodidad:
+
+- **El texto ya está resuelto sin hacer nada.** El barrido de la salida extrae
+  `<title>`, `meta[name=description]`, `og:title`, `og:description`,
+  `og:site_name`, `og:image:alt` y `twitter:*`. Sea cual sea el plugin que los
+  haya escrito, se traducen como cualquier otra cadena del sitio y se revisan
+  desde el mismo editor. Un juego de filtros por plugin no añadiría nada a esto
+  y habría que mantenerlo cuádruple.
+- **Cuatro plugins son cuatro APIs que cambian entre versiones mayores.** Yoast
+  reescribió su capa de frontend entera en la 14. Una pasada sobre el HTML
+  funciona con los cuatro, con sus versiones futuras y con el quinto que
+  aparezca, sin tener que reconocerlo.
+- **Lo que falta es solo la URL**, y es un problema uniforme: la canónica, la
+  `og:url` y la paginación salen de `get_permalink()`, así que ya llevan el slug
+  traducido y solo les falta el prefijo de idioma.
+
+`Seo\HeadUrls` es esa pasada. Va **después** de la de enlaces y aparte de ella
+porque la regla es distinta: aquí manda el `rel`, no la etiqueta.
+
+**`rel="alternate"` no se toca nunca.** Ahí viven nuestros propios `hreflang`,
+que apuntan a otros idiomas a propósito, y también los feeds RSS. Convertirlos
+al idioma en curso sería estropear justo lo que se acaba de emitir bien. Por la
+misma razón `LinkRewriter` sigue sin tocar ningún `<link>`: en esa pasada no se
+mira el `rel` y no habría forma de distinguir un canónico de un `hreflang`.
+
+Tampoco se toca `og:image`: es un archivo, no una página, y no tiene versión por
+idioma.
+
 ---
 
 ## 4. Estructura del repositorio
