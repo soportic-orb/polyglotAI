@@ -20,6 +20,7 @@ use PolyglotAI\Editor\AdminBar;
 use PolyglotAI\Editor\EditMode;
 use PolyglotAI\Editor\EditorPage;
 use PolyglotAI\Editor\MarkerDecorator;
+use PolyglotAI\Editor\PreviewAs;
 use PolyglotAI\Editor\PreviewRenderer;
 use PolyglotAI\Engines\Claude\ClaudeClient;
 use PolyglotAI\Engines\Claude\ClaudeEngine;
@@ -151,6 +152,10 @@ final class Plugin {
 		// La vista previa del editor fija el idioma que se está traduciendo
 		// antes de que nada resuelva la URL.
 		add_action( 'template_redirect', array( $this->edit_mode(), 'apply_language' ), 0 );
+
+		// Después de que el modo de edición haya quedado comprobado: quitarle
+		// los permisos al usuario antes cerraría la propia vista previa.
+		add_action( 'template_redirect', array( new PreviewAs( $this->edit_mode() ), 'apply' ), 2 );
 		add_action( 'wp_enqueue_scripts', array( $this->preview(), 'enqueue' ) );
 
 		$this->head_tags()->register();

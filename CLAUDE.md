@@ -509,19 +509,8 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 | Fase | Estado |
 |---|---|
 | 1. Base | Completa |
-| 2. Editor visual y API REST | Núcleo completo; faltan imágenes, bloques de traducción y previsualización por rol |
+| 2. Editor visual y API REST | Completa |
 | 3–8 | Sin empezar |
-
-**Pendiente de la fase 2**, con lo que cuesta cada cosa:
-
-- **Traducción de imágenes**: cambiar `src`/`srcset` por idioma desde la
-  mediateca. El `alt` ya se traduce como atributo. Necesita almacenamiento
-  propio para la imagen por idioma y un selector de medios en el panel.
-- **Bloques de traducción**: fusionar varios elementos en una sola unidad y
-  deshacer la fusión. Es lo más caro: obliga a persistir la agrupación y a que
-  el driver la respete al extraer.
-- **Previsualización por rol o como visitante no conectado**: la vista previa
-  usa siempre la sesión del traductor.
 
 ## 7. Decisiones confirmadas y pendientes
 

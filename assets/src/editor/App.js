@@ -35,6 +35,9 @@ export default function App() {
 	const [ error, setError ] = useState( '' );
 	const [ message, setMessage ] = useState( '' );
 
+	// Punto de vista de la vista previa: como yo, como visitante o como un rol.
+	const [ viewpoint, setViewpoint ] = useState( '' );
+
 	// Al cambiar una imagen hay que cambiar también su srcset, o la traducción
 	// solo se vería en algunos tamaños de pantalla.
 	const [ companion, setCompanion ] = useState( null );
@@ -494,6 +497,30 @@ export default function App() {
 		setPreviewUrl( url.toString() );
 	};
 
+	/**
+	 * Cambia el punto de vista de la vista previa.
+	 *
+	 * Un tema puede mostrar cosas distintas a quien ha iniciado sesión, así que
+	 * traducir lo que ve un administrador no garantiza haber traducido lo que
+	 * ve el público.
+	 *
+	 * @param {string} value Vacío, «visitor» o un rol.
+	 */
+	const changeViewpoint = ( value ) => {
+		setViewpoint( value );
+		setLoading( true );
+
+		const url = new URL( previewUrl, window.location.origin );
+
+		if ( value ) {
+			url.searchParams.set( 'pgai-as', value );
+		} else {
+			url.searchParams.delete( 'pgai-as' );
+		}
+
+		setPreviewUrl( url.toString() );
+	};
+
 	const languageOptions = ( boot.languages || [] ).map( ( item ) => ( {
 		value: item.locale,
 		label: item.published
@@ -515,6 +542,16 @@ export default function App() {
 					value={ language }
 					options={ languageOptions }
 					onChange={ changeLanguage }
+					disabled={ busy }
+				/>
+
+				<SelectControl
+					__nextHasNoMarginBottom
+					label={ __( 'Ver como', 'polyglot-ai' ) }
+					hideLabelFromVision
+					value={ viewpoint }
+					options={ boot.viewpoints || [] }
+					onChange={ changeViewpoint }
 					disabled={ busy }
 				/>
 

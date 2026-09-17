@@ -191,6 +191,7 @@ final class EditorPage {
 				'autoRun' => current_user_can( Capabilities::RUN_AUTO ),
 			),
 			'settingsUrl' => esc_url_raw( admin_url( 'admin.php?page=polyglot-ai' ) ),
+			'viewpoints'  => PreviewAs::choices(),
 		);
 	}
 }

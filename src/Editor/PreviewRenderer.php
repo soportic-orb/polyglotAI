@@ -11,7 +11,6 @@ namespace PolyglotAI\Editor;
 
 use PolyglotAI\Html\ExtractedString;
 use PolyglotAI\Html\RawHtml;
-use PolyglotAI\Support\Capabilities;
 use PolyglotAI\Translation\MissingQueue;
 use PolyglotAI\Translation\PageDictionary;
 
@@ -108,10 +107,9 @@ final class PreviewRenderer {
 		$this->queue->record( $this->seen, $language->locale );
 
 		$payload = array(
-			'language'  => $language->locale,
-			'rtl'       => $language->rtl,
-			'strings'   => $this->decorator->collected(),
-			'canReview' => current_user_can( Capabilities::REVIEW ),
+			'language' => $language->locale,
+			'rtl'      => $language->rtl,
+			'strings'  => $this->decorator->collected(),
 		);
 
 		$script = sprintf(
