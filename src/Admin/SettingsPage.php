@@ -14,6 +14,7 @@ use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Capabilities;
+use PolyglotAI\Switcher\MenuLocations;
 use PolyglotAI\Support\Options;
 use PolyglotAI\Translation\DictionaryFactory;
 
@@ -32,16 +33,18 @@ final class SettingsPage {
 	/**
 	 * Constructor.
 	 *
-	 * @param Options          $options   Ajustes.
-	 * @param ApiKey           $api_key   Custodia de la clave.
-	 * @param EngineRegistry   $engines   Motores disponibles.
-	 * @param LanguageRegistry $languages Idiomas configurados.
+	 * @param Options          $options        Ajustes.
+	 * @param ApiKey           $api_key        Custodia de la clave.
+	 * @param EngineRegistry   $engines        Motores disponibles.
+	 * @param LanguageRegistry $languages      Idiomas configurados.
+	 * @param MenuLocations    $menu_locations Menús por idioma.
 	 */
 	public function __construct(
 		private readonly Options $options,
 		private readonly ApiKey $api_key,
 		private readonly EngineRegistry $engines,
-		private readonly LanguageRegistry $languages
+		private readonly LanguageRegistry $languages,
+		private readonly MenuLocations $menu_locations
 	) {}
 
 	/**
@@ -88,6 +91,8 @@ final class SettingsPage {
 			'uninstall_removes_data' => isset( $_POST['uninstall_removes_data'] ),
 		);
 
+		$values[ MenuLocations::OPTION_KEY ] = $this->submitted_menus();
+
 		if ( ! in_array( $values['effort'], array( 'low', 'medium', 'high', 'xhigh', 'max' ), true ) ) {
 			$values['effort'] = 'low';
 		}
@@ -111,6 +116,50 @@ final class SettingsPage {
 
 		wp_safe_redirect( add_query_arg( 'pgai-saved', '1', menu_page_url( self::SLUG, false ) ) );
 		exit;
+	}
+
+	/**
+	 * Asignaciones de menú enviadas en el formulario.
+	 *
+	 * El nonce ya se ha comprobado en save(), que es el único que llama aquí.
+	 *
+	 * @return array<string, array<string, int>>
+	 */
+	private function submitted_menus(): array {
+		// Los valores se sanean uno a uno más abajo: son identificadores de menú
+		// y nombres de ubicación, no texto libre.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$submitted = $_POST['pgai_menus'] ?? array();
+
+		if ( ! is_array( $submitted ) ) {
+			return array();
+		}
+
+		$known = array_keys( get_registered_nav_menus() );
+		$menus = array();
+
+		foreach ( $this->languages->translatable() as $language ) {
+			$locations = $submitted[ $language->locale ] ?? array();
+
+			if ( ! is_array( $locations ) ) {
+				continue;
+			}
+
+			foreach ( $locations as $location => $menu ) {
+				$location = sanitize_key( (string) $location );
+				$menu     = absint( $menu );
+
+				// Solo ubicaciones que el tema declara: un nombre inventado en
+				// el formulario no tiene por qué acabar en la base de datos.
+				if ( 0 === $menu || ! in_array( $location, $known, true ) ) {
+					continue;
+				}
+
+				$menus[ $language->locale ][ $location ] = $menu;
+			}
+		}
+
+		return $menus;
 	}
 
 	/**
@@ -230,6 +279,54 @@ final class SettingsPage {
 							<p class="description"><?php esc_html_e( 'De qué va el sitio, a quién se dirige y con qué tono. Mejora mucho la calidad de la traducción.', 'polyglot-ai' ); ?></p>
 						</td>
 					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Menús por idioma', 'polyglot-ai' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<?php $locations = get_registered_nav_menus(); ?>
+					<?php if ( array() === $locations || array() === $this->languages->translatable() ) : ?>
+						<tr>
+							<td>
+								<p class="description">
+									<?php esc_html_e( 'Aparecerá aquí cuando el tema declare ubicaciones de menú y haya algún idioma añadido.', 'polyglot-ai' ); ?>
+								</p>
+							</td>
+						</tr>
+					<?php else : ?>
+						<?php $menus = wp_get_nav_menus(); ?>
+						<?php $assigned = $this->menu_locations->map(); ?>
+						<?php foreach ( $this->languages->translatable() as $language ) : ?>
+							<?php foreach ( $locations as $location => $description ) : ?>
+								<?php $field = 'pgai_menus[' . $language->locale . '][' . $location . ']'; ?>
+								<?php $id = 'pgai-menu-' . sanitize_html_class( $language->locale . '-' . $location ); ?>
+								<tr>
+									<th scope="row">
+										<label for="<?php echo esc_attr( $id ); ?>">
+											<?php
+											printf(
+												/* translators: 1: nombre del idioma, 2: ubicación del menú en el tema. */
+												esc_html__( '%1$s — %2$s', 'polyglot-ai' ),
+												esc_html( $language->label ),
+												esc_html( (string) $description )
+											);
+											?>
+										</label>
+									</th>
+									<td>
+										<select name="<?php echo esc_attr( $field ); ?>" id="<?php echo esc_attr( $id ); ?>">
+											<option value="0"><?php esc_html_e( 'El mismo que el idioma por defecto', 'polyglot-ai' ); ?></option>
+											<?php foreach ( $menus as $menu ) : ?>
+												<option value="<?php echo esc_attr( (string) $menu->term_id ); ?>"
+													<?php selected( $assigned[ $language->locale ][ $location ] ?? 0, $menu->term_id ); ?>>
+													<?php echo esc_html( $menu->name ); ?>
+												</option>
+											<?php endforeach; ?>
+										</select>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						<?php endforeach; ?>
+					<?php endif; ?>
 				</table>
 
 				<h2><?php esc_html_e( 'Consumo', 'polyglot-ai' ); ?></h2>

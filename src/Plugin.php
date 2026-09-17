@@ -68,6 +68,9 @@ use PolyglotAI\Routing\SlugResolver;
 use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Options;
+use PolyglotAI\Switcher\MenuLocations;
+use PolyglotAI\Switcher\NavMenu;
+use PolyglotAI\Switcher\NavMenuMetaBox;
 use PolyglotAI\Switcher\Shortcode;
 use PolyglotAI\Switcher\SwitcherRenderer;
 use PolyglotAI\Translation\DictionaryFactory;
@@ -168,6 +171,14 @@ final class Plugin {
 		}
 
 		$this->switcher()->register();
+
+		// Selector de idioma dentro de los menús, y menús distintos por idioma.
+		( new NavMenu( $this->switcher_renderer(), $this->request() ) )->register();
+		$this->menu_locations()->register();
+
+		if ( is_admin() ) {
+			( new NavMenuMetaBox( $this->languages() ) )->register();
+		}
 		$this->admin_bar()->register();
 
 		if ( ! is_admin() ) {
@@ -444,6 +455,16 @@ final class Plugin {
 		return $this->service(
 			'slug_resolver',
 			fn(): SlugResolver => new SlugResolver( $this->slugs() )
+		);
+	}
+
+	/**
+	 * Menús por idioma.
+	 */
+	public function menu_locations(): MenuLocations {
+		return $this->service(
+			'menu_locations',
+			fn(): MenuLocations => new MenuLocations( $this->options(), $this->request() )
 		);
 	}
 
@@ -793,7 +814,13 @@ final class Plugin {
 	private function settings_page(): SettingsPage {
 		return $this->service(
 			'settings_page',
-			fn(): SettingsPage => new SettingsPage( $this->options(), new ApiKey(), $this->engines(), $this->languages() )
+			fn(): SettingsPage => new SettingsPage(
+				$this->options(),
+				new ApiKey(),
+				$this->engines(),
+				$this->languages(),
+				$this->menu_locations()
+			)
 		);
 	}
 }
