@@ -15,6 +15,7 @@ use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Routing\SlugResolver;
 use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Seo\TranslatedSitemapProvider;
+use PolyglotAI\Seo\TranslatedUrls;
 use PolyglotAI\Translation\StatusPrecedence;
 use WP_UnitTestCase;
 
@@ -52,9 +53,11 @@ final class SitemapTest extends WP_UnitTestCase {
 		$this->slugs = new SlugRepository( new StatusPrecedence() );
 
 		$this->provider = new TranslatedSitemapProvider(
-			$languages,
-			new UrlConverter( $languages, '/', false ),
-			new SlugResolver( $this->slugs )
+			new TranslatedUrls(
+				$languages,
+				new UrlConverter( $languages, '/', false ),
+				new SlugResolver( $this->slugs )
+			)
 		);
 	}
 

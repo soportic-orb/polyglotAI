@@ -386,6 +386,37 @@ Sin escribir una línea de PHP:
 También quedan fuera por defecto `<script>`, `<style>`, `<code>`, `<pre>`,
 `<template>`, `<svg>`, `<math>`, `<canvas>` y `<object>`.
 
+## Sitemaps
+
+Las URLs traducidas se publican siempre, esté quien esté al mando del sitemap.
+
+| Situación | Dónde salen |
+|---|---|
+| Sitemap del núcleo en pie | Dentro de él: `/wp-sitemap-pgai-<idioma>-<n>.xml`. |
+| Un plugin de SEO lo ha apagado | En rutas propias, enlazadas desde el índice de ese plugin. |
+
+Rutas propias:
+
+| Ruta | Contenido |
+|---|---|
+| `/pgai-sitemap.xml` | Índice de los sitemaps por idioma. También se anuncia en `robots.txt`. |
+| `/pgai-sitemap-<idioma>-<n>.xml` | URLs de las entradas de ese idioma. |
+| `/pgai-sitemap-<idioma>-tax-<n>.xml` | URLs de los términos de ese idioma. |
+
+Solo responden cuando el sitemap del núcleo está apagado; si sigue en pie, esas
+mismas URLs ya están dentro de él y estas rutas no existen.
+
+Filtros ajenos a los que nos enganchamos para entrar en el índice del plugin de
+SEO activo (no hace falta configurar nada: los cuatro se registran siempre y
+solo se dispara el del plugin que haya):
+
+| Plugin | Filtro |
+|---|---|
+| Yoast SEO | `wpseo_sitemap_index_links` |
+| Rank Math | `rank_math/sitemap/index` |
+| SEOPress | `seopress_sitemaps_external_link` |
+| All in One SEO | `aioseo_sitemap_indexes` |
+
 ## Capacidades
 
 | Capacidad | Permite |

@@ -474,12 +474,11 @@ mira el `rel` y no habría forma de distinguir un canónico de un `hreflang`.
 Tampoco se toca `og:image`: es un archivo, no una página, y no tiene versión por
 idioma.
 
-### ADR-16 — Sitemaps: el del núcleo ahora; los de los plugins de SEO, en la fase 8
+### ADR-16 — Sitemaps: una sola lista de URLs, la sirva quien la sirva
 
 El sitemap del núcleo solo conoce las URLs del idioma por defecto, así que un
 buscador no tenía por dónde descubrir `/en/contact-us/` salvo rastreando
-enlaces. `Seo\TranslatedSitemapProvider` publica un sitemap por idioma dentro
-del de WordPress.
+enlaces.
 
 **El idioma va en el subtipo, no en el nombre del proveedor.** La regla de
 reescritura del núcleo captura el nombre con `[a-z]+`, de modo que un proveedor
@@ -499,17 +498,61 @@ renderizador entero para añadirlos no compensa: el `hreflang` de cada página y
 da esa señal, y lo que faltaba —que las URLs traducidas fueran descubribles— sí
 queda resuelto.
 
-**La integración con los sitemaps de Yoast, Rank Math, SEOPress y All in One
-SEO se aplaza a la fase 8**, junto con el resto de pruebas de compatibilidad.
-Cada uno sustituye el sitemap del núcleo por el suyo y lo amplía a su manera, y
-no tengo forma de comprobar esos hooks hasta tenerlos instalados en `wp-env`.
-Escribir cuatro juegos de `add_filter` sin poder ejecutarlos daría código que
-parece hecho y puede no hacer nada, que es peor que no tenerlo: esto queda
-anotado como pendiente y no como resuelto.
+**Los cuatro plugins de SEO apagan el sitemap del núcleo, y los cuatro con el
+mismo filtro.** Esto era lo que la fase 4 no pudo comprobar y aplazó; con Yoast
+28.5, Rank Math 1.0.278, SEOPress 10.2 y All in One SEO 5.0.1.1 instalados
+resulta que los cuatro hacen `add_filter( 'wp_sitemaps_enabled', '__return_false' )`.
+Con ese filtro se van también las rutas `wp-sitemap-*.xml` y con ellas el
+proveedor de arriba: las URLs traducidas dejaban de ser descubribles.
 
-Lo que **sí** funciona ya con los cuatro es lo demás del SEO Pack: el texto que
-emiten lo traduce el barrido de la salida y sus URLs las corrige `Seo\HeadUrls`
-(ADR-15).
+La respuesta no es reimplementar el sitemap de cada plugin, sino separar **qué
+URLs hay** de **quién las sirve**:
+
+| Pieza | Papel |
+|---|---|
+| `Seo\TranslatedUrls` | La lista de URLs traducidas, paginada por subtipo. Única. |
+| `Seo\TranslatedSitemapProvider` | La sirve dentro del sitemap del núcleo. |
+| `Seo\StandaloneSitemap` | La sirve en rutas propias cuando el núcleo no está. |
+| `Compat\SeoPlugins` | Mete esos archivos en el índice del plugin de SEO activo. |
+
+Las dos vías de servicio son **excluyentes**: solo se anuncia lo que se sirve, y
+si el sitemap del núcleo sigue en pie las rutas propias no responden, porque
+esas mismas URLs ya están dentro de él. Publicarlas en dos sitios no aporta
+nada y obliga a mantener dos verdades.
+
+**No se detecta qué plugin hay instalado.** Los cuatro filtros se registran
+siempre; el que no tenga plugin detrás no se dispara nunca y no cuesta nada.
+Reconocer cada plugin por su constante de versión es justo el código que se
+queda obsoleto en la siguiente versión mayor, que es lo que ya argumenta el
+ADR-15. Lo único que cambia entre los cuatro es el formato de la entrada,
+comprobado en el código de cada uno:
+
+| Plugin | Hook | Entrada |
+|---|---|---|
+| Yoast | `wpseo_sitemap_index_links` | `['loc' => …, 'lastmod' => …]` |
+| Rank Math | `rank_math/sitemap/index` | XML en crudo que se concatena |
+| SEOPress | `seopress_sitemaps_external_link` | `['sitemap_url' => …, 'sitemap_last_mod' => …]` |
+| All in One SEO | `aioseo_sitemap_indexes` | `['loc' => …, 'lastmod' => …, 'count' => …]` |
+
+Que el de Rank Math es el bueno se ve en su propio módulo de Local SEO, que
+añade su `local-sitemap.xml` al índice por ese mismo filtro y de esa misma
+forma.
+
+**Las rutas propias no usan reglas de reescritura.** Una regla nueva no existe
+hasta que alguien vacía las reglas, y aquí el disparador es activar un plugin
+ajeno: el sitio serviría 404 hasta que al administrador se le ocurriera volver a
+guardar los enlaces permanentes. Se resuelven en `parse_request`, que corre
+antes de que WordPress decida el 404 y antes de enviar ninguna cabecera,
+mirando la ruta como ya hace el enrutador del ADR-09. El prefijo de idioma ya
+viene quitado de ahí, así que `/en/pgai-sitemap.xml` no necesita nada aparte.
+
+**No se anida un índice dentro de otro.** El protocolo de sitemaps.org solo
+admite `<sitemap>` apuntando a archivos de URLs, no a otros índices; Google lo
+tolera, pero no hace falta apoyarse en eso pudiendo enlazar los archivos uno a
+uno, que es lo que ya sabemos enumerar. Nuestro índice `/pgai-sitemap.xml`
+existe igualmente y se anuncia en `robots.txt`, que es lo único que hace
+descubribles las URLs traducidas si el sitemap del núcleo está apagado y no hay
+ningún plugin de SEO detrás.
 
 ### ADR-17 — Detección del visitante: implementada, desactivada por defecto
 
@@ -616,7 +659,8 @@ src/
                          Memory, MissingQueue, TranslationLookup
   Engines/               Interfaces + Claude/{ClaudeEngine,ClaudeClient,PromptBuilder,
                          ResponseSchema,ResponseParser,RetryPolicy,Batches}
-  Seo/                   HeadUrls, StructuredData, Sitemaps
+  Seo/                   HeadUrls, StructuredData, Sitemaps, TranslatedUrls,
+                         TranslatedSitemapProvider, StandaloneSitemap
   Switcher/              SwitcherRenderer, Shortcode, Block, NavMenu,
                          MenuLocations, FloatingSwitcher
   Detection/             BotDetector, BrowserLanguage, VisitorRedirect
@@ -688,11 +732,11 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 | 1. Base | Completa |
 | 2. Editor visual y API REST | Completa |
 | 3. Gettext, contenido dinámico y correos | Completa |
-| 4. SEO Pack | Completa, salvo los sitemaps de los plugins de SEO (ADR-16) |
+| 4. SEO Pack | Completa |
 | 5. Selector, navegación y detección | Completa |
 | 6. Roles, gestor de cadenas, glosario y estadísticas | Completa |
 | 7. Traducción de sitio completo | Completa |
-| 8 | Sin empezar |
+| 8. Compatibilidad, rendimiento, seguridad y documentación | En curso |
 
 Un punto del encargo que caía en la fase 3 sigue pendiente, y otro ya está
 resuelto:
@@ -706,15 +750,14 @@ resuelto:
   `pgai_recipient_language` es el punto de entrada para el idioma del pedido.
   La integración concreta con WooCommerce es de la fase 8.
 
-Y uno de la fase 4:
+Y el de la fase 4 ya está resuelto:
 
-- **Los sitemaps de Yoast, Rank Math, SEOPress y All in One SEO.** Cada uno
-  sustituye el del núcleo por el suyo y lo amplía a su manera, y esos hooks no
-  se pueden comprobar hasta tener los cuatro plugins instalados en `wp-env`.
-  Va con el resto de pruebas de compatibilidad de la fase 8 (ADR-16). El
-  sitemap del núcleo sí lleva ya un sitemap por idioma, y el resto del SEO Pack
-  —título, descripción, Open Graph, datos estructurados y URLs— funciona con
-  los cuatro desde ahora.
+- ~~**Los sitemaps de Yoast, Rank Math, SEOPress y All in One SEO.**~~ Resuelto
+  en la fase 8 con los cuatro plugins instalados, que es lo que faltaba para
+  poder comprobarlo en vez de suponerlo. Resultó que los cuatro apagan el
+  sitemap del núcleo con el mismo filtro y que los cuatro admiten entradas
+  externas en su índice, así que la integración es una lista de URLs
+  compartida y cuatro adaptadores de formato (ADR-16).
 
 ## 7. Decisiones confirmadas y pendientes
 
