@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace PolyglotAI;
 
 use PolyglotAI\Admin\SettingsPage;
+use PolyglotAI\Admin\StringsPage;
 use PolyglotAI\Admin\TranslatorAccess;
 use PolyglotAI\Admin\TranslatorProfile;
 use PolyglotAI\Bootstrap\Requirements;
@@ -179,6 +180,7 @@ final class Plugin {
 			$this->settings_page()->register();
 			$this->editor_page()->register();
 
+			( new StringsPage( $this->translator_languages() ) )->register();
 			( new TranslatorAccess() )->register();
 			( new TranslatorProfile( $this->languages(), $this->translator_languages() ) )->register();
 		}

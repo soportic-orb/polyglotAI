@@ -1,0 +1,78 @@
+/**
+ * Estilos del gestor de cadenas.
+ */
+
+.pgai-manager {
+
+	&__filters {
+		align-items: flex-end;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	&__search {
+		align-items: flex-end;
+		display: flex;
+		gap: 8px;
+	}
+
+	&__bulk {
+		align-items: center;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-bottom: 12px;
+	}
+
+	&__original {
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
+
+	&__meta {
+		color: #757575;
+		font-size: 12px;
+		margin-top: 4px;
+	}
+
+	&__loading {
+		align-items: center;
+		display: flex;
+		gap: 8px;
+	}
+
+	&__pagination {
+		align-items: center;
+		display: flex;
+		gap: 12px;
+		margin-top: 16px;
+	}
+
+	&__status {
+		border-radius: 3px;
+		display: inline-block;
+		font-size: 12px;
+		padding: 2px 8px;
+
+		&--pending {
+			background: #f0f0f1;
+		}
+
+		&--error {
+			background: #fcf0f1;
+			color: #8a2424;
+		}
+
+		&--automatic {
+			background: #f0f6fc;
+		}
+
+		&--reviewed,
+		&--manual {
+			background: #edfaef;
+			color: #135e32;
+		}
+	}
+}
