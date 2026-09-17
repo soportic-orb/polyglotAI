@@ -60,6 +60,9 @@ final class Options {
 			'realtime'               => true,
 			'realtime_max_queued'    => 50,
 
+			// Traducción del texto que aparece después de cargar la página.
+			'dynamic'                => true,
+
 			// Tope mensual de tokens. 0 = sin tope.
 			'monthly_token_limit'    => 0,
 

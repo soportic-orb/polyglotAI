@@ -28,6 +28,8 @@ use PolyglotAI\Engines\Claude\PromptBuilder;
 use PolyglotAI\Engines\Claude\ResponseParser;
 use PolyglotAI\Engines\Claude\RetryPolicy;
 use PolyglotAI\Engines\EngineRegistry;
+use PolyglotAI\Frontend\DynamicScript;
+use PolyglotAI\Gettext\GettextTranslator;
 use PolyglotAI\Html\BailConditions;
 use PolyglotAI\Html\DocumentProcessor;
 use PolyglotAI\Html\DriverFactory;
@@ -40,6 +42,10 @@ use PolyglotAI\Html\TagScanner;
 use PolyglotAI\Jobs\PendingTranslator;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
+use PolyglotAI\Languages\UserLanguage;
+use PolyglotAI\Mail\LanguageResolver;
+use PolyglotAI\Mail\MailTranslator;
+use PolyglotAI\Rest\DynamicController;
 use PolyglotAI\Rest\MergesController;
 use PolyglotAI\Rest\StringsController;
 use PolyglotAI\Rest\SuggestController;
@@ -57,6 +63,7 @@ use PolyglotAI\Translation\MergeRegistry;
 use PolyglotAI\Translation\MissingQueue;
 use PolyglotAI\Translation\Normalizer;
 use PolyglotAI\Translation\StatusPrecedence;
+use PolyglotAI\Translation\TranslationLookup;
 use PolyglotAI\Translation\Validator;
 
 /**
@@ -133,7 +140,17 @@ final class Plugin {
 		$this->switcher()->register();
 		$this->admin_bar()->register();
 
+		if ( ! is_admin() ) {
+			( new DynamicScript( $this->request(), $this->options() ) )->register();
+		}
+
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+
+		// Los correos se traducen siempre, también los que dispara el
+		// escritorio: el idioma del correo es el del destinatario.
+		$this->mail_translator()->register();
+
+		( new UserLanguage( $this->request(), $this->languages() ) )->register();
 
 		// La traducción en segundo plano se registra siempre, también cuando no
 		// hay driver: puede haber cadenas pendientes de una visita anterior.
@@ -141,6 +158,13 @@ final class Plugin {
 
 		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( \WP_CLI::class ) ) {
 			$this->commands()->register();
+		}
+
+		// Las cadenas de temas y plugins se traducen en el frontal, donde las ve
+		// el visitante. En el escritorio se dejan como están: traducir la
+		// interfaz de administración confundiría a quien la usa.
+		if ( ! is_admin() && ! $this->request()->is_default() ) {
+			$this->gettext()->register( $this->request()->language() );
 		}
 
 		// Sin driver viable no se procesa nada: es preferible servir el sitio
@@ -174,6 +198,13 @@ final class Plugin {
 		) )->register_routes();
 
 		( new MergesController( $this->languages(), $this->merges() ) )->register_routes();
+
+		( new DynamicController(
+			$this->languages(),
+			$this->translations(),
+			$this->hasher(),
+			$this->normalizer()
+		) )->register_routes();
 
 		( new SuggestController(
 			$this->languages(),
@@ -403,6 +434,87 @@ final class Plugin {
 					(string) wp_parse_url( home_url(), PHP_URL_HOST )
 				),
 				$this->preview()
+			)
+		);
+	}
+
+	/**
+	 * Búsqueda de traducciones de cadenas sueltas.
+	 */
+	public function lookup(): TranslationLookup {
+		return $this->service(
+			'lookup',
+			fn(): TranslationLookup => new TranslationLookup(
+				$this->sources(),
+				$this->translations(),
+				$this->hasher(),
+				$this->normalizer()
+			)
+		);
+	}
+
+	/**
+	 * Traductor de correos salientes.
+	 */
+	public function mail_translator(): MailTranslator {
+		return $this->service(
+			'mail_translator',
+			fn(): MailTranslator => new MailTranslator(
+				new LanguageResolver( $this->languages() ),
+				$this->languages(),
+				new DocumentProcessor(
+					$this->driver() ?? new Html\HtmlApiDriver( new TagScanner(), new ExclusionRules() ),
+					new Splicer(),
+					new Escaper(),
+					new SafetyCheck()
+				),
+				$this->lookup()
+			)
+		);
+	}
+
+	/**
+	 * Ejecuta un bloque de código en otro idioma.
+	 *
+	 * Restaura el idioma anterior pase lo que pase: si el bloque lanza una
+	 * excepción y no se restaurara, el resto de la petición se serviría en el
+	 * idioma equivocado.
+	 *
+	 * @param string   $locale   Locale de destino.
+	 * @param callable $callback Código a ejecutar.
+	 * @return mixed
+	 */
+	public function with_language( string $locale, callable $callback ) {
+		$language = $this->languages()->by_locale( $locale );
+
+		if ( null === $language ) {
+			return $callback();
+		}
+
+		$previous = $this->request()->language();
+
+		$this->request()->force( $language );
+		$this->gettext()->register( $language );
+
+		try {
+			return $callback();
+		} finally {
+			$this->gettext()->unregister();
+			$this->request()->force( $previous );
+		}
+	}
+
+	/**
+	 * Traductor de las cadenas de temas y plugins.
+	 */
+	public function gettext(): GettextTranslator {
+		return $this->service(
+			'gettext',
+			fn(): GettextTranslator => new GettextTranslator(
+				$this->sources(),
+				$this->translations(),
+				$this->hasher(),
+				$this->normalizer()
 			)
 		);
 	}

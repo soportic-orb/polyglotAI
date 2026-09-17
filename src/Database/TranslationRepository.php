@@ -122,6 +122,49 @@ final class TranslationRepository {
 	}
 
 	/**
+	 * Todas las traducciones utilizables de un tipo, en un idioma.
+	 *
+	 * La usa el diccionario de gettext, que necesita el conjunto entero de una
+	 * vez: consultarlo cadena a cadena sería una consulta por cada llamada a
+	 * __(), y son miles por petición.
+	 *
+	 * @param string $language Locale.
+	 * @param string $type     Tipo de cadena.
+	 * @return array<string, string> Hash => traducción.
+	 */
+	public function lookup_by_type( string $language, string $type ): array {
+		global $wpdb;
+
+		$sources      = Schema::table( 'sources' );
+		$translations = Schema::table( 'translations' );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT s.hash, t.translation
+				FROM {$translations} t
+				INNER JOIN {$sources} s ON s.id = t.source_id
+				WHERE t.language = %s
+				AND s.type = %s
+				AND t.status <> 'pending'
+				AND t.status <> 'error'",
+				$language,
+				$type
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$map = array();
+
+		foreach ( (array) $rows as $row ) {
+			$map[ (string) $row['hash'] ] = (string) $row['translation'];
+		}
+
+		return $map;
+	}
+
+	/**
 	 * Estado actual de una traducción.
 	 *
 	 * @param int    $source_id Identificador de la cadena original.

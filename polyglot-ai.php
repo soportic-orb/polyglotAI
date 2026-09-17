@@ -47,6 +47,7 @@ if ( ! is_readable( $pgai_autoload ) ) {
 }
 
 require_once $pgai_autoload;
+require_once PGAI_DIR . 'src/functions.php';
 
 register_activation_hook( __FILE__, array( Bootstrap\Activator::class, 'activate' ) );
 register_deactivation_hook( __FILE__, array( Bootstrap\Deactivator::class, 'deactivate' ) );

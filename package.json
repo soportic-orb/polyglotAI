@@ -4,8 +4,8 @@
     "private": true,
     "license": "UNLICENSED",
     "scripts": {
-        "build": "wp-scripts build editor=./assets/src/editor/index.js preview=./assets/src/preview/index.js --output-path=assets/build",
-        "start": "wp-scripts start editor=./assets/src/editor/index.js preview=./assets/src/preview/index.js --output-path=assets/build",
+        "build": "wp-scripts build editor=./assets/src/editor/index.js preview=./assets/src/preview/index.js dynamic=./assets/src/dynamic/index.js --output-path=assets/build",
+        "start": "wp-scripts start editor=./assets/src/editor/index.js preview=./assets/src/preview/index.js dynamic=./assets/src/dynamic/index.js --output-path=assets/build",
         "lint:js": "wp-scripts lint-js assets/src",
         "lint:css": "wp-scripts lint-style \"assets/src/**/*.scss\"",
         "format": "wp-scripts format",

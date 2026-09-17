@@ -69,6 +69,40 @@ add_filter( 'pgai_allowed_html', function ( array $allowed ): array {
 } );
 ```
 
+### `pgai_skip_gettext_domain`
+
+Excluye de la traducción un dominio de gettext entero.
+
+```php
+add_filter( 'pgai_skip_gettext_domain', function ( bool $skip, string $domain ): bool {
+    return $skip || 'mi-plugin-interno' === $domain;
+}, 10, 2 );
+```
+
+### `pgai_record_string`
+
+Decide si una cadena encontrada en el HTML se anota como pendiente. Lo usa la
+captura de gettext para que una frase ya traducida por esa vía no aparezca dos
+veces en el gestor.
+
+### `pgai_allow_dynamic_translation`
+
+Permite cerrar a los visitantes el endpoint de contenido dinámico. Devolver
+`false` lo desactiva.
+
+### `pgai_recipient_language`
+
+Decide el idioma de un correo. Es el punto por el que una integración aporta el
+idioma de un pedido, que puede no corresponder a ningún usuario registrado.
+
+```php
+add_filter( 'pgai_recipient_language', function ( $language, string $email, $to ) {
+    $order = wc_get_order( /* … */ );
+
+    return $order ? pgai_language( $order->get_meta( '_pgai_language' ) ) : $language;
+}, 10, 3 );
+```
+
 ### `pgai_is_bot`
 
 Afina la detección de tráfico automatizado. Devolver `true` impide que esa
@@ -92,6 +126,7 @@ add_filter( 'pgai_is_bot', function ( bool $is_bot, string $agent ): bool {
 | `pgai_document_safety_check_failed` | `string $driver` | La comprobación de integridad ha rechazado el resultado. |
 | `pgai_no_driver_available` | — | No hay driver de análisis viable; el plugin deja de traducir. |
 | `pgai_budget_exhausted` | `string $language` | El tope mensual de tokens ha detenido la traducción. |
+| `pgai_translated_mail` | `array $mail, string $language` | Tras traducir un correo saliente. |
 
 ## Endpoints REST
 
@@ -150,6 +185,43 @@ automática no pisa una corrección manual ni aunque se pulse «traducir todo».
 
 Devuelve `429` si se ha alcanzado el tope mensual de tokens, `502` si el motor
 falla y `503` si el fallo admite reintento.
+
+### `POST /wp-json/pgai/v1/merges` y `DELETE /wp-json/pgai/v1/merges`
+
+Crea y deshace bloques de traducción fusionados. Capacidad: `pgai_translate`.
+Una fusión cambia cómo se trocea la página para todos los idiomas, así que no
+recibe un idioma.
+
+### `POST /wp-json/pgai/v1/dynamic`
+
+Devuelve traducciones ya existentes para textos que aparecen en la página
+después de cargarla.
+
+Es el **único endpoint abierto a visitantes no identificados**, y lo es porque
+tiene que funcionar para cualquiera que navegue el sitio. Es de solo lectura, no
+llama a ninguna API y solo devuelve traducciones que ya se muestran
+públicamente. Se puede cerrar con el filtro `pgai_allow_dynamic_translation`.
+
+## Funciones públicas
+
+| Función | Devuelve |
+|---|---|
+| `pgai_current_language()` | Locale de la petición en curso, p. ej. `en_US`. |
+| `pgai_is_default_language()` | Si se sirve en el idioma original del sitio. |
+| `pgai_languages()` | Idiomas visibles del sitio. |
+| `pgai_translate( $text, $locale = null )` | Traducción de un texto suelto; anota la cadena si aún no existe. |
+| `pgai_with_language( $locale, $callback )` | Ejecuta un bloque como si la petición fuese de otro idioma. |
+
+`pgai_with_language()` es la vía para generar contenido en un idioma concreto —el
+correo de un pedido en el idioma del cliente, por ejemplo—. Dentro del bloque,
+las cadenas de gettext y `pgai_current_language()` responden en ese idioma, y al
+salir todo vuelve a como estaba, también si el bloque lanza una excepción.
+
+```php
+pgai_with_language( 'en_US', function () use ( $order ) {
+    return wc_get_template_html( 'emails/customer-completed-order.php', array( 'order' => $order ) );
+} );
+```
 
 ## Mensajes entre el editor y la vista previa
 

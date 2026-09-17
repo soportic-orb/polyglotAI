@@ -82,6 +82,22 @@ final class MissingQueue {
 		foreach ( $strings as $hash => $entry ) {
 			$unit = $entry['unit'];
 
+			/**
+			 * Permite no anotar una cadena concreta.
+			 *
+			 * Lo usa la captura de gettext para que una frase ya traducida por
+			 * esa vía no se anote otra vez como contenido: aparecería dos veces
+			 * en el gestor de cadenas.
+			 *
+			 * @since 0.1.0
+			 *
+			 * @param bool                            $record Si se anota.
+			 * @param \PolyglotAI\Html\ExtractedString $unit Unidad encontrada.
+			 */
+			if ( ! (bool) apply_filters( 'pgai_record_string', true, $unit ) ) {
+				continue;
+			}
+
 			$source_ids[] = $this->sources->remember(
 				$hash,
 				$unit->value,
