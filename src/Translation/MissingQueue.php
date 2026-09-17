@@ -12,6 +12,7 @@ namespace PolyglotAI\Translation;
 use PolyglotAI\Database\SourceRepository;
 use PolyglotAI\Database\TranslationRepository;
 use PolyglotAI\Detection\BotDetector;
+use PolyglotAI\Jobs\PendingTranslator;
 use PolyglotAI\Support\Options;
 
 /**
@@ -88,10 +89,10 @@ final class MissingQueue {
 			return;
 		}
 
-		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( 'pgai_translate_pending', array( $language ), 'polyglot-ai' ) ) {
+		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( PendingTranslator::HOOK, array( $language ), 'polyglot-ai' ) ) {
 			return;
 		}
 
-		as_enqueue_async_action( 'pgai_translate_pending', array( $language ), 'polyglot-ai' );
+		as_enqueue_async_action( PendingTranslator::HOOK, array( $language ), 'polyglot-ai' );
 	}
 }

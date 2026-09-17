@@ -6,6 +6,8 @@ parameters:
         - tests/phpstan-bootstrap.php
     scanFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-commands-stubs.php
     treatPhpDocTypesAsCertain: false
     # El valor real de estas constantes depende de la instalación, no del
     # arranque del análisis: sin esto PHPStan resolvería ABSPATH al valor del

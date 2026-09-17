@@ -23,6 +23,12 @@ if ( ! file_exists( $pgai_tests_dir . '/includes/functions.php' ) ) {
 	exit( 1 );
 }
 
+// La suite de WordPress exige la biblioteca de polyfills de PHPUnit y aborta si
+// no la encuentra. Se le indica dónde está la que instala Composer.
+if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
+	define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', dirname( __DIR__, 2 ) . '/vendor/yoast/phpunit-polyfills' );
+}
+
 require_once $pgai_tests_dir . '/includes/functions.php';
 
 tests_add_filter(

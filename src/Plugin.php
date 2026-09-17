@@ -11,6 +11,7 @@ namespace PolyglotAI;
 
 use PolyglotAI\Admin\SettingsPage;
 use PolyglotAI\Bootstrap\Requirements;
+use PolyglotAI\Cli\Commands;
 use PolyglotAI\Database\ApiLogRepository;
 use PolyglotAI\Database\SourceRepository;
 use PolyglotAI\Database\TranslationRepository;
@@ -30,6 +31,7 @@ use PolyglotAI\Html\OutputBuffer;
 use PolyglotAI\Html\SafetyCheck;
 use PolyglotAI\Html\Splicer;
 use PolyglotAI\Html\TagScanner;
+use PolyglotAI\Jobs\PendingTranslator;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Routing\HeadTags;
@@ -117,6 +119,14 @@ final class Plugin {
 		}
 
 		$this->switcher()->register();
+
+		// La traducción en segundo plano se registra siempre, también cuando no
+		// hay driver: puede haber cadenas pendientes de una visita anterior.
+		$this->pending_translator()->register();
+
+		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( \WP_CLI::class ) ) {
+			$this->commands()->register();
+		}
 
 		// Sin driver viable no se procesa nada: es preferible servir el sitio
 		// sin traducir a servirlo corrupto (ver DriverFactory).
@@ -335,6 +345,40 @@ final class Plugin {
 					new Splicer(),
 					(string) wp_parse_url( home_url(), PHP_URL_HOST )
 				)
+			)
+		);
+	}
+
+	/**
+	 * Traductor de las cadenas pendientes en segundo plano.
+	 */
+	public function pending_translator(): PendingTranslator {
+		return $this->service(
+			'pending_translator',
+			fn(): PendingTranslator => new PendingTranslator(
+				$this->engine(),
+				$this->translations(),
+				$this->api_log(),
+				$this->languages(),
+				$this->options()
+			)
+		);
+	}
+
+	/**
+	 * Comandos de WP-CLI.
+	 */
+	private function commands(): Commands {
+		return $this->service(
+			'commands',
+			fn(): Commands => new Commands(
+				$this->engine(),
+				$this->translations(),
+				$this->api_log(),
+				$this->languages(),
+				$this->options(),
+				new ApiKey(),
+				$this->pending_translator()
 			)
 		);
 	}
