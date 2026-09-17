@@ -91,6 +91,19 @@ final class FakeAsyncEngine implements AsyncBatchEngineInterface {
 	}
 
 	/**
+	 * Estima los tokens de entrada.
+	 *
+	 * @param TranslationRequest[] $requests Cadenas.
+	 * @param EngineContext        $context  Contexto.
+	 */
+	public function estimate_input_tokens( array $requests, EngineContext $context ): int {
+		unset( $context );
+
+		// Diez por cadena: basta para comprobar que la cuenta llega al panel.
+		return count( $requests ) * 10;
+	}
+
+	/**
 	 * Guarda el lote y lo deja en curso.
 	 *
 	 * @param array<string, TranslationRequest[]> $chunks  Trozos.

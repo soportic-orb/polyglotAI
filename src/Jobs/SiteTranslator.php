@@ -198,6 +198,64 @@ final class SiteTranslator {
 	}
 
 	/**
+	 * Cuánto costaría traducir lo que queda pendiente.
+	 *
+	 * @param string $language Locale.
+	 * @return array{strings:int, input_tokens:int}
+	 */
+	public function estimate( string $language ): array {
+		$pending = $this->translations->counts( $language )[ Status::Pending->value ] ?? 0;
+
+		if ( 0 === $pending ) {
+			return array(
+				'strings'      => 0,
+				'input_tokens' => 0,
+			);
+		}
+
+		// Se estima sobre una muestra del principio de la cola —un trozo— y se
+		// multiplica por los trozos que harían falta. Traerse cien mil cadenas
+		// de la base de datos para contarlas no afinaría: el prompt del sistema
+		// es idéntico en todos los trozos y las cadenas son parecidas entre sí.
+		$sample   = $this->translations->pending( $language, $this->engine->max_batch_size() );
+		$requests = array();
+
+		foreach ( $sample as $row ) {
+			$requests[] = new TranslationRequest(
+				(string) $row['source_id'],
+				(string) $row['original'],
+				StringType::tryFrom( (string) $row['type'] ) ?? StringType::Text,
+				isset( $row['context'] ) ? (string) $row['context'] : null
+			);
+		}
+
+		if ( array() === $requests ) {
+			return array(
+				'strings'      => $pending,
+				'input_tokens' => 0,
+			);
+		}
+
+		try {
+			$per_chunk = $this->engine->estimate_input_tokens( $requests, $this->contexts->for_language( $language ) );
+		} catch ( EngineException $error ) {
+			unset( $error );
+
+			return array(
+				'strings'      => $pending,
+				'input_tokens' => 0,
+			);
+		}
+
+		$chunks = (int) ceil( $pending / max( 1, $this->engine->max_batch_size() ) );
+
+		return array(
+			'strings'      => $pending,
+			'input_tokens' => $per_chunk * $chunks,
+		);
+	}
+
+	/**
 	 * Una pasada del trabajo.
 	 *
 	 * @param string $language Locale.

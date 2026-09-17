@@ -6,7 +6,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import { Button, Notice } from '@wordpress/components';
 import { useCallback, useEffect, useState } from '@wordpress/element';
 
-import { commandSiteRun, fetchSiteRun } from './api';
+import { commandSiteRun, estimateSiteRun, fetchSiteRun } from './api';
 
 const boot = window.pgaiManager || {};
 
@@ -50,6 +50,7 @@ export default function SiteRun( { language, onFinish } ) {
 	const [ run, setRun ] = useState( null );
 	const [ busy, setBusy ] = useState( false );
 	const [ error, setError ] = useState( '' );
+	const [ estimate, setEstimate ] = useState( null );
 
 	const load = useCallback( async () => {
 		if ( ! language ) {
@@ -72,7 +73,27 @@ export default function SiteRun( { language, onFinish } ) {
 
 	useEffect( () => {
 		load();
+		setEstimate( null );
 	}, [ load ] );
+
+	/**
+	 * Pide la estimación de coste.
+	 */
+	const askEstimate = async () => {
+		setBusy( true );
+		setError( '' );
+
+		try {
+			setEstimate( await estimateSiteRun( language ) );
+		} catch ( failure ) {
+			setError(
+				failure.message ||
+					__( 'No se ha podido estimar.', 'polyglot-ai' )
+			);
+		}
+
+		setBusy( false );
+	};
 
 	// Solo se pregunta mientras hay algo en marcha: una pasada terminada no
 	// cambia sola y seguir preguntando sería ruido.
@@ -189,7 +210,31 @@ export default function SiteRun( { language, onFinish } ) {
 				</>
 			) }
 
+			{ estimate && (
+				<p className="pgai-site-run__estimate">
+					{ sprintf(
+						/* translators: 1: cadenas, 2: tokens de entrada. */
+						__(
+							'Quedan %1$d cadenas, unos %2$d tokens de entrada. La lectura de caché y la salida se suman aparte.',
+							'polyglot-ai'
+						),
+						estimate.strings || 0,
+						estimate.input_tokens || 0
+					) }
+				</p>
+			) }
+
 			<div className="pgai-site-run__actions">
+				{ ( ! run || ! run.active ) && (
+					<Button
+						variant="secondary"
+						disabled={ busy }
+						onClick={ askEstimate }
+					>
+						{ __( 'Estimar el coste', 'polyglot-ai' ) }
+					</Button>
+				) }
+
 				{ ( ! run || ! run.active ) && run?.status !== 'paused' && (
 					<Button
 						variant="primary"

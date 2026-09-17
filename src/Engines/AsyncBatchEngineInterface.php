@@ -22,6 +22,17 @@ namespace PolyglotAI\Engines;
 interface AsyncBatchEngineInterface extends TranslationEngineInterface {
 
 	/**
+	 * Cuenta los tokens de entrada que costaría traducir unas cadenas.
+	 *
+	 * @param TranslationRequest[] $requests Cadenas.
+	 * @param EngineContext        $context  Contexto lingüístico.
+	 * @return int Tokens de entrada estimados.
+	 *
+	 * @throws EngineException Si no se puede estimar.
+	 */
+	public function estimate_input_tokens( array $requests, EngineContext $context ): int;
+
+	/**
 	 * Envía un lote y devuelve su identificador.
 	 *
 	 * @param array<string, TranslationRequest[]> $chunks  Trozos, por identificador propio.

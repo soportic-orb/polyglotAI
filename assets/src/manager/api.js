@@ -91,3 +91,18 @@ export function commandSiteRun( command, language ) {
 		data: { language, command },
 	} );
 }
+
+/**
+ * Estima lo que costaría traducir lo pendiente.
+ *
+ * Va en su propia llamada porque cuesta una petición a la API: pedirla con cada
+ * sondeo del progreso sería pagarla cada quince segundos.
+ *
+ * @param {string} language Locale.
+ * @return {Promise<Object>} Cadenas y tokens estimados.
+ */
+export function estimateSiteRun( language ) {
+	return apiFetch( {
+		path: `site/estimate?language=${ encodeURIComponent( language ) }`,
+	} );
+}

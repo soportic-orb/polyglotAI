@@ -48,15 +48,17 @@ final class PromptBuilder {
 	/**
 	 * Construye el cuerpo de la petición.
 	 *
-	 * @param TranslationRequest[] $requests Cadenas a traducir.
-	 * @param EngineContext        $context  Contexto lingüístico.
+	 * @param TranslationRequest[] $requests   Cadenas a traducir.
+	 * @param EngineContext        $context    Contexto lingüístico.
+	 * @param bool                 $long_cache Si el prefijo se cachea una hora
+	 *                                         en vez de cinco minutos.
 	 * @return array<string, mixed>
 	 */
-	public function build( array $requests, EngineContext $context ): array {
+	public function build( array $requests, EngineContext $context, bool $long_cache = false ): array {
 		$body = array(
 			'model'         => $this->model,
 			'max_tokens'    => $this->max_tokens( $requests ),
-			'system'        => $this->system( $context ),
+			'system'        => $this->system( $context, $long_cache ),
 			'messages'      => array(
 				array(
 					'role'    => 'user',
@@ -98,10 +100,11 @@ final class PromptBuilder {
 	 * bloque: las cadenas del lote, que cambian siempre, viajan en messages y
 	 * quedan después del corte.
 	 *
-	 * @param EngineContext $context Contexto lingüístico.
+	 * @param EngineContext $context    Contexto lingüístico.
+	 * @param bool          $long_cache Si el prefijo se cachea una hora.
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function system( EngineContext $context ): array {
+	private function system( EngineContext $context, bool $long_cache = false ): array {
 		$blocks = array(
 			array(
 				'type' => 'text',
@@ -120,7 +123,11 @@ final class PromptBuilder {
 
 		$cache_control = array( 'type' => 'ephemeral' );
 
-		if ( 5 !== $this->cache_ttl ) {
+		// La hora de vida es para la traducción de sitio completo (ADR-05):
+		// allí hay ráfagas con huecos de minutos entre lote y lote, y con cinco
+		// minutos el prefijo caduca entre uno y otro y se vuelve a pagar
+		// entero. En una llamada suelta no compensa: cuesta más escribirla.
+		if ( $long_cache || 5 !== $this->cache_ttl ) {
 			$cache_control['ttl'] = '1h';
 		}
 

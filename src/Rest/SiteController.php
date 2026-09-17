@@ -45,6 +45,17 @@ final class SiteController extends Controller {
 	public function register_routes(): void {
 		register_rest_route(
 			self::NAMESPACE,
+			'/site/estimate',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'estimate' ),
+				'permission_callback' => $this->requires( Capabilities::RUN_AUTO ),
+				'args'                => $this->language_argument(),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/site',
 			array(
 				array(
@@ -95,6 +106,35 @@ final class SiteController extends Controller {
 			array(
 				'supported' => true,
 				'run'       => null === $run ? null : $run->to_array(),
+			)
+		);
+	}
+
+	/**
+	 * Cuánto costaría traducir lo pendiente.
+	 *
+	 * Va en su propio endpoint y no dentro del estado porque cuesta una llamada
+	 * a la API: mezclarla con el sondeo del progreso sería pagarla cada quince
+	 * segundos por cada pestaña abierta.
+	 *
+	 * @param WP_REST_Request $request Petición.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function estimate( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$language = $this->language_from( $request );
+
+		if ( $language instanceof WP_Error ) {
+			return $language;
+		}
+
+		if ( null === $this->translator ) {
+			return new WP_REST_Response( array( 'supported' => false ) );
+		}
+
+		return new WP_REST_Response(
+			array_merge(
+				array( 'supported' => true ),
+				$this->translator->estimate( $language->locale )
 			)
 		);
 	}

@@ -331,6 +331,31 @@ final class SiteTranslatorTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $this->engine->created, 'No se ha llamado a la API.' );
 	}
 
+	public function test_estima_lo_que_costaria_traducir_lo_pendiente(): void {
+		$this->pending( 'Hola' );
+		$this->pending( 'Adiós' );
+		$this->pending( 'Gracias' );
+
+		$estimate = $this->translator->estimate( 'en_US' );
+
+		$this->assertSame( 3, $estimate['strings'] );
+
+		// El motor de mentira cobra diez por cadena y parte en trozos de dos:
+		// una muestra de dos cadenas son veinte tokens, y hacen falta dos
+		// trozos para tres cadenas.
+		$this->assertSame( 40, $estimate['input_tokens'] );
+	}
+
+	public function test_sin_nada_pendiente_la_estimacion_es_cero(): void {
+		$this->assertSame(
+			array(
+				'strings'      => 0,
+				'input_tokens' => 0,
+			),
+			$this->translator->estimate( 'en_US' )
+		);
+	}
+
 	public function test_no_pisa_lo_que_ha_escrito_una_persona(): void {
 		$id = $this->pending( 'Hola' );
 

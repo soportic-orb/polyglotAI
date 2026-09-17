@@ -110,6 +110,44 @@ final class ClaudeEngine implements AsyncBatchEngineInterface {
 		return new BatchResult( $translations, $failures, $usage );
 	}
 	/**
+	 * Cuenta los tokens de entrada que costaría traducir unas cadenas.
+	 *
+	 * Lo cuenta la propia API (`/v1/messages/count_tokens`) y no una regla
+	 * casera de caracteres por token: el tokenizador depende del modelo y una
+	 * estimación inventada se equivoca justo donde importa, que es al decirle a
+	 * alguien cuánto va a gastar.
+	 *
+	 * Solo se manda **un trozo** y se multiplica por el número de trozos. El
+	 * prompt del sistema es idéntico en todos y las cadenas son parecidas entre
+	 * sí, así que la diferencia es pequeña; mandarlos todos para afinar
+	 * significaría pagar una llamada por trozo para averiguar lo que va a
+	 * costar, que es exactamente lo que se quiere evitar.
+	 *
+	 * @param TranslationRequest[] $requests Cadenas.
+	 * @param EngineContext        $context  Contexto lingüístico.
+	 * @return int Tokens de entrada estimados.
+	 *
+	 * @throws EngineException Si la API no responde.
+	 */
+	public function estimate_input_tokens( array $requests, EngineContext $context ): int {
+		if ( array() === $requests ) {
+			return 0;
+		}
+
+		$chunks = array_chunk( $requests, $this->max_batch_size() );
+		$sample = $this->prompt->build( $chunks[0], $context, true );
+
+		// count_tokens no acepta los campos de la respuesta.
+		unset( $sample['max_tokens'], $sample['output_config'], $sample['thinking'] );
+
+		$response = $this->client->post( '/v1/messages/count_tokens', $sample );
+
+		$tokens = (int) ( $response['input_tokens'] ?? 0 );
+
+		return $tokens * count( $chunks );
+	}
+
+	/**
 	 * Envía un lote asíncrono.
 	 *
 	 * @param array<string, TranslationRequest[]> $chunks  Trozos, por identificador propio.
@@ -124,7 +162,10 @@ final class ClaudeEngine implements AsyncBatchEngineInterface {
 		foreach ( $chunks as $custom_id => $chunk ) {
 			$requests[] = array(
 				'custom_id' => (string) $custom_id,
-				'params'    => $this->prompt->build( $chunk, $context ),
+				// Una hora de caché: entre lote y lote de una traducción de
+				// sitio completo pasan minutos, y con cinco el prefijo caduca
+				// y se vuelve a pagar entero (ADR-05).
+				'params'    => $this->prompt->build( $chunk, $context, true ),
 			);
 		}
 

@@ -209,6 +209,16 @@ la pasada en curso, si la hay, con su estado, el progreso y los recuentos.
 | `resume` | Vuelve a esperar por el mismo lote, sin reenviarlo. |
 | `cancel` | Cancela el lote en vuelo y olvida la pasada. |
 
+### `GET /wp-json/pgai/v1/site/estimate`
+
+Cuántas cadenas quedan pendientes en un idioma y cuántos tokens de entrada
+costaría traducirlas. Capacidad: `pgai_run_auto_translate`.
+
+Va en su propio endpoint porque **cuesta una llamada a la API**: mezclarla con
+el sondeo del progreso sería pagarla cada quince segundos por cada pestaña
+abierta. La cuenta la hace la propia API, no una regla casera de caracteres por
+token, y se estima sobre un trozo que se multiplica por los que harían falta.
+
 ### `GET /wp-json/pgai/v1/manager`
 
 Busca entre **todas** las cadenas del sitio, no solo las de una página.
