@@ -505,6 +505,63 @@ Lo que **sí** funciona ya con los cuatro es lo demás del SEO Pack: el texto qu
 emiten lo traduce el barrido de la salida y sus URLs las corrige `Seo\HeadUrls`
 (ADR-15).
 
+### ADR-17 — Detección del visitante: implementada, desactivada por defecto
+
+La detección va **solo por `Accept-Language`** (decisión 2 del apartado 7): el
+país no es el idioma —en Bélgica se habla neerlandés y francés, y un español en
+Berlín sigue queriendo leer en español—, así que la cabecera que el propio
+visitante envía es mejor señal que su dirección IP, y además no obliga a
+descargar ni a mantener ninguna base de datos.
+
+`Detection\BrowserLanguage` empareja de lo más preciso a lo menos: primero
+agota toda la lista del navegador buscando un locale exacto y solo después se
+conforma con el idioma base, porque un `es-MX` exacto más abajo es mejor que un
+`es` aproximado más arriba. Respeta el factor `q`, y trata una `q` mal formada
+como ausente: el navegador ha nombrado ese idioma y eso cuenta.
+
+**La redirección viene desactivada.** Es una decisión de producto con dos
+motivos concretos:
+
+- **Rompe las cachés de página que no varían por cookie.** La primera respuesta
+  cacheada se queda con la redirección dentro y se la lleva todo el mundo. Por
+  eso, además, la redirección no se emite nunca si ya hay cookie: la petición
+  cacheable es siempre la misma.
+- **Se lleva al visitante a donde no ha pedido ir.** Quien sigue un enlace a la
+  versión española desde una red social con el navegador en inglés acaba en la
+  inglesa.
+
+Quien la active sabrá lo que hace; quien no, tiene el selector, que es explícito
+y no sorprende a nadie.
+
+Salvaguardas cuando está activada: nunca a un robot (mismo `BotDetector` de
+ADR-13), nunca en un POST, ni en un 404, ni en un feed, ni en una vista previa,
+ni a quien ya ha elegido antes. Navegar a `/en/` cuenta como elección y se
+recuerda en una cookie, de modo que a partir de ahí manda lo que el visitante ha
+hecho y no lo que dice su navegador. El filtro `pgai_detected_language` permite
+cancelarla o cambiarla caso por caso.
+
+### ADR-18 — El selector se pinta siempre en el servidor, desde un único sitio
+
+`Switcher\SwitcherRenderer` es el único lugar donde se decide a qué URL lleva
+cada idioma. El shortcode, el bloque de Gutenberg, el elemento de menú y el
+selector flotante son envoltorios suyos.
+
+No es simetría por gusto: calcular ese enlace tiene una trampa —hay que volver
+al slug original antes de traducir al idioma de destino, o desde `/ca/contacte/`
+el enlace al inglés sale como `/en/contacte/`—, y con cuatro implementaciones
+habría cuatro sitios donde volver a caer en ella. De hecho el shortcode de la
+fase 1 caía.
+
+Por lo mismo, **el bloque no guarda HTML en la entrada**: los enlaces dependen
+de la página que se está viendo, de los idiomas activos en ese momento y de los
+slugs traducidos de esa página. Un HTML guardado se quedaría obsoleto en cuanto
+se añadiera un idioma o se corrigiera un slug, y habría que reeditar cada
+entrada.
+
+Y por lo mismo los elementos de menú guardan un centinela (`#pgai-switcher`,
+`#pgai-lang-en`) en vez de una URL: no existe una URL que se pueda guardar una
+vez, y un menú guardado sigue valiendo si después se añade o se quita un idioma.
+
 ---
 
 ## 4. Estructura del repositorio
@@ -525,7 +582,11 @@ src/
   Translation/           Dictionary, Normalizer, Hasher, Validator, StatusPrecedence, Memory
   Engines/               Interfaz + Claude/{ClaudeEngine,Client,PromptBuilder,Schema,Batches,UsageMeter}
   Seo/                   HeadUrls, StructuredData, Sitemaps
-  Gettext/  Editor/  Rest/  Admin/  Switcher/  Detection/
+  Switcher/              SwitcherRenderer, Shortcode, Block, NavMenu,
+                         MenuLocations, FloatingSwitcher
+  Detection/             BotDetector, BrowserLanguage, VisitorRedirect
+  Content/               Conditional (shortcodes por idioma)
+  Gettext/  Editor/  Rest/  Admin/
   Compat/                WooCommerce, Forms, Cache, Builders, SeoPlugins
   Jobs/                  PendingTranslator, SlugTranslator, Budget, ContextFactory
   Support/               Options, Capabilities, Logger, Lock, Cache
@@ -590,7 +651,8 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 | 2. Editor visual y API REST | Completa |
 | 3. Gettext, contenido dinámico y correos | Completa |
 | 4. SEO Pack | Completa, salvo los sitemaps de los plugins de SEO (ADR-16) |
-| 5–8 | Sin empezar |
+| 5. Selector, navegación y detección | Completa |
+| 6–8 | Sin empezar |
 
 Dos puntos del encargo que caen en la fase 3 pertenecen en realidad a fases
 posteriores y se dejan ahí a propósito:
