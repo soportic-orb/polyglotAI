@@ -11,6 +11,7 @@ namespace PolyglotAI\Rest;
 
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
+use PolyglotAI\Support\TranslatorLanguages;
 use WP_Error;
 use WP_REST_Request;
 
@@ -81,6 +82,20 @@ abstract class Controller {
 				'pgai_default_language',
 				__( 'El idioma por defecto no se traduce.', 'polyglot-ai' ),
 				array( 'status' => 400 )
+			);
+		}
+
+		// Un traductor puede tener asignados solo algunos idiomas. La
+		// comprobación se hace aquí, en el único sitio por el que pasan todos
+		// los endpoints que reciben un idioma: repartirla por los controladores
+		// sería garantizar que algún día falte en uno.
+		$access = new TranslatorLanguages( $this->languages );
+
+		if ( ! $access->allows( get_current_user_id(), $language->locale ) ) {
+			return new WP_Error(
+				'pgai_language_not_assigned',
+				__( 'No tienes asignado este idioma.', 'polyglot-ai' ),
+				array( 'status' => 403 )
 			);
 		}
 

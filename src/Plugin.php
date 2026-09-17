@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace PolyglotAI;
 
 use PolyglotAI\Admin\SettingsPage;
+use PolyglotAI\Admin\TranslatorAccess;
+use PolyglotAI\Admin\TranslatorProfile;
 use PolyglotAI\Bootstrap\Requirements;
 use PolyglotAI\Cli\Commands;
 use PolyglotAI\Database\ApiLogRepository;
@@ -71,6 +73,7 @@ use PolyglotAI\Routing\SlugResolver;
 use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Options;
+use PolyglotAI\Support\TranslatorLanguages;
 use PolyglotAI\Switcher\Block;
 use PolyglotAI\Switcher\FloatingSwitcher;
 use PolyglotAI\Switcher\MenuLocations;
@@ -173,6 +176,9 @@ final class Plugin {
 		if ( is_admin() ) {
 			$this->settings_page()->register();
 			$this->editor_page()->register();
+
+			( new TranslatorAccess() )->register();
+			( new TranslatorProfile( $this->languages(), $this->translator_languages() ) )->register();
 		}
 
 		$this->switcher()->register();
@@ -479,6 +485,16 @@ final class Plugin {
 	}
 
 	/**
+	 * Idiomas asignados a cada traductor.
+	 */
+	public function translator_languages(): TranslatorLanguages {
+		return $this->service(
+			'translator_languages',
+			fn(): TranslatorLanguages => new TranslatorLanguages( $this->languages() )
+		);
+	}
+
+	/**
 	 * Menús por idioma.
 	 */
 	public function menu_locations(): MenuLocations {
@@ -715,7 +731,7 @@ final class Plugin {
 	private function editor_page(): EditorPage {
 		return $this->service(
 			'editor_page',
-			fn(): EditorPage => new EditorPage( $this->languages(), $this->edit_mode() )
+			fn(): EditorPage => new EditorPage( $this->languages(), $this->edit_mode(), $this->translator_languages() )
 		);
 	}
 

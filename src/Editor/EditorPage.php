@@ -13,6 +13,7 @@ use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Rest\Controller;
 use PolyglotAI\Support\Capabilities;
+use PolyglotAI\Support\TranslatorLanguages;
 
 /**
  * Aloja la aplicación del editor visual.
@@ -29,12 +30,14 @@ final class EditorPage {
 	/**
 	 * Constructor.
 	 *
-	 * @param LanguageRegistry $languages Idiomas del sitio.
-	 * @param EditMode         $mode      Modo de edición.
+	 * @param LanguageRegistry    $languages Idiomas del sitio.
+	 * @param EditMode            $mode      Modo de edición.
+	 * @param TranslatorLanguages $access    Idiomas asignados a cada traductor.
 	 */
 	public function __construct(
 		private readonly LanguageRegistry $languages,
-		private readonly EditMode $mode
+		private readonly EditMode $mode,
+		private readonly TranslatorLanguages $access
 	) {}
 
 	/**
@@ -156,7 +159,10 @@ final class EditorPage {
 	private function boot_data(): array {
 		$languages = array();
 
-		foreach ( $this->languages->translatable() as $language ) {
+		// Un traductor con idiomas asignados no ve los demás en el desplegable:
+		// enseñárselos para que la API se los rechace después sería una
+		// invitación a un error.
+		foreach ( $this->access->for_user( get_current_user_id() ) as $language ) {
 			$languages[] = array(
 				'locale'    => $language->locale,
 				'slug'      => $language->slug,
