@@ -29,6 +29,18 @@ final class RequestContext {
 	private ?Language $language = null;
 
 	/**
+	 * Ruta pedida por el visitante, CON su prefijo de idioma.
+	 *
+	 * Se guarda antes de que RequestRouter se lo quite a REQUEST_URI. Es la
+	 * única copia fiable de dónde está el visitante, y por eso todo lo que
+	 * necesita saberlo la pide aquí en lugar de volver a leer REQUEST_URI, que
+	 * para entonces ya está modificado.
+	 *
+	 * @var string|null
+	 */
+	private ?string $path = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LanguageRegistry $registry  Idiomas del sitio.
@@ -67,9 +79,22 @@ final class RequestContext {
 	}
 
 	/**
-	 * Ruta de la petición.
+	 * Guarda la ruta original de la petición.
+	 *
+	 * @param string $path Ruta con su prefijo de idioma.
 	 */
-	private function path(): string {
+	public function set_path( string $path ): void {
+		$this->path = $path;
+	}
+
+	/**
+	 * Ruta pedida por el visitante, con su prefijo de idioma.
+	 */
+	public function path(): string {
+		if ( null !== $this->path ) {
+			return $this->path;
+		}
+
 		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
 			return '/';
 		}

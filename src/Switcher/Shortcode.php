@@ -70,7 +70,7 @@ final class Shortcode {
 			return '';
 		}
 
-		$path  = $this->converter->strip( $this->current_path() );
+		$path  = $this->converter->strip( $this->request->path() );
 		$items = '';
 
 		foreach ( $languages as $language ) {
@@ -108,18 +108,5 @@ final class Shortcode {
 			'both'  => sprintf( '%s (%s)', $language->label, strtoupper( $language->code() ) ),
 			default => $language->label,
 		};
-	}
-
-	/**
-	 * Ruta de la petición en curso.
-	 */
-	private function current_path(): string {
-		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
-			return '/';
-		}
-
-		$path = wp_parse_url( esc_url_raw( wp_unslash( (string) $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH );
-
-		return is_string( $path ) && '' !== $path ? $path : '/';
 	}
 }

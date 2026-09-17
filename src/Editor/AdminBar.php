@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace PolyglotAI\Editor;
 
 use PolyglotAI\Languages\LanguageRegistry;
+use PolyglotAI\Routing\RequestContext;
 use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Support\Capabilities;
 use WP_Admin_Bar;
@@ -28,11 +29,13 @@ final class AdminBar {
 	 * @param LanguageRegistry $languages Idiomas del sitio.
 	 * @param UrlConverter     $converter Conversor de rutas.
 	 * @param EditMode         $mode      Modo de edición.
+	 * @param RequestContext   $request   Contexto de la petición.
 	 */
 	public function __construct(
 		private readonly LanguageRegistry $languages,
 		private readonly UrlConverter $converter,
-		private readonly EditMode $mode
+		private readonly EditMode $mode,
+		private readonly RequestContext $request
 	) {}
 
 	/**
@@ -63,7 +66,7 @@ final class AdminBar {
 			return;
 		}
 
-		$path = $this->converter->strip( $this->current_path() );
+		$path = $this->converter->strip( $this->request->path() );
 
 		$bar->add_node(
 			array(
@@ -84,18 +87,5 @@ final class AdminBar {
 				)
 			);
 		}
-	}
-
-	/**
-	 * Ruta de la petición en curso.
-	 */
-	private function current_path(): string {
-		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) {
-			return '/';
-		}
-
-		$path = wp_parse_url( esc_url_raw( wp_unslash( (string) $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH );
-
-		return is_string( $path ) && '' !== $path ? $path : '/';
 	}
 }

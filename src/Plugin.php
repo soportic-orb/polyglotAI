@@ -52,6 +52,7 @@ use PolyglotAI\Rest\SuggestController;
 use PolyglotAI\Routing\HeadTags;
 use PolyglotAI\Routing\LinkRewriter;
 use PolyglotAI\Routing\RequestContext;
+use PolyglotAI\Routing\RequestRouter;
 use PolyglotAI\Routing\UrlConverter;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Options;
@@ -132,6 +133,10 @@ final class Plugin {
 	 * Engancha los servicios que actúan sobre las peticiones.
 	 */
 	public function register_services(): void {
+		// Lo primero de todo: WordPress no sabe nada de /en/, así que hay que
+		// quitarle el prefijo a la petición antes de que la analice.
+		( new RequestRouter( $this->languages(), $this->url_converter(), $this->request() ) )->register();
+
 		if ( is_admin() ) {
 			$this->settings_page()->register();
 			$this->editor_page()->register();
@@ -581,7 +586,12 @@ final class Plugin {
 	private function admin_bar(): AdminBar {
 		return $this->service(
 			'admin_bar',
-			fn(): AdminBar => new AdminBar( $this->languages(), $this->url_converter(), $this->edit_mode() )
+			fn(): AdminBar => new AdminBar(
+				$this->languages(),
+				$this->url_converter(),
+				$this->edit_mode(),
+				$this->request()
+			)
 		);
 	}
 
