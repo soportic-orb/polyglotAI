@@ -8,26 +8,14 @@ declare(strict_types=1);
 namespace PolyglotAI\Tests\Integration;
 
 use PolyglotAI\Database\Schema;
+use PolyglotAI\Database\SourceRepository;
+use PolyglotAI\Translation\StringType;
 use WP_UnitTestCase;
 
 /**
  * @covers \PolyglotAI\Database\Schema
  */
 final class SchemaTest extends WP_UnitTestCase {
-
-	/**
-	 * Si una tabla existe.
-	 *
-	 * @param string $name Nombre corto de la tabla.
-	 */
-	private function table_exists( string $name ): bool {
-		global $wpdb;
-
-		$table = Schema::table( $name );
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
-		return $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
-	}
 
 	/**
 	 * Índices de una tabla, por nombre.
@@ -48,18 +36,33 @@ final class SchemaTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Crea las tablas antes de cada test.
+	 * Vacía las tablas antes de cada test.
 	 */
 	public function set_up(): void {
 		parent::set_up();
 
-		( new Schema() )->install( true );
+		global $wpdb;
+
+		foreach ( Schema::names() as $name ) {
+			$table = Schema::table( $name );
+
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "DELETE FROM `{$table}`" );
+		}
 	}
 
-	public function test_crea_las_cuatro_tablas(): void {
-		foreach ( array( 'sources', 'translations', 'slugs', 'api_log' ) as $table ) {
-			$this->assertTrue( $this->table_exists( $table ), "Falta la tabla {$table}." );
-		}
+	public function test_no_falta_ninguna_tabla(): void {
+		// dbDelta no informa de sus fallos: si no sabe analizar una sentencia,
+		// simplemente no crea la tabla y no dice nada.
+		$this->assertSame( array(), ( new Schema() )->missing_tables() );
+	}
+
+	public function test_instalar_es_idempotente(): void {
+		$schema = new Schema();
+
+		$this->assertSame( array(), $schema->install( true ) );
+		$this->assertSame( array(), $schema->install( true ) );
+		$this->assertSame( array(), $schema->missing_tables() );
 	}
 
 	public function test_el_hash_de_una_cadena_es_unico(): void {
@@ -77,38 +80,20 @@ final class SchemaTest extends WP_UnitTestCase {
 		$this->assertContains( 'language_translated', $this->index_names( 'slugs' ) );
 	}
 
-	public function test_instalar_dos_veces_no_rompe_nada(): void {
-		$schema = new Schema();
-
-		$schema->install( true );
-		$schema->install( true );
-
-		$this->assertTrue( $this->table_exists( 'sources' ) );
-	}
-
 	public function test_las_tablas_llevan_el_prefijo_del_sitio(): void {
 		global $wpdb;
 
 		$this->assertStringStartsWith( $wpdb->prefix . 'pgai_', Schema::table( 'sources' ) );
 	}
 
-	public function test_borrar_elimina_todas_las_tablas(): void {
-		( new Schema() )->drop();
-
-		foreach ( array( 'sources', 'translations', 'slugs', 'api_log' ) as $table ) {
-			$this->assertFalse( $this->table_exists( $table ), "La tabla {$table} sigue existiendo." );
-		}
-
-		( new Schema() )->install( true );
-	}
-
 	public function test_el_texto_original_admite_acentos_y_emoji(): void {
 		global $wpdb;
 
-		$repository = new \PolyglotAI\Database\SourceRepository();
-		$original   = 'Cafè, ñandú, «cometes» 😀';
+		$original = 'Cafè, ñandú, «cometes» 😀';
+		$id       = ( new SourceRepository() )->remember( md5( $original ), $original, StringType::Text );
 
-		$id    = $repository->remember( md5( $original ), $original, \PolyglotAI\Translation\StringType::Text );
+		$this->assertGreaterThan( 0, $id, 'La cadena no se ha llegado a insertar.' );
+
 		$table = Schema::table( 'sources' );
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery

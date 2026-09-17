@@ -64,6 +64,9 @@
     </rule>
     <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
         <exclude-pattern>tests/*</exclude-pattern>
+        <!-- La firma de un comando de WP-CLI la fija WP-CLI: recibe siempre los
+             argumentos posicionales y los que llevan nombre, los use o no. -->
+        <exclude-pattern>src/Cli/*</exclude-pattern>
     </rule>
 
     <rule ref="WordPress.WP.I18n">

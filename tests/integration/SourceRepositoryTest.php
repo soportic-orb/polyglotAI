@@ -23,12 +23,23 @@ final class SourceRepositoryTest extends WP_UnitTestCase {
 	private SourceRepository $repository;
 
 	/**
-	 * Prepara las tablas.
+	 * Vacía las tablas del plugin antes de cada test.
+	 *
+	 * El esquema ya existe: lo crea el arranque de la suite. Aquí solo se
+	 * borran filas, que es una operación transaccional y por tanto compatible
+	 * con el aislamiento entre tests de WP_UnitTestCase.
 	 */
 	public function set_up(): void {
 		parent::set_up();
 
-		( new Schema() )->install( true );
+		global $wpdb;
+
+		foreach ( Schema::names() as $name ) {
+			$table = Schema::table( $name );
+
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "DELETE FROM `{$table}`" );
+		}
 
 		$this->repository = new SourceRepository();
 	}

@@ -26,6 +26,7 @@ if ( ! file_exists( $pgai_tests_dir . '/includes/functions.php' ) ) {
 // La suite de WordPress exige la biblioteca de polyfills de PHPUnit y aborta si
 // no la encuentra. Se le indica dónde está la que instala Composer.
 if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- El nombre lo fija la suite de tests de WordPress.
 	define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', dirname( __DIR__, 2 ) . '/vendor/yoast/phpunit-polyfills' );
 }
 
@@ -39,3 +40,19 @@ tests_add_filter(
 );
 
 require $pgai_tests_dir . '/includes/bootstrap.php';
+
+/*
+ * Las tablas se crean UNA sola vez, aquí, y no en el set_up de cada test.
+ *
+ * WP_UnitTestCase envuelve cada test en una transacción, y un CREATE TABLE
+ * dentro de una transacción provoca un commit implícito que la da por
+ * terminada: crear el esquema por test dejaba el aislamiento entre tests en un
+ * estado impredecible. Creándolo antes, cada test solo hace INSERT y SELECT,
+ * que sí son transaccionales y sí se deshacen al terminar.
+ */
+$pgai_missing = ( new PolyglotAI\Database\Schema() )->install( true );
+
+if ( array() !== $pgai_missing ) {
+	fwrite( STDERR, 'No se han podido crear las tablas: ' . implode( ', ', $pgai_missing ) . "\n" );
+	exit( 1 );
+}

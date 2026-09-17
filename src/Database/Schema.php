@@ -36,13 +36,23 @@ final class Schema {
 	}
 
 	/**
+	 * Nombres cortos de todas las tablas.
+	 *
+	 * @return string[]
+	 */
+	public static function names(): array {
+		return array( 'sources', 'translations', 'slugs', 'api_log' );
+	}
+
+	/**
 	 * Crea o actualiza las tablas si hace falta.
 	 *
 	 * @param bool $force Si se fuerza aunque la versión coincida.
+	 * @return string[] Tablas que NO se han podido crear. Vacío si todo ha ido bien.
 	 */
-	public function install( bool $force = false ): void {
+	public function install( bool $force = false ): array {
 		if ( ! $force && (int) get_option( self::VERSION_OPTION, 0 ) === self::VERSION ) {
-			return;
+			return array();
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -51,7 +61,43 @@ final class Schema {
 			dbDelta( $statement );
 		}
 
+		// dbDelta no informa de sus fallos: ante un SQL que no sabe analizar
+		// simplemente no hace nada. Se comprueba el resultado en vez de
+		// suponerlo, porque una tabla que falta se manifestaría mucho más tarde
+		// como traducciones que no se guardan.
+		$missing = $this->missing_tables();
+
+		if ( array() !== $missing ) {
+			return $missing;
+		}
+
 		update_option( self::VERSION_OPTION, self::VERSION, true );
+
+		return array();
+	}
+
+	/**
+	 * Tablas del plugin que no existen en la base de datos.
+	 *
+	 * @return string[] Nombres cortos.
+	 */
+	public function missing_tables(): array {
+		global $wpdb;
+
+		$missing = array();
+
+		foreach ( self::names() as $name ) {
+			$table = self::table( $name );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+
+			if ( $table !== $found ) {
+				$missing[] = $name;
+			}
+		}
+
+		return $missing;
 	}
 
 	/**
@@ -60,7 +106,7 @@ final class Schema {
 	public function drop(): void {
 		global $wpdb;
 
-		foreach ( array( 'api_log', 'slugs', 'translations', 'sources' ) as $name ) {
+		foreach ( array_reverse( self::names() ) as $name ) {
 			$table = self::table( $name );
 
 			// El nombre de la tabla no puede ir por prepare y se construye a
@@ -88,11 +134,14 @@ final class Schema {
 		$api_log      = self::table( 'api_log' );
 
 		return array(
-			// El hash es ascii_bin: es hexadecimal, no necesita utf8mb4 y así el
-			// índice ocupa la cuarta parte.
+			// El hash va como char(32) simple, sin CHARACTER SET ni COLLATE en
+			// línea: dbDelta analiza el SQL con expresiones regulares y esas
+			// cláusulas por columna le hacen perder la definición, de modo que
+			// la tabla no llega a crearse. El ahorro de índice que darían no
+			// compensa depender de cómo analice dbDelta.
 			"CREATE TABLE {$sources} (
 	id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-	hash char(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+	hash char(32) NOT NULL,
 	type varchar(20) NOT NULL,
 	domain varchar(100) DEFAULT NULL,
 	context varchar(190) DEFAULT NULL,

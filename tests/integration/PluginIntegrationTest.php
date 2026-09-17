@@ -33,12 +33,23 @@ use WP_UnitTestCase;
 final class PluginIntegrationTest extends WP_UnitTestCase {
 
 	/**
-	 * Prepara las tablas.
+	 * Vacía las tablas del plugin antes de cada test.
+	 *
+	 * El esquema ya existe: lo crea el arranque de la suite. Aquí solo se
+	 * borran filas, que es una operación transaccional y por tanto compatible
+	 * con el aislamiento entre tests de WP_UnitTestCase.
 	 */
 	public function set_up(): void {
 		parent::set_up();
 
-		( new Schema() )->install( true );
+		global $wpdb;
+
+		foreach ( Schema::names() as $name ) {
+			$table = Schema::table( $name );
+
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "DELETE FROM `{$table}`" );
+		}
 	}
 
 	public function test_la_sonda_del_driver_funciona_en_este_wordpress(): void {
