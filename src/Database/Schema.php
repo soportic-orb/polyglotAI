@@ -86,16 +86,27 @@ final class Schema {
 
 		$missing = array();
 
+		$suppressed = $wpdb->suppress_errors( true );
+
 		foreach ( self::names() as $name ) {
 			$table = self::table( $name );
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+			// Se consulta la tabla en lugar de usar SHOW TABLES: SHOW TABLES no
+			// lista las tablas temporales, y la suite de tests de WordPress
+			// convierte los CREATE TABLE en CREATE TEMPORARY TABLE. Con SHOW
+			// TABLES la comprobación era ciega justo en el entorno donde más
+			// falta hace. LIMIT 0 no devuelve filas: solo interesa si la
+			// consulta es válida.
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+			$wpdb->query( "SELECT 1 FROM `{$table}` LIMIT 0" );
 
-			if ( $table !== $found ) {
+			if ( '' !== (string) $wpdb->last_error ) {
 				$missing[] = $name;
 			}
 		}
+
+		$wpdb->last_error = '';
+		$wpdb->suppress_errors( $suppressed );
 
 		return $missing;
 	}

@@ -39,9 +39,9 @@ final class DocumentProcessor {
 	 * Traduce un documento.
 	 *
 	 * @param string   $html   Documento original.
-	 * @param callable $lookup fn(ExtractedString): ?string. Devuelve la
-	 *                         traducción de una unidad, o null para dejarla
-	 *                         como está.
+	 * @param callable $lookup fn(ExtractedString): string|RawHtml|null. Devuelve
+	 *                         la traducción de una unidad, un RawHtml si ya es
+	 *                         HTML listo, o null para dejarla como está.
 	 * @return string Documento traducido, o el original si algo falla.
 	 */
 	public function translate( string $html, callable $lookup ): string {
@@ -54,6 +54,12 @@ final class DocumentProcessor {
 
 			foreach ( $this->driver->extract( $html ) as $unit ) {
 				$translation = $lookup( $unit );
+
+				if ( $translation instanceof RawHtml ) {
+					$replacements[] = new Replacement( $unit->start, $unit->length, $translation->html );
+
+					continue;
+				}
 
 				if ( ! is_string( $translation ) || $translation === $unit->value ) {
 					continue;

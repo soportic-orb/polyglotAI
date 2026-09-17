@@ -29,6 +29,14 @@ final class SchemaDropTest extends WP_UnitTestCase {
 	}
 
 	public function test_borrar_elimina_todas_las_tablas_y_se_puede_rehacer(): void {
+		// La suite de tests de WordPress instala un filtro que convierte los
+		// CREATE TABLE en CREATE TEMPORARY TABLE y los DROP TABLE en DROP
+		// TEMPORARY TABLE, para que cada test quede aislado. Con ese filtro
+		// puesto, este test no probaría nada: el DROP no tocaría las tablas de
+		// verdad. Se quita aquí, y tear_down rehace el esquema.
+		remove_filter( 'query', array( $this, '_create_temporary_tables' ) );
+		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
+
 		$schema = new Schema();
 
 		$schema->drop();

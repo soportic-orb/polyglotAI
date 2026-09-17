@@ -52,6 +52,59 @@ final class SourceRepository {
 	}
 
 	/**
+	 * Detalle completo de unas cadenas, con su traducción en un idioma.
+	 *
+	 * Es la consulta que alimenta el editor visual: en una sola pasada devuelve
+	 * el original, el tipo, el contexto, la traducción y su estado.
+	 *
+	 * @param string[] $hashes   Hashes.
+	 * @param string   $language Locale.
+	 * @return array<string, array{source_id:int, original:string, type:string, context:string|null, translation:string, status:string}>
+	 */
+	public function details_by_hash( array $hashes, string $language ): array {
+		global $wpdb;
+
+		if ( array() === $hashes ) {
+			return array();
+		}
+
+		$sources      = Schema::table( 'sources' );
+		$translations = Schema::table( 'translations' );
+		$placeholders = implode( ',', array_fill( 0, count( $hashes ), '%s' ) );
+		$arguments    = array_merge( array( $language ), $hashes );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT s.id, s.hash, s.original, s.type, s.context,
+					COALESCE(t.translation, '') AS translation,
+					COALESCE(t.status, 'pending') AS status
+				FROM {$sources} s
+				LEFT JOIN {$translations} t ON t.source_id = s.id AND t.language = %s
+				WHERE s.hash IN ({$placeholders})",
+				$arguments
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$details = array();
+
+		foreach ( (array) $rows as $row ) {
+			$details[ (string) $row['hash'] ] = array(
+				'source_id'   => (int) $row['id'],
+				'original'    => (string) $row['original'],
+				'type'        => (string) $row['type'],
+				'context'     => null === $row['context'] ? null : (string) $row['context'],
+				'translation' => (string) $row['translation'],
+				'status'      => (string) $row['status'],
+			);
+		}
+
+		return $details;
+	}
+
+	/**
 	 * Registra una cadena original, o actualiza su última aparición.
 	 *
 	 * @param string      $hash     Hash.
