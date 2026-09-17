@@ -519,13 +519,15 @@ src/
   Bootstrap/             Activación, desactivación, comprobación de requisitos
   Database/              Schema, Migrator, repositorios
   Languages/             Registro de idiomas, variantes, RTL
-  Routing/               UrlConverter, Rewrites, Redirector, Canonical
+  Routing/               UrlConverter, RequestRouter, SlugResolver, SlugSync,
+                         PermalinkTranslator, LinkRewriter, InternalUrl, HeadTags
   Html/                  Drivers, extractor, sustituidor, exclusiones, BailConditions
   Translation/           Dictionary, Normalizer, Hasher, Validator, StatusPrecedence, Memory
   Engines/               Interfaz + Claude/{ClaudeEngine,Client,PromptBuilder,Schema,Batches,UsageMeter}
-  Gettext/  Seo/  Editor/  Rest/  Admin/  Switcher/  Detection/
+  Seo/                   HeadUrls, StructuredData, Sitemaps
+  Gettext/  Editor/  Rest/  Admin/  Switcher/  Detection/
   Compat/                WooCommerce, Forms, Cache, Builders, SeoPlugins
-  Jobs/                  Action Scheduler, SiteTranslator
+  Jobs/                  PendingTranslator, SlugTranslator, Budget, ContextFactory
   Support/               Options, Capabilities, Logger, Lock, Cache
 assets/src → assets/build
 languages/               polyglot-ai.pot
@@ -587,7 +589,8 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 | 1. Base | Completa |
 | 2. Editor visual y API REST | Completa |
 | 3. Gettext, contenido dinámico y correos | Completa |
-| 4–8 | Sin empezar |
+| 4. SEO Pack | Completa, salvo los sitemaps de los plugins de SEO (ADR-16) |
+| 5–8 | Sin empezar |
 
 Dos puntos del encargo que caen en la fase 3 pertenecen en realidad a fases
 posteriores y se dejan ahí a propósito:
@@ -599,6 +602,16 @@ posteriores y se dejan ahí a propósito:
   mutaciones ya traduce el resultado visible de esas respuestas, y el filtro
   `pgai_recipient_language` es el punto de entrada para el idioma del pedido.
   La integración concreta con WooCommerce es de la fase 8.
+
+Y uno de la fase 4:
+
+- **Los sitemaps de Yoast, Rank Math, SEOPress y All in One SEO.** Cada uno
+  sustituye el del núcleo por el suyo y lo amplía a su manera, y esos hooks no
+  se pueden comprobar hasta tener los cuatro plugins instalados en `wp-env`.
+  Va con el resto de pruebas de compatibilidad de la fase 8 (ADR-16). El
+  sitemap del núcleo sí lleva ya un sitemap por idioma, y el resto del SEO Pack
+  —título, descripción, Open Graph, datos estructurados y URLs— funciona con
+  los cuatro desde ahora.
 
 ## 7. Decisiones confirmadas y pendientes
 
