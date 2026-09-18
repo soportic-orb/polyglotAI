@@ -60,6 +60,9 @@ use PolyglotAI\Jobs\SlugTranslator;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
 use PolyglotAI\Languages\UserLanguage;
+use PolyglotAI\Licensing\License;
+use PolyglotAI\Licensing\LicenseServer;
+use PolyglotAI\Licensing\UpdateChecker;
 use PolyglotAI\Mail\LanguageResolver;
 use PolyglotAI\Mail\MailTranslator;
 use PolyglotAI\Rest\DynamicController;
@@ -199,6 +202,18 @@ final class Plugin {
 		// en que se hizo. Va también en el escritorio: muchos de esos correos
 		// los dispara un administrador al cambiar el estado del pedido.
 		( new WooCommerce( $this->languages(), $this->request() ) )->register();
+
+		// Las actualizaciones: solo donde WordPress las busca, que es el
+		// escritorio y el cron. En una visita normal no pintan nada (ADR-20).
+		if ( is_admin() || wp_doing_cron() ) {
+			( new UpdateChecker(
+				LicenseServer::from_constant(),
+				new License(),
+				plugin_basename( PGAI_FILE ),
+				'polyglot-ai',
+				PGAI_VERSION
+			) )->register();
+		}
 
 		if ( is_admin() ) {
 			$this->settings_page()->register();
@@ -952,7 +967,8 @@ final class Plugin {
 				new ApiKey(),
 				$this->engines(),
 				$this->languages(),
-				$this->menu_locations()
+				$this->menu_locations(),
+				new License()
 			)
 		);
 	}

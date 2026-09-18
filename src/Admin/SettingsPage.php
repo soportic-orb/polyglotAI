@@ -12,6 +12,8 @@ namespace PolyglotAI\Admin;
 use PolyglotAI\Engines\EngineRegistry;
 use PolyglotAI\Languages\Language;
 use PolyglotAI\Languages\LanguageRegistry;
+use PolyglotAI\Licensing\License;
+use PolyglotAI\Licensing\UpdateChecker;
 use PolyglotAI\Support\ApiKey;
 use PolyglotAI\Support\Capabilities;
 use PolyglotAI\Switcher\MenuLocations;
@@ -38,13 +40,15 @@ final class SettingsPage {
 	 * @param EngineRegistry   $engines        Motores disponibles.
 	 * @param LanguageRegistry $languages      Idiomas configurados.
 	 * @param MenuLocations    $menu_locations Menús por idioma.
+	 * @param License          $license        Licencia del plugin.
 	 */
 	public function __construct(
 		private readonly Options $options,
 		private readonly ApiKey $api_key,
 		private readonly EngineRegistry $engines,
 		private readonly LanguageRegistry $languages,
-		private readonly MenuLocations $menu_locations
+		private readonly MenuLocations $menu_locations,
+		private readonly License $license
 	) {}
 
 	/**
@@ -112,6 +116,19 @@ final class SettingsPage {
 
 		if ( '' !== $submitted_key && ! $this->api_key->is_locked() ) {
 			$this->api_key->save( $submitted_key );
+		}
+
+		// La de licencia sí se enseña, así que aquí un campo vacío sí significa
+		// «bórrala»: es la única forma de quitarla desde el panel.
+		if ( ! $this->license->is_locked() && isset( $_POST['license_key'] ) ) {
+			$submitted_license = sanitize_text_field( wp_unslash( (string) $_POST['license_key'] ) );
+
+			if ( $submitted_license !== $this->license->key() ) {
+				$this->license->set_key( $submitted_license );
+
+				// Que vuelva a preguntar por actualizaciones con la nueva.
+				delete_site_transient( UpdateChecker::TRANSIENT );
+			}
 		}
 
 		// Cambiar el modelo o el contexto invalida las traducciones cacheadas.
@@ -280,6 +297,49 @@ final class SettingsPage {
 						<td>
 							<textarea name="site_context" id="pgai-context" rows="4" class="large-text"><?php echo esc_textarea( (string) $options['site_context'] ); ?></textarea>
 							<p class="description"><?php esc_html_e( 'De qué va el sitio, a quién se dirige y con qué tono. Mejora mucho la calidad de la traducción.', 'polyglot-ai' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h2><?php esc_html_e( 'Licencia', 'polyglot-ai' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="pgai-license"><?php esc_html_e( 'Clave de licencia', 'polyglot-ai' ); ?></label></th>
+						<td>
+							<?php if ( $this->license->is_locked() ) : ?>
+								<p>
+									<code><?php echo esc_html( $this->license->last_four() ); ?></code>
+									<?php esc_html_e( 'Definida en wp-config.php mediante PGAI_LICENSE_KEY.', 'polyglot-ai' ); ?>
+								</p>
+							<?php else : ?>
+								<input type="text" class="regular-text" name="license_key" id="pgai-license" autocomplete="off"
+									value="<?php echo esc_attr( $this->license->key() ); ?>">
+							<?php endif; ?>
+							<p class="description">
+								<?php
+								switch ( $this->license->status() ) {
+									case License::VALID:
+										echo esc_html(
+											'' === $this->license->expires()
+												? __( 'Licencia activa.', 'polyglot-ai' )
+												: sprintf(
+													/* translators: %s: fecha de caducidad. */
+													__( 'Licencia activa hasta el %s.', 'polyglot-ai' ),
+													$this->license->expires()
+												)
+										);
+										break;
+									case License::EXPIRED:
+										esc_html_e( 'La licencia ha caducado. El plugin sigue funcionando, pero no recibirá actualizaciones.', 'polyglot-ai' );
+										break;
+									case License::INVALID:
+										esc_html_e( 'Sin licencia válida. El plugin funciona igual, pero no recibirá actualizaciones.', 'polyglot-ai' );
+										break;
+									default:
+										esc_html_e( 'Todavía no se ha comprobado con el servidor.', 'polyglot-ai' );
+								}
+								?>
+							</p>
 						</td>
 					</tr>
 				</table>

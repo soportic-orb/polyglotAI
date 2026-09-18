@@ -706,6 +706,55 @@ no métodos nuevos en `TranslationEngineInterface`: no todo motor los admite, y
 el ciclo es distinto del de una llamada normal. Si el motor configurado no los
 admite, la pantalla lo dice en vez de enseñar un botón que no hace nada.
 
+### ADR-20 — Licencias y actualizaciones: servidor propio
+
+Decisión 5 del apartado 7, confirmada: **servidor propio**, ni Freemius ni EDD
+ni un vendedor registrado. Con la distribución privada del ADR-14 —pocos
+clientes, sin escaparate— una pasarela con comisión por venta no resuelve ningún
+problema que tengamos, y las dos alternativas de SaaS obligan a meter su SDK en
+el `vendor/` del sitio del cliente, que es exactamente lo que el ADR-05 evita
+para no chocar con otros plugins. El cliente son tres clases; el servidor es
+trabajo aparte y no vive en este repositorio.
+
+El contrato con el servidor está en `docs/licensing.md`. Lo que se decide aquí:
+
+**Lo que responde el servidor no se cree a ciegas.** WordPress instala sin
+rechistar el zip que diga `package`, así que una respuesta manipulada —un DNS
+envenenado, un proxy de por medio, el propio servidor comprometido— podría hacer
+que el sitio del cliente instalara cualquier cosa bajo el nombre de este plugin.
+El actualizador del núcleo no verifica firmas de plugins de terceros, así que la
+única defensa real es exigir que la descarga sea `https://` **y esté en el mismo
+host que el servidor de licencias**. Si no cuadra se descarta la actualización
+entera, no se recorta la parte sospechosa. Consecuencia práctica: las descargas
+se sirven desde el mismo host que la API, y moverlas a un CDN obliga a volver
+aquí.
+
+**No se llama a casa sin licencia.** Sin clave configurada no se contacta con el
+servidor. Un sitio que nunca ha comprado nada no tiene por qué anunciar su
+dirección a ninguna parte, y así el plugin se puede usar en desarrollo sin
+tráfico saliente de ningún tipo.
+
+**Sin servidor configurado no hay comprobación.** `PGAI_UPDATE_SERVER` se fija al
+empaquetar; si no está, el plugin funciona igual y simplemente no se actualiza
+solo. Es lo que queremos en una copia del repositorio.
+
+**Un servidor caído no molesta a nadie.** Cinco segundos de espera, y si no
+responde no se ofrece actualización ni se enseña ningún error. Se reintenta a la
+hora; una respuesta buena se guarda medio día, porque WordPress mira si hay
+actualizaciones muchas veces por sesión de escritorio y cada una no puede ser una
+petición de red.
+
+**La licencia no es un interruptor de encendido.** Una licencia caducada o
+inválida deja al plugin sin actualizaciones, no sin funcionar: el sitio del
+cliente sigue traducido y el panel sigue abierto. Vender una suscripción a
+actualizaciones es una cosa y tomar el sitio de alguien como rehén es otra.
+
+**La clave de licencia no se cifra**, a diferencia de la de la API (ADR-05). La
+de Anthropic gasta dinero en un tercero y el administrador no tiene por qué
+volver a verla; la de licencia es suya, la copia de su factura, tiene que poder
+leerla para pegarla en otro sitio, y lo peor que puede hacer quien la robe es
+recibir actualizaciones de algo que ya ha pagado alguien.
+
 ---
 
 ## 4. Estructura del repositorio
@@ -739,6 +788,7 @@ src/
   Compat/                WooCommerce, Forms, Cache, Builders, SeoPlugins
   Jobs/                  PendingTranslator, SlugTranslator, SiteTranslator,
                          SiteRun, Budget, ContextFactory
+  Licensing/             License, LicenseServer, UpdateChecker
   Support/               Options, Capabilities, Logger, Lock, Cache
 assets/src → assets/build
 languages/               polyglot-ai.pot
@@ -824,13 +874,15 @@ De la fase 8 están hechos:
   modo que ninguna URL traducida funcionaba en los servidores que lo rellenan, y
   el sitemap por idioma no llevaba ninguna página por filtrar por
   `publicly_queryable`.
+- **El mecanismo de actualización y licencias** con servidor propio (ADR-20), que
+  era la decisión pendiente nº 5.
 - **El `readme.txt` y el `README.md`** puestos al día.
 
 Queda de la fase 8:
 
 - Pruebas de compatibilidad con constructores (Divi y Elementor Pro son de pago,
   decisión pendiente nº 6).
-- El mecanismo de actualización y licencias (decisión pendiente nº 5).
+
 - Seguir perfilando el barrido: el objetivo de < 50 ms se cumple hasta unos
   190 KB de HTML, no en las páginas más grandes de constructor.
 
@@ -869,11 +921,12 @@ Y el de la fase 4 ya está resuelto:
    se deja preparada para añadir GeoIP más adelante sin tocar el resto.
 3. Distribución **comercial/privada** → ADR-14.
 4. Traducción en tiempo real **activada, en segundo plano** → ADR-13.
+5. Mecanismo de actualización y licencias: **servidor propio** → ADR-20. El contrato
+   con ese servidor está en `docs/licensing.md`; el servidor en sí es trabajo aparte y
+   no vive en este repositorio.
 
-**Pendientes**, no bloquean las fases 1-7:
+**Pendiente**:
 
-5. **Mecanismo de actualización y licencias** (Fase 8): servidor propio, EDD Software
-   Licensing, Freemius u otro.
 6. **Licencias para pruebas de compatibilidad** (Fase 8): Divi y Elementor Pro son de
    pago y hacen falta en `wp-env` para las pruebas E2E. Con las versiones gratuitas se
    cubren Elementor, Gutenberg, Astra y GeneratePress; Divi y Beaver/Bricks no.

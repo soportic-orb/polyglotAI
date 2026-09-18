@@ -510,3 +510,5 @@ El rol `pgai_translator` («Traductor») recibe `read`, `pgai_translate` y
 | Constante | Descripción |
 |---|---|
 | `PGAI_API_KEY` | Clave de la API. Definirla en `wp-config.php` es la vía recomendada: así la clave no se guarda en la base de datos ni viaja en las copias de seguridad. |
+| `PGAI_UPDATE_SERVER` | Dirección del servidor de licencias y actualizaciones, con `https://`. Se fija al empaquetar. Sin ella no se comprueban actualizaciones y el plugin no hace ninguna petición saliente por este motivo. Ver [`licensing.md`](licensing.md). |
+| `PGAI_LICENSE_KEY` | Fija la clave de licencia y quita el campo del panel, para instalaciones gestionadas. |
