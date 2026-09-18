@@ -189,8 +189,14 @@ Se **abandona sin procesar** (sin arrancar siquiera el buffer) cuando:
 - `is_admin()`, `wp_doing_ajax()`, `wp_doing_cron()`, `defined('WP_CLI')`,
   `defined('REST_REQUEST')`, `is_feed()` (los feeds tienen su propio camino), login.
 - El idioma solicitado es el idioma por defecto y no hay nada que sustituir.
-- Modo edición de constructor: `et_fb`, `elementor-preview` / `action=elementor`,
-  `fl_builder`, `bricks=run`, `vc_action`, `customize_changeset_uuid`, `tve` (Thrive).
+- Modo edición de constructor. Comprobados en el código del propio plugin:
+  `elementor-preview` y `action=elementor` (Elementor), `fl_builder` (Beaver),
+  `is-editor-iframe` (Brizy, que edita dentro de un iframe del frente; la lista decía
+  `brizy-edit`, que no existe), `siteorigin_panels_live_editor` y
+  `customize_changeset_uuid`. Sin comprobar, por ser de pago y no poder instalarlos:
+  `et_fb` (Divi), `bricks`, `vc_action` (WPBakery), `tve` (Thrive), `ct_builder`
+  (Oxygen). Equivocarse en estos últimos solo significa que el constructor se vería
+  traducido en su propia pantalla de edición, no que se rompa el sitio publicado.
 - **Vista previa** (`is_preview()`, `is_customize_preview()`). Un borrador es contenido
   sin publicar: procesarlo lo guardaría en `pgai_sources` y la tarea de fondo acabaría
   mandándolo a la API (ADR-13), de modo que un anuncio con fecha o una página de producto

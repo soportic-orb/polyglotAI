@@ -28,16 +28,22 @@ final class BailConditions {
 	 * @var string[]
 	 */
 	private const BUILDER_PARAMETERS = array(
-		'et_fb',                    // Divi.
-		'elementor-preview',        // Elementor.
-		'fl_builder',               // Beaver Builder.
-		'bricks',                   // Bricks.
-		'vc_action',                // WPBakery.
-		'tve',                      // Thrive Architect.
-		'ct_builder',               // Oxygen.
-		'customize_changeset_uuid', // Personalizador.
-		'brizy-edit',               // Brizy.
-		'siteorigin_panels_live_editor',
+		// Comprobados en el código de cada plugin.
+		'elementor-preview',             // Elementor (includes/preview.php).
+		'fl_builder',                    // Beaver Builder.
+		'is-editor-iframe',              // Brizy, que edita dentro de un iframe.
+		'siteorigin_panels_live_editor', // SiteOrigin Page Builder.
+		'customize_changeset_uuid',      // Personalizador del núcleo.
+
+		// De pago, no instalables aquí para comprobarlos: van por lo que
+		// documentan. Equivocarse de parámetro en estos solo significa que el
+		// constructor se vería traducido en su propia pantalla de edición, no
+		// que se rompa nada del sitio publicado.
+		'et_fb',      // Divi.
+		'bricks',     // Bricks.
+		'vc_action',  // WPBakery.
+		'tve',        // Thrive Architect.
+		'ct_builder', // Oxygen.
 	);
 
 	/**

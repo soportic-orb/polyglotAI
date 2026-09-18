@@ -55,12 +55,34 @@ final class BailConditionsTest extends WP_UnitTestCase {
 		$this->assertFalse( $this->bail->should_process() );
 	}
 
-	public function test_el_modo_edicion_de_un_constructor_no_se_procesa(): void {
-		$_GET['elementor-preview'] = '12';
+	/**
+	 * @dataProvider parametros_de_constructor
+	 *
+	 * @param string $parameter Parámetro que marca el modo edición.
+	 */
+	public function test_el_modo_edicion_de_un_constructor_no_se_procesa( string $parameter ): void {
+		$_GET[ $parameter ] = '1';
 
-		$this->assertFalse( $this->bail->should_process() );
+		$this->assertFalse( $this->bail->should_process(), $parameter );
 
-		unset( $_GET['elementor-preview'] );
+		unset( $_GET[ $parameter ] );
+	}
+
+	/**
+	 * Los que se han podido comprobar en el código del propio constructor.
+	 *
+	 * @return array<string, string[]>
+	 */
+	public static function parametros_de_constructor(): array {
+		return array(
+			'Elementor'  => array( 'elementor-preview' ),
+			'Beaver'     => array( 'fl_builder' ),
+			// Brizy edita dentro de un iframe del frente y lo marca con esto,
+			// no con «brizy-edit», que es lo que ponía antes esta lista.
+			'Brizy'      => array( 'is-editor-iframe' ),
+			'SiteOrigin' => array( 'siteorigin_panels_live_editor' ),
+			'Customizer' => array( 'customize_changeset_uuid' ),
+		);
 	}
 
 	public function test_el_filtro_manda_sobre_todo_lo_demas(): void {
