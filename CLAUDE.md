@@ -811,7 +811,8 @@ De la fase 8 están hechos:
 
 - **Los sitemaps de los cuatro plugins de SEO** (ADR-16), que era lo que quedaba
   de la fase 4.
-- **`Compat\SeoPlugins`, `Compat\PrivacyExclusions` y `Compat\CachePlugins`.**
+- **`Compat\SeoPlugins`, `Compat\PrivacyExclusions`, `Compat\CachePlugins` y
+  `Compat\WooCommerce`** (el idioma del pedido, que venía pendiente de la fase 3).
 - **El empalme en tiempo lineal** (ADR-08): el coste por KB ha dejado de crecer
   con el tamaño de la página.
 - **Tres agujeros de privacidad** que el ADR-12 daba por cerrados y no lo
@@ -828,8 +829,7 @@ De la fase 8 están hechos:
 Queda de la fase 8:
 
 - Pruebas de compatibilidad con constructores (Divi y Elementor Pro son de pago,
-  decisión pendiente nº 6) y con WooCommerce más allá de la privacidad: idioma
-  del pedido y respuestas de `admin-ajax.php`.
+  decisión pendiente nº 6).
 - El mecanismo de actualización y licencias (decisión pendiente nº 5).
 - Seguir perfilando el barrido: el objetivo de < 50 ms se cumple hasta unos
   190 KB de HTML, no en las páginas más grandes de constructor.
@@ -841,10 +841,14 @@ resuelto:
   página.**~~ Resuelto en la fase 6: se registran en cuanto se llama a `__()`,
   aunque su texto no acabe en el HTML, y el gestor de cadenas las encuentra
   filtrando por tipo «Cadena del tema o de un plugin».
-- **Idioma del pedido y respuestas de `admin-ajax.php`.** El observador de
-  mutaciones ya traduce el resultado visible de esas respuestas, y el filtro
-  `pgai_recipient_language` es el punto de entrada para el idioma del pedido.
-  La integración concreta con WooCommerce es de la fase 8.
+- ~~**Idioma del pedido.**~~ Resuelto en la fase 8: `Compat\WooCommerce` anota el
+  idioma en el propio pedido al comprarlo y lo devuelve por
+  `pgai_recipient_language` al enviar sus avisos. Hacía falta porque la mayoría
+  de los pedidos los hacen invitados, que no tienen usuario ni preferencia
+  guardada, así que sus correos salían todos en el idioma por defecto del sitio.
+- **Respuestas de `admin-ajax.php`.** El observador de mutaciones ya traduce el
+  resultado visible de esas respuestas. Queda por ver si algún caso de
+  WooCommerce necesita algo más.
 
 Y el de la fase 4 ya está resuelto:
 

@@ -410,6 +410,27 @@ Enabler, WP Fastest Cache y SiteGround Optimizer. Para cualquier otra caché
 —la de un alojamiento, un CDN, un proxy inverso— está la acción
 `pgai_page_cache_purged`.
 
+## WooCommerce
+
+Los correos de un pedido salen **en el idioma en que se hizo el pedido**, no en
+el de quien dispara el envío. El idioma se anota en el pedido al comprar
+(metadato `_pgai_language`, con `update_meta_data()`, así que funciona igual con
+el almacenamiento clásico y con HPOS) y se devuelve al enviar sus avisos.
+
+Hace falta porque la mayoría de los pedidos los hacen invitados, que no tienen
+usuario ni preferencia guardada: sin esto, sus avisos salían todos en el idioma
+por defecto del sitio.
+
+Cuando hay las dos cosas, **manda el idioma del pedido sobre el del usuario**: el
+del pedido es el de la compra de la que habla ese correo concreto, mientras que
+el del usuario se guarda al navegar y puede ser simplemente la última página que
+miró.
+
+Se enganchan `woocommerce_checkout_create_order` y
+`woocommerce_store_api_checkout_update_order_from_request` —el pago clásico y el
+de bloques— y `woocommerce_mail_callback_params`, que es donde WooCommerce
+entrega el pedido justo antes de llamar a `wp_mail()`.
+
 ## Privacidad
 
 Estas páginas no se traducen nunca y su contenido no llega a la API (ADR-12):

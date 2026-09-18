@@ -42,6 +42,7 @@ use PolyglotAI\Frontend\DynamicScript;
 use PolyglotAI\Gettext\GettextTranslator;
 use PolyglotAI\Compat\CachePlugins;
 use PolyglotAI\Compat\PrivacyExclusions;
+use PolyglotAI\Compat\WooCommerce;
 use PolyglotAI\Html\BailConditions;
 use PolyglotAI\Html\DocumentProcessor;
 use PolyglotAI\Html\DriverFactory;
@@ -193,6 +194,11 @@ final class Plugin {
 		// Y el aviso al plugin de caché: sin esto la traducción que acaba de
 		// guardarse no la vería nadie hasta que caducara la copia (ADR-13).
 		( new CachePlugins() )->register();
+
+		// Y WooCommerce, para que los avisos de un pedido salgan en el idioma
+		// en que se hizo. Va también en el escritorio: muchos de esos correos
+		// los dispara un administrador al cambiar el estado del pedido.
+		( new WooCommerce( $this->languages(), $this->request() ) )->register();
 
 		if ( is_admin() ) {
 			$this->settings_page()->register();
