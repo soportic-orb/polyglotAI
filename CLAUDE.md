@@ -761,7 +761,8 @@ npm run lint:js
 # Tests
 composer test              # PHPUnit con la suite de WordPress
 composer test -- --filter HtmlDriverTest
-npm run test:e2e           # Playwright (editor visual, selector de idioma)
+bash tests/e2e/install.sh  # WordPress servido con el plugin activo, sin Docker
+npm run test:e2e           # Playwright (enrutado, selector, sitemaps)
 
 # Build
 npm run build              # @wordpress/scripts, producción

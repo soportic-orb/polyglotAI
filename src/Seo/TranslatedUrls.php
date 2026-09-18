@@ -302,8 +302,14 @@ final class TranslatedUrls {
 	private function post_types(): array {
 		$types = array();
 
+		// El criterio es el mismo que usa el sitemap del núcleo: público y que
+		// no sea un adjunto. **No se mira `publicly_queryable`**, aunque parezca
+		// lo razonable: el núcleo registra `page` con `publicly_queryable` en
+		// false —las páginas no se consultan con `?page=`, se resuelven por su
+		// ruta— y filtrando por ahí se quedaban fuera del sitemap todas las
+		// páginas del sitio, que en la mayoría son casi todo el contenido.
 		foreach ( get_post_types( array( 'public' => true ), 'objects' ) as $type ) {
-			if ( 'attachment' !== $type->name && (bool) $type->publicly_queryable ) {
+			if ( 'attachment' !== $type->name ) {
 				$types[] = (string) $type->name;
 			}
 		}
@@ -319,10 +325,9 @@ final class TranslatedUrls {
 	private function taxonomies(): array {
 		$names = array();
 
+		// Igual que arriba: el mismo criterio que el sitemap del núcleo.
 		foreach ( get_taxonomies( array( 'public' => true ), 'objects' ) as $taxonomy ) {
-			if ( (bool) $taxonomy->publicly_queryable ) {
-				$names[] = (string) $taxonomy->name;
-			}
+			$names[] = (string) $taxonomy->name;
 		}
 
 		return $names;

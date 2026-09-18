@@ -128,6 +128,21 @@ final class SitemapTest extends WP_UnitTestCase {
 		$this->assertSame( array( home_url( '/ca/la-meva-entrada/' ) ), $this->locs( 'ca' ) );
 	}
 
+	public function test_lista_tambien_las_paginas(): void {
+		// El núcleo registra «page» con publicly_queryable en false, así que
+		// filtrar por ese flag dejaba fuera del sitemap todas las páginas del
+		// sitio. El sitemap del núcleo tampoco lo mira.
+		self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => 'sobre-nosotros',
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->assertContains( home_url( '/en/sobre-nosotros/' ), $this->locs( 'en' ) );
+	}
+
 	public function test_no_lista_borradores(): void {
 		self::factory()->post->create(
 			array(

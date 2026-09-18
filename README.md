@@ -186,7 +186,17 @@ npm run build      # Compila el editor y la vista previa
 npm run test:js    # Jest
 npm run lint:js    # ESLint
 npm run env:start  # WordPress local con wp-env
+
+bash tests/e2e/install.sh  # Deja un WordPress servido con el plugin activo
+npm run test:e2e           # Playwright contra ese sitio
 ```
+
+Las pruebas de extremo a extremo no necesitan Docker: `tests/e2e/install.sh`
+instala un WordPress, activa el plugin, configura dos idiomas, crea una página
+con el selector dentro, guarda una traducción y lo sirve con el servidor
+integrado de PHP. Con `wp-env` se puede saltar el script apuntando
+`PGAI_E2E_URL` a su puerto. Si el navegador ya está instalado fuera de
+`node_modules`, `PGAI_E2E_CHROMIUM` dice dónde está en vez de descargar otro.
 
 La suite unitaria corre **sin Docker y sin una instalación de WordPress**:
 descarga la HTML API real del WordPress mínimo soportado y prueba el analizador

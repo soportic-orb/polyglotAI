@@ -80,6 +80,40 @@ final class RequestRouterTest extends WP_UnitTestCase {
 			: '';
 	}
 
+	/**
+	 * El PATH_INFO resultante, saneado.
+	 */
+	private function path_info(): string {
+		return isset( $_SERVER['PATH_INFO'] )
+			? sanitize_text_field( wp_unslash( (string) $_SERVER['PATH_INFO'] ) )
+			: '';
+	}
+
+	public function test_tambien_quita_el_prefijo_de_path_info(): void {
+		// WordPress no resuelve la petición solo con REQUEST_URI: cuando el
+		// servidor rellena PATH_INFO, WP::parse_request() lo prefiere. Si el
+		// prefijo se queda ahí, /en/lo-que-sea/ da un 404 aunque REQUEST_URI
+		// esté bien. Lo rellenan el servidor integrado de PHP siempre y Apache
+		// o nginx según su configuración.
+		$_SERVER['PATH_INFO'] = '/en/una-pagina/';
+
+		$this->assertSame( '/una-pagina/', $this->resolve( '/en/una-pagina/' ) );
+		$this->assertSame( '/una-pagina/', $this->path_info() );
+
+		unset( $_SERVER['PATH_INFO'] );
+	}
+
+	public function test_no_toca_un_path_info_que_no_es_la_ruta_reescrita(): void {
+		// En una instalación en subdirectorio PATH_INFO puede llevar otro trozo
+		// delante. Adivinarlo sería peor que no tocarlo.
+		$_SERVER['PATH_INFO'] = '/otra/cosa/';
+
+		$this->assertSame( '/una-pagina/', $this->resolve( '/en/una-pagina/' ) );
+		$this->assertSame( '/otra/cosa/', $this->path_info() );
+
+		unset( $_SERVER['PATH_INFO'] );
+	}
+
 	public function test_una_pagina_se_encuentra_a_traves_de_su_url_con_idioma(): void {
 		$page_id = self::factory()->post->create(
 			array(

@@ -108,6 +108,23 @@ final class RequestRouter {
 		$query = (string) wp_parse_url( $uri, PHP_URL_QUERY );
 
 		$_SERVER['REQUEST_URI'] = $original . ( '' === $query ? '' : '?' . $query );
+
+		// WordPress no resuelve la petición solo con REQUEST_URI: si el
+		// servidor ha rellenado PATH_INFO, WP::parse_request() lo prefiere y
+		// REQUEST_URI deja de contar. Dejarlo sin tocar hacía que el prefijo de
+		// idioma sobreviviera ahí y que /en/contacto/ acabara en un 404 en toda
+		// instalación que lo rellene —el servidor integrado de PHP siempre, y
+		// Apache o nginx según cómo estén configurados—. Solo se toca cuando es
+		// exactamente la ruta que se acaba de reescribir: en una instalación en
+		// subdirectorio puede llevar otro trozo delante y no hay por qué
+		// adivinarlo.
+		if ( isset( $_SERVER['PATH_INFO'] ) ) {
+			$info = esc_url_raw( wp_unslash( (string) $_SERVER['PATH_INFO'] ) );
+
+			if ( $info === $path ) {
+				$_SERVER['PATH_INFO'] = $original;
+			}
+		}
 	}
 
 	/**
