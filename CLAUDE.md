@@ -801,6 +801,33 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 | 7. Traducción de sitio completo | Completa |
 | 8. Compatibilidad, rendimiento, seguridad y documentación | En curso |
 
+De la fase 8 están hechos:
+
+- **Los sitemaps de los cuatro plugins de SEO** (ADR-16), que era lo que quedaba
+  de la fase 4.
+- **`Compat\SeoPlugins`, `Compat\PrivacyExclusions` y `Compat\CachePlugins`.**
+- **El empalme en tiempo lineal** (ADR-08): el coste por KB ha dejado de crecer
+  con el tamaño de la página.
+- **Tres agujeros de privacidad** que el ADR-12 daba por cerrados y no lo
+  estaban: las páginas personales por slug traducido, las respuestas a un POST,
+  el contenido de los `<textarea>` y las vistas previas de borradores (ADR-04).
+- **Las pruebas de extremo a extremo** con Playwright, sobre un WordPress servido
+  de verdad y sin necesitar Docker, y en CI. Encontraron dos fallos que ninguna
+  otra suite podía ver: el prefijo de idioma no se quitaba de `PATH_INFO`, de
+  modo que ninguna URL traducida funcionaba en los servidores que lo rellenan, y
+  el sitemap por idioma no llevaba ninguna página por filtrar por
+  `publicly_queryable`.
+- **El `readme.txt` y el `README.md`** puestos al día.
+
+Queda de la fase 8:
+
+- Pruebas de compatibilidad con constructores (Divi y Elementor Pro son de pago,
+  decisión pendiente nº 6) y con WooCommerce más allá de la privacidad: idioma
+  del pedido y respuestas de `admin-ajax.php`.
+- El mecanismo de actualización y licencias (decisión pendiente nº 5).
+- Seguir perfilando el barrido: el objetivo de < 50 ms se cumple hasta unos
+  190 KB de HTML, no en las páginas más grandes de constructor.
+
 Un punto del encargo que caía en la fase 3 sigue pendiente, y otro ya está
 resuelto:
 
