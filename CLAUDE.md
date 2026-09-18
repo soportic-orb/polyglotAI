@@ -855,7 +855,7 @@ npm run makepot            # regenera languages/polyglot-ai.pot
 | 5. Selector, navegación y detección | Completa |
 | 6. Roles, gestor de cadenas, glosario y estadísticas | Completa |
 | 7. Traducción de sitio completo | Completa |
-| 8. Compatibilidad, rendimiento, seguridad y documentación | En curso |
+| 8. Compatibilidad, rendimiento, seguridad y documentación | Completa, salvo las pruebas con constructores de pago (decisión nº 6) |
 
 De la fase 8 están hechos:
 
@@ -878,13 +878,18 @@ De la fase 8 están hechos:
   era la decisión pendiente nº 5.
 - **El `readme.txt` y el `README.md`** puestos al día.
 
-Queda de la fase 8:
+Queda de la fase 8, y las dos cosas por motivos que no son de código:
 
-- Pruebas de compatibilidad con constructores (Divi y Elementor Pro son de pago,
-  decisión pendiente nº 6).
-
-- Seguir perfilando el barrido: el objetivo de < 50 ms se cumple hasta unos
-  190 KB de HTML, no en las páginas más grandes de constructor.
+- **Las pruebas con los constructores de pago.** Divi, Elementor Pro, Bricks y
+  WPBakery hacen falta instalados para comprobar sus parámetros de modo edición,
+  que ahora mismo están puestos por lo que documentan y no por haberlos visto
+  (ADR-04). Es la decisión pendiente nº 6 y se resuelve comprando licencias, no
+  escribiendo código.
+- **Seguir perfilando el barrido.** El objetivo de < 50 ms se cumple hasta unos
+  190 KB de HTML, no en las páginas más grandes de constructor. Lo que queda por
+  ganar está repartido por nuestra propia lógica —pila de elementos, exclusiones,
+  atributos— sin ningún punto caliente que destaque, así que es un trabajo de
+  perfilado fino y no un arreglo puntual.
 
 Un punto del encargo que caía en la fase 3 sigue pendiente, y otro ya está
 resuelto:
