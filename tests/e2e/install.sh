@@ -21,6 +21,8 @@ WP_URL="http://127.0.0.1:${WP_PORT}"
 DB_NAME="${PGAI_E2E_DB:-pgai_e2e}"
 DB_USER="${PGAI_E2E_DB_USER:-root}"
 DB_PASS="${PGAI_E2E_DB_PASS:-root}"
+DB_HOST="${PGAI_E2E_DB_HOST:-127.0.0.1}"
+DB_PORT="${PGAI_E2E_DB_PORT:-3306}"
 WP_VERSION="6.6.2"
 CLI="${PGAI_WP_CLI:-/tmp/wp-cli.phar}"
 
@@ -46,9 +48,9 @@ cp "$PLUGIN_DIR/tests/e2e/router.php" "$WP_DIR/pgai-router.php"
 # servido, así que las rutas relativas cambian.
 sed -i "s#__DIR__ . '/../..' . \$pgai_path#__DIR__ . \$pgai_path#; s#__DIR__ . '/../../index.php'#__DIR__ . '/index.php'#" "$WP_DIR/pgai-router.php"
 
-mysql -u"$DB_USER" -p"$DB_PASS" -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`; CREATE DATABASE \`${DB_NAME}\` DEFAULT CHARACTER SET utf8mb4;"
+mysql -h "$DB_HOST" -P "$DB_PORT" --protocol=TCP -u"$DB_USER" -p"$DB_PASS" -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`; CREATE DATABASE \`${DB_NAME}\` DEFAULT CHARACTER SET utf8mb4;"
 
-wp config create --dbname="$DB_NAME" --dbuser="$DB_USER" --dbpass="$DB_PASS" --dbhost=127.0.0.1 --skip-check --force > /dev/null
+wp config create --dbname="$DB_NAME" --dbuser="$DB_USER" --dbpass="$DB_PASS" --dbhost="${DB_HOST}:${DB_PORT}" --skip-check --force > /dev/null
 wp core install --url="$WP_URL" --title="Polyglot E2E" --admin_user=admin --admin_password=admin --admin_email=e2e@example.test --skip-email
 # WordPress adivina la URL a partir de la carpeta cuando se instala por CLI, y
 # se queda con el nombre del directorio dentro. Se fija a mano.
