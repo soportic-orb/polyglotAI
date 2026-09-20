@@ -35,11 +35,20 @@ final class BailConditions {
 		'siteorigin_panels_live_editor', // SiteOrigin Page Builder.
 		'customize_changeset_uuid',      // Personalizador del núcleo.
 
-		// De pago, no instalables aquí para comprobarlos: van por lo que
-		// documentan. Equivocarse de parámetro en estos solo significa que el
-		// constructor se vería traducido en su propia pantalla de edición, no
-		// que se rompa nada del sitio publicado.
-		'et_fb',      // Divi.
+		// Divi, comprobado en el código de la 5.13.1. Tiene TRES entradas por
+		// el frente, no una: el constructor visual, la vista previa del bloque
+		// de Gutenberg y la vista previa de un módulo. «et_bfb» (constructor de
+		// escritorio) y «et_tb» (Theme Builder) no hacen falta porque siempre
+		// viajan acompañados de «et_fb».
+		'et_fb',
+		'et_block_layout_preview',
+		'et_pb_preview',
+
+		// De pago y sin licencia aquí, así que van por lo que documentan.
+		// Equivocarse en estos solo significa que el constructor se vería
+		// traducido en su propia pantalla de edición, no que se rompa nada del
+		// sitio publicado. Vista la experiencia con Brizy y con Divi, lo más
+		// probable no es que el parámetro esté mal, sino que falte alguno.
 		'bricks',     // Bricks.
 		'vc_action',  // WPBakery.
 		'tve',        // Thrive Architect.

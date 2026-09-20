@@ -75,13 +75,19 @@ final class BailConditionsTest extends WP_UnitTestCase {
 	 */
 	public static function parametros_de_constructor(): array {
 		return array(
-			'Elementor'  => array( 'elementor-preview' ),
-			'Beaver'     => array( 'fl_builder' ),
+			'Elementor'   => array( 'elementor-preview' ),
+			'Beaver'      => array( 'fl_builder' ),
 			// Brizy edita dentro de un iframe del frente y lo marca con esto,
 			// no con «brizy-edit», que es lo que ponía antes esta lista.
-			'Brizy'      => array( 'is-editor-iframe' ),
-			'SiteOrigin' => array( 'siteorigin_panels_live_editor' ),
-			'Customizer' => array( 'customize_changeset_uuid' ),
+			'Brizy'       => array( 'is-editor-iframe' ),
+			'SiteOrigin'  => array( 'siteorigin_panels_live_editor' ),
+			'Customizer'  => array( 'customize_changeset_uuid' ),
+			// Divi entra por el frente de tres maneras distintas, y solo la
+			// primera estaba en la lista: el constructor visual, la vista
+			// previa del bloque de Gutenberg y la de un módulo.
+			'Divi'        => array( 'et_fb' ),
+			'Divi bloque' => array( 'et_block_layout_preview' ),
+			'Divi módulo' => array( 'et_pb_preview' ),
 		);
 	}
 

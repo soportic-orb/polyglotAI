@@ -191,14 +191,26 @@ Se **abandona sin procesar** (sin arrancar siquiera el buffer) cuando:
 - `is_admin()`, `wp_doing_ajax()`, `wp_doing_cron()`, `defined('WP_CLI')`,
   `defined('REST_REQUEST')`, `is_feed()` (los feeds tienen su propio camino), login.
 - El idioma solicitado es el idioma por defecto y no hay nada que sustituir.
-- Modo edición de constructor. Comprobados en el código del propio plugin:
+- Modo edición de constructor. **Comprobados en el código del propio plugin:**
   `elementor-preview` y `action=elementor` (Elementor), `fl_builder` (Beaver),
   `is-editor-iframe` (Brizy, que edita dentro de un iframe del frente; la lista decía
-  `brizy-edit`, que no existe), `siteorigin_panels_live_editor` y
-  `customize_changeset_uuid`. Sin comprobar, por ser de pago y no poder instalarlos:
-  `et_fb` (Divi), `bricks`, `vc_action` (WPBakery), `tve` (Thrive), `ct_builder`
-  (Oxygen). Equivocarse en estos últimos solo significa que el constructor se vería
-  traducido en su propia pantalla de edición, no que se rompa el sitio publicado.
+  `brizy-edit`, que no existe), `siteorigin_panels_live_editor`,
+  `customize_changeset_uuid` y los tres de Divi.
+
+  **Divi entra por el frente de tres maneras**, no de una (comprobado en la 5.13.1):
+  `et_fb` para el constructor visual —`et_fb_is_enabled()` devuelve false en cuanto
+  falta—, `et_block_layout_preview` para la vista previa del bloque de Gutenberg y
+  `et_pb_preview` para la de un módulo. Las dos últimas **no llevan `et_fb`**, así que
+  con el parámetro que documenta todo el mundo se quedaban fuera. `et_bfb` (constructor
+  de escritorio) y `et_tb` (Theme Builder) no hacen falta en la lista: los dos exigen
+  `et_fb` además del suyo.
+
+  **Sin comprobar**, por ser de pago y no tener licencia: `bricks`, `vc_action`
+  (WPBakery), `tve` (Thrive), `ct_builder` (Oxygen). Equivocarse en estos solo significa
+  que el constructor se vería traducido en su propia pantalla de edición, no que se
+  rompa el sitio publicado. Visto lo de Brizy y lo de Divi, **lo más probable no es que
+  el parámetro esté mal, sino que falte alguno**: un constructor moderno tiene varias
+  pantallas que cargan el frente.
 - **Vista previa** (`is_preview()`, `is_customize_preview()`). Un borrador es contenido
   sin publicar: procesarlo lo guardaría en `pgai_sources` y la tarea de fondo acabaría
   mandándolo a la API (ADR-13), de modo que un anuncio con fecha o una página de producto
@@ -932,11 +944,12 @@ De la fase 8 están hechos:
 
 Queda de la fase 8, y las dos cosas por motivos que no son de código:
 
-- **Las pruebas con los constructores de pago.** Divi, Elementor Pro, Bricks y
-  WPBakery hacen falta instalados para comprobar sus parámetros de modo edición,
-  que ahora mismo están puestos por lo que documentan y no por haberlos visto
-  (ADR-04). Es la decisión pendiente nº 6 y se resuelve comprando licencias, no
-  escribiendo código.
+- **Las pruebas con los constructores de pago que quedan.** Divi ya está comprobado
+  —con la licencia del cliente— y resultó que le faltaban dos de sus tres entradas por
+  el frente (ADR-04). Quedan Bricks, WPBakery, Thrive y Oxygen, puestos por lo que
+  documentan. Elementor Pro no hace falta: usa el mismo `elementor-preview` que la
+  versión gratuita, ya verificada. Es la decisión pendiente nº 6 y se resuelve
+  consiguiendo licencias, no escribiendo código.
 - **Seguir perfilando el barrido.** El objetivo de < 50 ms se cumple hasta unos
   190 KB de HTML, no en las páginas más grandes de constructor. Lo que queda por
   ganar está repartido por nuestra propia lógica —pila de elementos, exclusiones,
@@ -984,6 +997,8 @@ Y el de la fase 4 ya está resuelto:
 
 **Pendiente**:
 
-6. **Licencias para pruebas de compatibilidad** (Fase 8): Divi y Elementor Pro son de
-   pago y hacen falta en `wp-env` para las pruebas E2E. Con las versiones gratuitas se
-   cubren Elementor, Gutenberg, Astra y GeneratePress; Divi y Beaver/Bricks no.
+6. **Licencias para pruebas de compatibilidad** (Fase 8): quedan **Bricks, WPBakery,
+   Thrive y Oxygen**. Con las versiones gratuitas se cubren Elementor, Beaver, Brizy,
+   SiteOrigin y Gutenberg, y **Divi se comprobó con la licencia del cliente** (2026-09-20),
+   con el resultado del ADR-04: le faltaban dos parámetros de los tres que tiene.
+   Elementor Pro no hace falta, porque comparte el parámetro con el gratuito.
