@@ -35,3 +35,6 @@ Thumbs.db
 /tools/phpstan.phar
 /tools/.phpstan-version
 /.phpunit-integration.result.cache
+
+# Paquete de distribución
+/dist/
