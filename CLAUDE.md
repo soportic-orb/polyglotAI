@@ -40,7 +40,9 @@ el comportamiento observable desde cero.
 
 - Entorno local: `wp-env` (Docker) + WP-CLI.
 - Composer con autoload PSR-4. **Cero dependencias pesadas en producción**: lo que se
-  instale en `require` debe justificarse; el grueso va en `require-dev`.
+  instale en `require` debe justificarse; el grueso va en `require-dev`. La única que
+  hay es `woocommerce/action-scheduler`, justificada en el ADR-21. La autocarga de
+  Composer es opcional: si no está, el plugin registra una PSR-4 propia.
 - JS del editor visual y del panel: React con `@wordpress/scripts` y `@wordpress/components`.
 - Compatible con multisite.
 
@@ -755,6 +757,55 @@ volver a verla; la de licencia es suya, la copia de su factura, tiene que poder
 leerla para pegarla en otro sitio, y lo peor que puede hacer quien la robe es
 recibir actualizaciones de algo que ya ha pagado alguien.
 
+### ADR-21 — Se instala como un zip desde el panel, con todo dentro
+
+El administrador sube un archivo en Plugins → Añadir nuevo → Subir plugin, lo
+activa y ya está. **No entra en el servidor ni ejecuta nada.** Eso obliga a tres
+cosas que antes no se cumplían.
+
+**Action Scheduler va dentro del paquete.** Es la única dependencia de
+producción, y el ADR-05 pide justificar cada una: sin ella, `as_enqueue_async_action()`
+no existe, y como todas las llamadas están detrás de un `function_exists()` la
+traducción en segundo plano (ADR-13) y la de sitio completo (ADR-19) **se
+quedaban calladas sin hacer nada**. No era un fallo visible: el sitio funcionaba,
+servía el original y no traducía nunca. Empaquetarla es lo que hace WooCommerce
+y para lo que está pensada —negocia su versión con las demás copias que haya en
+el sitio—, y no arrastra ninguna dependencia propia. Se carga en el archivo
+principal, antes de `plugins_loaded`, porque es cuando entra en esa negociación.
+
+Consecuencia que hay que asumir: Action Scheduler es **GPLv3**, así que el
+paquete que se distribuye va bajo GPLv3. Eso **no impide venderlo** —es lo que
+hacen Yoast, WooCommerce y todos los plugins comerciales de WordPress—, pero sí
+impide llamarlo propietario, que es lo que decía el `readme.txt`. Si algún día
+se prefiere no distribuir bajo GPL, la alternativa es no empaquetarla y declarar
+`Requires Plugins: action-scheduler` en la cabecera, que hace que WordPress 6.6
+ofrezca instalarla desde el panel; son dos instalaciones en vez de una.
+
+**La autocarga de Composer deja de ser obligatoria.** Si `vendor/autoload.php`
+no está, se registra una PSR-4 propia de quince líneas. Antes el plugin se
+negaba a arrancar y pedía ejecutar `composer install`, que es justo lo que no se
+puede pedir aquí. Una copia del repositorio arranca tal cual; lo único que le
+falta es Action Scheduler.
+
+**Instalar y actualizar son dos caminos, y los dos tienen que montar lo mismo.**
+`register_activation_hook()` **no se dispara al actualizar** desde el panel:
+WordPress no desactiva y vuelve a activar. Sin nada más, una versión con un
+esquema nuevo se instalaría sobre las tablas viejas y se quedaría así.
+`Bootstrap\Installer` es el único sitio que sabe qué significa instalar —tablas,
+rol, capacidades— y lo llaman el activador y `Bootstrap\Upgrader`, que compara la
+versión guardada en cada carga del escritorio. Si alguna tabla no se puede crear
+se avisa con un aviso de error: el plugin activándose, pareciendo que todo va
+bien y luego no guardando ninguna traducción es el fallo más desconcertante que
+puede tener una instalación, y casi siempre es que el usuario de la base de
+datos no puede crear tablas.
+
+**El paquete se construye con una lista de lo que entra, no de lo que se
+excluye** (`tools/build-zip.sh`). Se parte de `git archive HEAD`, se compilan los
+recursos del editor —que no se versionan—, se instalan solo las dependencias de
+producción y se comprueba que estén el cargador, Action Scheduler, `editor.js` y
+el `.pot` antes de cerrar el zip. Con una lista de exclusiones, cualquier archivo
+de desarrollo nuevo se colaría en la siguiente versión sin que nadie se enterara.
+
 ---
 
 ## 4. Estructura del repositorio
@@ -766,7 +817,7 @@ composer.json  package.json  phpcs.xml.dist  phpstan.neon.dist
 phpunit.xml.dist  playwright.config.js  .wp-env.json
 src/
   Plugin.php             Contenedor y registro de servicios
-  Bootstrap/             Activación, desactivación, comprobación de requisitos
+  Bootstrap/             Installer, Activator, Deactivator, Upgrader, Requirements
   Database/              Schema, Migrator, repositorios
   Languages/             Registro de idiomas, variantes, RTL
   Routing/               UrlConverter, RequestRouter, SlugResolver, SlugSync,
@@ -821,6 +872,7 @@ bash tests/e2e/install.sh  # WordPress servido con el plugin activo, sin Docker
 npm run test:e2e           # Playwright (enrutado, selector, sitemaps)
 
 # Build
+bash tools/build-zip.sh    # zip instalable desde el panel, en dist/
 npm run build              # @wordpress/scripts, producción
 npm run start              # watch
 npm run makepot            # regenera languages/polyglot-ai.pot

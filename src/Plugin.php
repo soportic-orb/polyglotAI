@@ -40,6 +40,7 @@ use PolyglotAI\Engines\Claude\RetryPolicy;
 use PolyglotAI\Engines\EngineRegistry;
 use PolyglotAI\Frontend\DynamicScript;
 use PolyglotAI\Gettext\GettextTranslator;
+use PolyglotAI\Bootstrap\Upgrader;
 use PolyglotAI\Compat\CachePlugins;
 use PolyglotAI\Compat\PrivacyExclusions;
 use PolyglotAI\Compat\WooCommerce;
@@ -202,6 +203,12 @@ final class Plugin {
 		// en que se hizo. Va también en el escritorio: muchos de esos correos
 		// los dispara un administrador al cambiar el estado del pedido.
 		( new WooCommerce( $this->languages(), $this->request() ) )->register();
+
+		// Y la puesta al día del esquema cuando llega una versión nueva: el
+		// hook de activación no se dispara al actualizar desde el panel.
+		if ( is_admin() ) {
+			( new Upgrader( PGAI_VERSION ) )->register();
+		}
 
 		// Las actualizaciones: solo donde WordPress las busca, que es el
 		// escritorio y el cron. En una visita normal no pintan nada (ADR-20).

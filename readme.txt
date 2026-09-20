@@ -5,7 +5,8 @@ Requires at least: 6.6
 Tested up to: 6.6
 Requires PHP: 8.1
 Stable tag: 0.1.0
-License: Proprietary
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 Traduce tu sitio entero con inteligencia artificial, con URLs por idioma y corrección manual que la traducción automática no pisa nunca.
 
@@ -92,14 +93,23 @@ segundo plano o desde el panel, y mientras tanto se sirve el texto original.
 
 == Installation ==
 
-1. Copia el plugin en `wp-content/plugins/polyglot-ai`.
-2. Ejecuta `composer install --no-dev` en la carpeta del plugin.
-3. Actívalo.
-4. Añade `define( 'PGAI_API_KEY', 'sk-ant-...' );` a `wp-config.php`.
-5. Configura los idiomas en Polyglot AI → Ajustes.
+No hace falta entrar en el servidor ni ejecutar nada: el paquete trae dentro
+todo lo que el plugin necesita.
 
-La clave se puede guardar también desde los ajustes; en ese caso se cifra con
-las claves de seguridad del sitio y nunca se devuelve al navegador.
+1. En el escritorio, **Plugins → Añadir nuevo → Subir plugin**.
+2. Elige `polyglot-ai-X.Y.Z.zip` y pulsa **Instalar ahora**.
+3. **Activar**. Al activarse crea sus tablas, el rol de traductor y las
+   capacidades, y deja lista la cola de tareas en segundo plano.
+4. En **Polyglot AI → Ajustes**, añade los idiomas y pega la clave de API.
+
+La clave se guarda cifrada con las claves de seguridad del sitio y nunca se
+devuelve al navegador. Si prefieres que no toque la base de datos, defínela en
+`wp-config.php`:
+
+`define( 'PGAI_API_KEY', 'sk-ant-...' );`
+
+Las actualizaciones llegan solas al escritorio, como las de cualquier otro
+plugin, en cuanto pegues la clave de licencia en los ajustes.
 
 == Frequently Asked Questions ==
 
@@ -128,6 +138,12 @@ máquina de desarrollo son unos 0,27 ms por KB de HTML: unos 34 ms en una págin
 de 128 KB y unos 69 ms en una de 254 KB. En tu servidor la cifra será otra, pero
 la proporción se mantiene. Detrás de una caché de página ese coste se paga una
 vez por copia guardada, no en cada visita.
+
+= ¿Hace falta acceso al servidor para instalarlo? =
+
+No. Se sube el zip desde el escritorio y al activarlo queda todo montado: las
+tablas, el rol de traductor, las capacidades y la cola de tareas en segundo
+plano, que va dentro del paquete.
 
 = ¿Se puede probar antes de gastar? =
 

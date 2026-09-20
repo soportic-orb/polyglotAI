@@ -33,18 +33,29 @@ Si algo sale mal en el proceso, se sirve la página original sin traducir.
 
 ## Instalación
 
-1. Copia el plugin en `wp-content/plugins/polyglot-ai`.
-2. Desde esa carpeta, ejecuta `composer install --no-dev`.
-3. Activa el plugin.
-4. Añade la clave de API a `wp-config.php`:
+Desde el escritorio de WordPress, sin tocar el servidor:
+
+1. **Plugins → Añadir nuevo → Subir plugin**.
+2. Elige `polyglot-ai-X.Y.Z.zip` y pulsa **Instalar ahora**.
+3. Actívalo. Al activarse crea sus tablas, el rol de traductor, las capacidades
+   y la cola de tareas en segundo plano.
+4. La clave de API se pega en **Polyglot AI → Ajustes**, o, si prefieres que no
+   toque la base de datos, en `wp-config.php`:
 
 ```php
 define( 'PGAI_API_KEY', 'sk-ant-...' );
 ```
 
-   Es la vía recomendada: así la clave no se guarda en la base de datos ni
-   aparece en las copias de seguridad. También puede introducirse desde el
-   panel, en cuyo caso se cifra con las sales de la instalación.
+   Así la clave no se guarda en la base de datos ni aparece en las copias de
+   seguridad. Desde el panel también vale: se cifra con las sales de la
+   instalación.
+
+El zip se construye con `bash tools/build-zip.sh`, que compila los recursos del
+editor, instala solo las dependencias de producción, quita lo que es de
+desarrollo y comprueba que no falte nada. Una copia del repositorio **también
+arranca tal cual**, sin `composer install`: si no encuentra la autocarga de
+Composer registra una propia. Lo único que se pierde así es Action Scheduler, y
+con él la traducción en segundo plano.
 
 5. En **Polyglot AI → Ajustes**, configura los idiomas y describe el sitio en el
    campo de contexto. Esa descripción mejora notablemente la calidad de la
