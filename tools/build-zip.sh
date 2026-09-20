@@ -68,10 +68,13 @@ rm -rf \
 	"$PKG/phpunit.xml.dist" \
 	"$PKG/phpunit-integration.xml.dist" \
 	"$PKG/playwright.config.js" \
-	"$PKG/.wp-env.json" \
-	"$PKG/.gitignore" \
-	"$PKG/.gitattributes" \
-	"$PKG/.editorconfig"
+	"$PKG/.wp-env.json"
+
+# Y cualquier archivo oculto que quede en la raíz. Se hace por patrón y no por
+# nombre porque la lista de antes se quedó corta en cuanto apareció un
+# .eslintrc.js: el paquete no publica ningún archivo oculto, así que no hay
+# ninguno que salvar.
+find "$PKG" -maxdepth 1 -name '.*' ! -name '.' -exec rm -rf {} +
 
 # De Action Scheduler se queda solo lo que se ejecuta y su licencia, que tiene
 # que viajar con él.
@@ -102,6 +105,12 @@ do
 		exit 1
 	fi
 done
+
+stray="$( find "$PKG" -maxdepth 1 -name '.*' ! -name '.' | head -1 )"
+if [ -n "$stray" ]; then
+	echo "Ha quedado un archivo oculto en el paquete: $stray" >&2
+	exit 1
+fi
 
 mkdir -p "$OUT"
 ZIP="$OUT/$SLUG-$VERSION.zip"
