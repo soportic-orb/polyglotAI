@@ -205,6 +205,12 @@ Se **abandona sin procesar** (sin arrancar siquiera el buffer) cuando:
   de escritorio) y `et_tb` (Theme Builder) no hacen falta en la lista: los dos exigen
   `et_fb` además del suyo.
 
+  Con Divi 5.13.1 **activo como tema**, el sitio funciona: las páginas responden, se
+  traducen, la comprobación de integridad del ADR-01 no rechaza su HTML —que lleva
+  mucho `<script>` y `<style>` en línea— y las once pruebas de extremo a extremo pasan
+  igual que con un tema del núcleo. Las tres pantallas de edición se abandonan sin
+  procesar, comprobado sirviendo cada una y viendo que devuelve el original.
+
   **Sin comprobar**, por ser de pago y no tener licencia: `bricks`, `vc_action`
   (WPBakery), `tve` (Thrive), `ct_builder` (Oxygen). Equivocarse en estos solo significa
   que el constructor se vería traducido en su propia pantalla de edición, no que se
