@@ -102,7 +102,7 @@ final class CachePlugins {
 		 * Útil en sitios que prefieren esperar a que caduque sola o que vacían
 		 * desde fuera.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param bool $purge Si se vacía.
 		 */
@@ -129,7 +129,7 @@ final class CachePlugins {
 		 * Es el sitio donde enganchar el vaciado de una caché que el plugin no
 		 * conozca: la de un alojamiento, un CDN, un proxy inverso.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 */
 		do_action( 'pgai_page_cache_purged' );
 	}

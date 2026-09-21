@@ -167,7 +167,7 @@ final class ClaudeClient {
 			/**
 			 * Se dispara antes de esperar para reintentar una llamada a la API.
 			 *
-			 * @since 0.1.0
+			 * @since 2.0
 			 *
 			 * @param int             $attempt Intento que acaba de fallar.
 			 * @param int             $delay   Segundos de espera.

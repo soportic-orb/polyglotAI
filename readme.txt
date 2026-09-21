@@ -4,7 +4,7 @@ Tags: multilingual, translate, translation, multilanguage, seo
 Requires at least: 6.6
 Tested up to: 6.6
 Requires PHP: 8.1
-Stable tag: 0.1.0
+Stable tag: 2.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -153,7 +153,7 @@ encolado.
 
 == Changelog ==
 
-= 0.1.0 =
+= 2.0 =
 * Primera versión: traducción del HTML renderizado, enrutado por idioma con
   slugs traducidos, motor de inteligencia artificial con validación
   estructural, editor visual, gestor de cadenas, glosario, roles de traductor,

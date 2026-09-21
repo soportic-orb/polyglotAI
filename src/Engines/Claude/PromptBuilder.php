@@ -83,7 +83,7 @@ final class PromptBuilder {
 		/**
 		 * Permite ajustar el cuerpo de la petición antes de enviarla.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param array<string, mixed> $body     Cuerpo de la petición.
 		 * @param TranslationRequest[] $requests Cadenas del lote.

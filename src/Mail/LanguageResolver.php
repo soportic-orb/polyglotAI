@@ -60,7 +60,7 @@ final class LanguageResolver {
 		 * el idioma del pedido o del envío, que puede no corresponder a ningún
 		 * usuario registrado.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param Language|null   $language Idioma resuelto, o null.
 		 * @param string          $email    Correo del destinatario.

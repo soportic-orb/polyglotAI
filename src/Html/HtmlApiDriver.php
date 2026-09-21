@@ -404,7 +404,7 @@ final class HtmlApiDriver implements DocumentDriverInterface {
 			 * prohíbe el ADR-12. El texto que sí es de la interfaz va en
 			 * `placeholder`, que sí se traduce.
 			 *
-			 * @since 0.1.0
+			 * @since 2.0
 			 *
 			 * @param bool $translate Si se traduce.
 			 */

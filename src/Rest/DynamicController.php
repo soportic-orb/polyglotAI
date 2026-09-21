@@ -86,7 +86,7 @@ final class DynamicController extends Controller {
 		/**
 		 * Permite cerrar la traducción de contenido dinámico a visitantes.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param bool $allowed Si se permite.
 		 */

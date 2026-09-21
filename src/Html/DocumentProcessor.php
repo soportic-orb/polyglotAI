@@ -82,7 +82,7 @@ final class DocumentProcessor {
 			 * Se dispara cuando la traducción de una página falla y se sirve el
 			 * original.
 			 *
-			 * @since 0.1.0
+			 * @since 2.0
 			 *
 			 * @param Throwable $error Excepción capturada.
 			 */

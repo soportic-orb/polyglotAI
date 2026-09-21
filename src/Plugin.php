@@ -498,7 +498,7 @@ final class Plugin {
 				/**
 				 * Permite registrar motores de traducción adicionales.
 				 *
-				 * @since 0.1.0
+				 * @since 2.0
 				 *
 				 * @param EngineRegistry $registry Registro de motores.
 				 */

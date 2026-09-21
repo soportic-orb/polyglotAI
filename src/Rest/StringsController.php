@@ -77,7 +77,7 @@ final class StringsController extends Controller {
 		/**
 		 * Permite ajustar el HTML admitido en una traducción manual.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param array<string, array<string, bool>> $allowed Etiquetas y atributos.
 		 */

@@ -71,7 +71,7 @@ final class BailConditions {
 		/**
 		 * Permite decidir si se traduce la salida de esta petición.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param bool $process Si se procesa.
 		 */

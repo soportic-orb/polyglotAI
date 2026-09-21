@@ -3,7 +3,7 @@
  * Plugin Name:       Polyglot AI
  * Plugin URI:        https://github.com/soportic-orb/polyglotAI
  * Description:       Traducción multilingüe del sitio con motor de inteligencia artificial, editor visual y URLs por idioma.
- * Version:           0.1.0
+ * Version:           2.0
  * Requires at least: 6.6
  * Requires PHP:      8.1
  * Author:            Soportic
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const VERSION = '0.1.0';
+const VERSION = '2.0';
 
 define( 'PGAI_VERSION', VERSION );
 define( 'PGAI_FILE', __FILE__ );

@@ -235,7 +235,7 @@ final class TranslationRepository {
 		/**
 		 * Se dispara tras guardar una traducción.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param int    $source_id Identificador de la cadena original.
 		 * @param string $language  Locale.

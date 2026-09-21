@@ -79,7 +79,7 @@ final class BotDetector {
 		/**
 		 * Permite afinar la detección de robots.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param bool   $is_bot Si se considera un robot.
 		 * @param string $agent  User-agent en minúsculas.

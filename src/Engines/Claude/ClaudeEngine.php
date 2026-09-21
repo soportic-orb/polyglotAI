@@ -75,7 +75,7 @@ final class ClaudeEngine implements AsyncBatchEngineInterface {
 		/**
 		 * Permite ajustar cuántas cadenas se envían por llamada.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param int $size Número de cadenas.
 		 */

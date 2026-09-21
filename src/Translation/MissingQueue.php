@@ -91,7 +91,7 @@ final class MissingQueue {
 			 * esa vía no se anote otra vez como contenido: aparecería dos veces
 			 * en el gestor de cadenas.
 			 *
-			 * @since 0.1.0
+			 * @since 2.0
 			 *
 			 * @param bool                            $record Si se anota.
 			 * @param \PolyglotAI\Html\ExtractedString $unit Unidad encontrada.

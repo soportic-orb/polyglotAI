@@ -144,7 +144,7 @@ final class VisitorRedirect {
 		 *
 		 * Devolver null cancela la redirección.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param Language|null $preferred Idioma detectado.
 		 * @param string        $header    Cabecera Accept-Language recibida.

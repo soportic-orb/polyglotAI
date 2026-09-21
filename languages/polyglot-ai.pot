@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the Polyglot AI plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: Polyglot AI 0.1.0\n"
+"Project-Id-Version: Polyglot AI 2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/polyglotAI\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-20T18:38:30+00:00\n"
+"POT-Creation-Date: 2026-09-21T09:32:46+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: polyglot-ai\n"
@@ -18,7 +18,7 @@ msgstr ""
 #: polyglot-ai.php
 #: src/Admin/SettingsPage.php:67
 #: src/Admin/SettingsPage.php:68
-#: src/Admin/SettingsPage.php:197
+#: src/Admin/SettingsPage.php:353
 #: src/Languages/UserLanguage.php:76
 msgid "Polyglot AI"
 msgstr ""
@@ -94,233 +94,281 @@ msgstr ""
 msgid "No tienes permiso para cambiar estos ajustes."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:201
-msgid "Ajustes guardados."
-msgstr ""
-
-#: src/Admin/SettingsPage.php:207
-msgid "Todavía no hay una clave de API configurada. Sin ella no se puede traducir automáticamente."
-msgstr ""
-
 #: src/Admin/SettingsPage.php:215
 #: src/Switcher/NavMenuMetaBox.php:42
 msgid "Idiomas"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:218
+#: src/Admin/SettingsPage.php:219
 msgid "Idioma por defecto"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:222
-msgid "Idiomas adicionales"
+#: src/Admin/SettingsPage.php:226
+msgid "Español"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:225
-msgid "Aún no hay idiomas adicionales."
+#: src/Admin/SettingsPage.php:228
+msgid "Código, segmento de URL y nombre. Es el idioma en que está escrito el contenido: no se traduce, se traduce desde él."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:238
-msgid "(en preparación)"
+#: src/Admin/SettingsPage.php:234
+msgid "Idiomas a los que se traduce"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:236
+msgid "Rellena una fila vacía para añadir un idioma. Se guarda con el resto de los ajustes, al pulsar el botón del final."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:242
+#: src/Admin/SettingsPage.php:491
+#: assets/src/block/index.js:76
+msgid "Código"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:243
+msgid "URL"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:244
+#: src/Admin/SettingsPage.php:490
+#: assets/src/block/index.js:72
+msgid "Nombre"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:245
+msgid "Tratamiento"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:246
+msgid "RTL"
 msgstr ""
 
 #: src/Admin/SettingsPage.php:247
+msgid "Visible"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:248
+msgid "Quitar"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:273
+msgid "El código es el de WordPress (es_ES, en_US, pt_BR, ca). «URL» es el segmento con el que se sirve el idioma: /en/. «Visible» desmarcado deja el idioma en preparación, a la vista solo de quien puede traducir."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:278
 msgid "URL del idioma por defecto"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:251
+#: src/Admin/SettingsPage.php:282
 msgid "Usar también un subdirectorio para el idioma por defecto."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:257
+#: src/Admin/SettingsPage.php:318
+msgid "Neutro"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:319
+msgid "Informal (tú)"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:320
+msgid "Formal (usted)"
+msgstr ""
+
+#. translators: %s: idioma.
+#: src/Admin/SettingsPage.php:334
+#, php-format
+msgid "Quitar %s"
+msgstr ""
+
+#: src/Admin/SettingsPage.php:357
+msgid "Ajustes guardados."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:363
+msgid "Todavía no hay una clave de API configurada. Sin ella no se puede traducir automáticamente."
+msgstr ""
+
+#: src/Admin/SettingsPage.php:373
 msgid "Motor de traducción"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:260
+#: src/Admin/SettingsPage.php:376
 msgid "Motor"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:272
+#: src/Admin/SettingsPage.php:388
 #: src/Admin/StatsPage.php:213
 msgid "Modelo"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:275
+#: src/Admin/SettingsPage.php:391
 msgid "Por defecto claude-sonnet-5. Para abaratar el coste, claude-haiku-4-5."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:279
+#: src/Admin/SettingsPage.php:395
 msgid "Clave de API"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:284
+#: src/Admin/SettingsPage.php:400
 msgid "Definida en wp-config.php mediante PGAI_API_KEY."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:290
+#: src/Admin/SettingsPage.php:406
 msgid "Recomendado: define PGAI_API_KEY en wp-config.php para que la clave no se guarde en la base de datos."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:296
+#: src/Admin/SettingsPage.php:412
 msgid "Contexto del sitio"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:299
+#: src/Admin/SettingsPage.php:415
 msgid "De qué va el sitio, a quién se dirige y con qué tono. Mejora mucho la calidad de la traducción."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:304
+#: src/Admin/SettingsPage.php:420
 msgid "Licencia"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:307
+#: src/Admin/SettingsPage.php:423
 msgid "Clave de licencia"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:312
+#: src/Admin/SettingsPage.php:428
 msgid "Definida en wp-config.php mediante PGAI_LICENSE_KEY."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:324
+#: src/Admin/SettingsPage.php:440
 msgid "Licencia activa."
 msgstr ""
 
 #. translators: %s: fecha de caducidad.
-#: src/Admin/SettingsPage.php:327
+#: src/Admin/SettingsPage.php:443
 #, php-format
 msgid "Licencia activa hasta el %s."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:333
+#: src/Admin/SettingsPage.php:449
 msgid "La licencia ha caducado. El plugin sigue funcionando, pero no recibirá actualizaciones."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:336
+#: src/Admin/SettingsPage.php:452
 msgid "Sin licencia válida. El plugin funciona igual, pero no recibirá actualizaciones."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:339
+#: src/Admin/SettingsPage.php:455
 msgid "Todavía no se ha comprobado con el servidor."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:347
+#: src/Admin/SettingsPage.php:463
 #: src/Switcher/NavMenuMetaBox.php:57
 #: src/Switcher/SwitcherRenderer.php:132
 #: assets/src/block/index.js:64
 msgid "Selector de idioma"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:350
+#: src/Admin/SettingsPage.php:466
 msgid "Selector flotante"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:354
+#: src/Admin/SettingsPage.php:470
 msgid "Mostrarlo fijo en una esquina de todas las páginas."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:358
+#: src/Admin/SettingsPage.php:474
 msgid "Para temas donde no hay dónde poner el bloque. Ocupa la misma esquina que los avisos de cookies y los chats de soporte."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:368
+#: src/Admin/SettingsPage.php:484
 msgid "Qué muestra"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:374
-#: assets/src/block/index.js:72
-msgid "Nombre"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:375
-#: assets/src/block/index.js:76
-msgid "Código"
-msgstr ""
-
-#: src/Admin/SettingsPage.php:376
+#: src/Admin/SettingsPage.php:492
 #: assets/src/block/index.js:80
 msgid "Nombre y código"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:377
+#: src/Admin/SettingsPage.php:493
 #: assets/src/block/index.js:84
 msgid "Bandera"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:378
+#: src/Admin/SettingsPage.php:494
 #: assets/src/block/index.js:88
 msgid "Bandera y nombre"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:391
+#: src/Admin/SettingsPage.php:507
 msgid "Visitantes"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:394
+#: src/Admin/SettingsPage.php:510
 msgid "Detectar el idioma del navegador"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:398
+#: src/Admin/SettingsPage.php:514
 msgid "Llevar al visitante a su idioma la primera vez que llega."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:402
+#: src/Admin/SettingsPage.php:518
 msgid "Actívalo solo si sabes que tu caché de página varía por cookie: si no, la primera respuesta cacheada se queda con la redirección dentro y se la lleva todo el mundo. Además manda sobre la intención de quien sigue un enlace a un idioma concreto."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:412
+#: src/Admin/SettingsPage.php:528
 msgid "Menús por idioma"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:419
+#: src/Admin/SettingsPage.php:535
 msgid "Aparecerá aquí cuando el tema declare ubicaciones de menú y haya algún idioma añadido."
 msgstr ""
 
 #. translators: 1: nombre del idioma, 2: ubicación del menú en el tema.
-#: src/Admin/SettingsPage.php:436
+#: src/Admin/SettingsPage.php:552
 #, php-format
 msgid "%1$s — %2$s"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:445
+#: src/Admin/SettingsPage.php:561
 msgid "El mismo que el idioma por defecto"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:460
+#: src/Admin/SettingsPage.php:576
 msgid "Consumo"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:463
+#: src/Admin/SettingsPage.php:579
 msgid "Traducción en segundo plano"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:467
+#: src/Admin/SettingsPage.php:583
 msgid "Traducir automáticamente las cadenas nuevas que aparezcan al visitarse una página."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:469
+#: src/Admin/SettingsPage.php:585
 msgid "Nunca bloquea la carga: se muestra el original y la traducción aparece en la visita siguiente. El tráfico de robots no encola nada."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:473
+#: src/Admin/SettingsPage.php:589
 msgid "Tope mensual de tokens"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:476
+#: src/Admin/SettingsPage.php:592
 msgid "0 significa sin tope."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:481
+#: src/Admin/SettingsPage.php:597
 msgid "Desinstalación"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:484
+#: src/Admin/SettingsPage.php:600
 msgid "Al desinstalar"
 msgstr ""
 
-#: src/Admin/SettingsPage.php:488
+#: src/Admin/SettingsPage.php:604
 msgid "Borrar las tablas y los ajustes al desinstalar el plugin."
 msgstr ""
 
-#: src/Admin/SettingsPage.php:490
+#: src/Admin/SettingsPage.php:606
 msgid "Desactivar el plugin nunca borra nada. Esto solo afecta a la desinstalación."
 msgstr ""
 

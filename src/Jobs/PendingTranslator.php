@@ -80,7 +80,7 @@ final class PendingTranslator {
 			/**
 			 * Se dispara cuando el tope mensual de tokens detiene la traducción.
 			 *
-			 * @since 0.1.0
+			 * @since 2.0
 			 *
 			 * @param string $language Locale de destino.
 			 */

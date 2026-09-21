@@ -67,7 +67,7 @@ final class DriverFactory {
 			 * Se dispara cuando ningún driver de análisis es viable y el plugin
 			 * deja de traducir la salida.
 			 *
-			 * @since 0.1.0
+			 * @since 2.0
 			 */
 			do_action( 'pgai_no_driver_available' );
 		}

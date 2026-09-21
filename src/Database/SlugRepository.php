@@ -498,7 +498,7 @@ final class SlugRepository {
 		 * Cambiar un slug cambia la URL de la página, así que lo que haya
 		 * cacheado en la anterior deja de valer.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 */
 		do_action( 'pgai_slugs_changed' );
 	}

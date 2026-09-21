@@ -76,7 +76,7 @@ final class MailTranslator {
 		/**
 		 * Se dispara tras traducir un correo.
 		 *
-		 * @since 0.1.0
+		 * @since 2.0
 		 *
 		 * @param array<string, mixed> $mail     Argumentos ya traducidos.
 		 * @param string               $language Locale de destino.
