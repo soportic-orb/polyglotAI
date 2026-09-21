@@ -185,7 +185,6 @@ final class EditorPage {
 		$initial   = $initial instanceof Language ? $initial : $this->languages->by_locale( (string) $initial );
 
 		return array(
-			'restUrl'     => esc_url_raw( rest_url( Controller::NAMESPACE ) ),
 			'nonce'       => wp_create_nonce( 'wp_rest' ),
 			'homeUrl'     => esc_url_raw( home_url( '/' ) ),
 			'path'        => '' === $path ? '/' : $path,

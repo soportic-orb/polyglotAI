@@ -263,7 +263,6 @@ final class StringsPage {
 		);
 
 		return array(
-			'restUrl'   => esc_url_raw( rest_url( Controller::NAMESPACE ) ),
 			'nonce'     => wp_create_nonce( 'wp_rest' ),
 			'languages' => array_values( $languages ),
 			'can'       => array(

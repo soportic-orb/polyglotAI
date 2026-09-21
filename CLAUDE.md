@@ -824,6 +824,33 @@ producción y se comprueba que estén el cargador, Action Scheduler, `editor.js`
 el `.pot` antes de cerrar el zip. Con una lista de exclusiones, cualquier archivo
 de desarrollo nuevo se colaría en la siguiente versión sin que nadie se enterara.
 
+### ADR-22 — Las aplicaciones del panel llaman a la API por la ruta, no por una raíz propia
+
+`apiFetch` recibe la ruta **con el espacio de nombres dentro**
+(`/pgai/v1/manager?…`) y deja que WordPress construya la URL. **No se registra
+ningún `createRootURLMiddleware` propio.**
+
+Se hacía al revés —raíz `…/wp-json/pgai/v1/` y rutas relativas— y no funciona,
+de una forma que no se ve en ningún test de PHP: WordPress registra su propio
+middleware de raíz al cargar `wp-api-fetch`, los middlewares corren **en orden
+inverso al de registro**, y el suyo se ejecutaba después del nuestro. Como el
+nuestro deja `path` intacto en las opciones, el suyo volvía a componer la URL
+desde la raíz sin espacio de nombres y la petición acababa en
+`/wp-json/manager`, que no existe: **todas las pantallas del panel contestaban
+`rest_no_route`**, el gestor de cadenas y el editor visual por igual.
+
+Que se nos escapara tanto tiempo no es casualidad: la suite de integración
+comprueba que las rutas se registran, y se registran; el fallo estaba en qué
+URL pedía el navegador. Solo se ve abriendo la pantalla, así que la red de
+protección son tres pruebas de extremo a extremo (`tests/e2e/admin.spec.js`) que
+miran las respuestas de la API y fallan si alguna es un 404 o si sale una
+petición nuestra sin `pgai/v1`. Están calibradas: con el middleware puesto otra
+vez, dos de las tres fallan.
+
+`assets/src/dynamic/index.js` no se vio afectado y sigue como estaba porque no
+usa `apiFetch`: llama a `window.fetch` con la URL completa, y ahí no hay ningún
+middleware que pueda pisarla.
+
 ---
 
 ## 4. Estructura del repositorio

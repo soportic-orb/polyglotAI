@@ -7,9 +7,18 @@ import apiFetch from '@wordpress/api-fetch';
 const boot = window.pgaiManager || {};
 
 apiFetch.use( apiFetch.createNonceMiddleware( boot.nonce || '' ) );
-apiFetch.use(
-	apiFetch.createRootURLMiddleware( ( boot.restUrl || '' ) + '/' )
-);
+/**
+ * El espacio de nombres va en la ruta, no en una raíz propia.
+ *
+ * Antes se registraba aquí un createRootURLMiddleware con la raíz ya apuntando
+ * a «…/wp-json/pgai/v1/». No funciona: WordPress registra el suyo al cargar
+ * wp-api-fetch y, como los middlewares corren en orden inverso al de registro,
+ * el suyo se ejecutaba DESPUÉS del nuestro y volvía a construir la URL a partir
+ * de «path», que seguía siendo relativo. El resultado era una petición a
+ * /wp-json/manager en vez de /wp-json/pgai/v1/manager, y la API contestaba
+ * rest_no_route a todo.
+ */
+const NS = '/pgai/v1/';
 
 /**
  * Busca cadenas.
@@ -27,7 +36,7 @@ export function fetchStrings( filters ) {
 		per_page: String( filters.perPage || 50 ),
 	} );
 
-	return apiFetch( { path: `manager?${ query.toString() }` } );
+	return apiFetch( { path: NS + `manager?${ query.toString() }` } );
 }
 
 /**
@@ -40,7 +49,7 @@ export function fetchStrings( filters ) {
  */
 export function saveTranslation( hash, translation, language ) {
 	return apiFetch( {
-		path: 'strings',
+		path: NS + 'strings',
 		method: 'POST',
 		data: {
 			language,
@@ -59,7 +68,7 @@ export function saveTranslation( hash, translation, language ) {
  */
 export function applyBulk( action, sourceIds, language ) {
 	return apiFetch( {
-		path: 'manager/bulk',
+		path: NS + 'manager/bulk',
 		method: 'POST',
 		data: { language, action, source_ids: sourceIds },
 	} );
@@ -73,7 +82,7 @@ export function applyBulk( action, sourceIds, language ) {
  */
 export function fetchSiteRun( language ) {
 	return apiFetch( {
-		path: `site?language=${ encodeURIComponent( language ) }`,
+		path: NS + `site?language=${ encodeURIComponent( language ) }`,
 	} );
 }
 
@@ -86,7 +95,7 @@ export function fetchSiteRun( language ) {
  */
 export function commandSiteRun( command, language ) {
 	return apiFetch( {
-		path: 'site',
+		path: NS + 'site',
 		method: 'POST',
 		data: { language, command },
 	} );
@@ -103,6 +112,6 @@ export function commandSiteRun( command, language ) {
  */
 export function estimateSiteRun( language ) {
 	return apiFetch( {
-		path: `site/estimate?language=${ encodeURIComponent( language ) }`,
+		path: NS + `site/estimate?language=${ encodeURIComponent( language ) }`,
 	} );
 }

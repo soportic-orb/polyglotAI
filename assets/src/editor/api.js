@@ -7,9 +7,18 @@ import apiFetch from '@wordpress/api-fetch';
 const boot = window.pgaiEditor || {};
 
 apiFetch.use( apiFetch.createNonceMiddleware( boot.nonce || '' ) );
-apiFetch.use(
-	apiFetch.createRootURLMiddleware( ( boot.restUrl || '' ) + '/' )
-);
+/**
+ * El espacio de nombres va en la ruta, no en una raíz propia.
+ *
+ * Antes se registraba aquí un createRootURLMiddleware con la raíz ya apuntando
+ * a «…/wp-json/pgai/v1/». No funciona: WordPress registra el suyo al cargar
+ * wp-api-fetch y, como los middlewares corren en orden inverso al de registro,
+ * el suyo se ejecutaba DESPUÉS del nuestro y volvía a construir la URL a partir
+ * de «path», que seguía siendo relativo. El resultado era una petición a
+ * /wp-json/manager en vez de /wp-json/pgai/v1/manager, y la API contestaba
+ * rest_no_route a todo.
+ */
+const NS = '/pgai/v1/';
 
 /**
  * Recupera cadenas con su traducción y su estado.
@@ -20,9 +29,11 @@ apiFetch.use(
  */
 export function fetchStrings( hashes, language ) {
 	return apiFetch( {
-		path: `strings?language=${ encodeURIComponent( language ) }&${ hashes
-			.map( ( hash ) => `hashes[]=${ encodeURIComponent( hash ) }` )
-			.join( '&' ) }`,
+		path:
+			NS +
+			`strings?language=${ encodeURIComponent( language ) }&${ hashes
+				.map( ( hash ) => `hashes[]=${ encodeURIComponent( hash ) }` )
+				.join( '&' ) }`,
 	} );
 }
 
@@ -35,7 +46,7 @@ export function fetchStrings( hashes, language ) {
  */
 export function saveStrings( translations, language ) {
 	return apiFetch( {
-		path: 'strings',
+		path: NS + 'strings',
 		method: 'POST',
 		data: { language, translations },
 	} );
@@ -51,7 +62,7 @@ export function saveStrings( translations, language ) {
  */
 export function suggestStrings( hashes, language, save = false ) {
 	return apiFetch( {
-		path: 'suggest',
+		path: NS + 'suggest',
 		method: 'POST',
 		data: { language, hashes, save },
 	} );
@@ -64,7 +75,11 @@ export function suggestStrings( hashes, language, save = false ) {
  * @return {Promise<Object>} Identificador del grupo creado.
  */
 export function createMerge( hashes ) {
-	return apiFetch( { path: 'merges', method: 'POST', data: { hashes } } );
+	return apiFetch( {
+		path: NS + 'merges',
+		method: 'POST',
+		data: { hashes },
+	} );
 }
 
 /**
@@ -74,7 +89,11 @@ export function createMerge( hashes ) {
  * @return {Promise<Object>} Resultado.
  */
 export function removeMerge( hash ) {
-	return apiFetch( { path: 'merges', method: 'DELETE', data: { hash } } );
+	return apiFetch( {
+		path: NS + 'merges',
+		method: 'DELETE',
+		data: { hash },
+	} );
 }
 
 /**
@@ -86,9 +105,11 @@ export function removeMerge( hash ) {
  */
 export function fetchSlugs( url, language ) {
 	return apiFetch( {
-		path: `slugs?language=${ encodeURIComponent(
-			language
-		) }&url=${ encodeURIComponent( url ) }`,
+		path:
+			NS +
+			`slugs?language=${ encodeURIComponent(
+				language
+			) }&url=${ encodeURIComponent( url ) }`,
 	} );
 }
 
@@ -104,7 +125,7 @@ export function fetchSlugs( url, language ) {
  */
 export function saveSlug( slug, language ) {
 	return apiFetch( {
-		path: 'slugs',
+		path: NS + 'slugs',
 		method: 'POST',
 		data: {
 			language,
