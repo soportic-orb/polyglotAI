@@ -104,7 +104,7 @@ final class GlossaryPage {
 		// El glosario va dentro del prompt, así que lo cacheado ya no vale.
 		DictionaryFactory::invalidate();
 
-		wp_safe_redirect( add_query_arg( 'pgai-saved', '1', menu_page_url( self::SLUG, false ) ) );
+		wp_safe_redirect( Redirect::to_page( self::SLUG, array( 'pgai-saved' => '1' ) ) );
 		exit;
 	}
 

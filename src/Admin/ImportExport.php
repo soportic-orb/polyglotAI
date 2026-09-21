@@ -318,9 +318,9 @@ final class ImportExport {
 	 */
 	private function finish( string $language, array $result ): void {
 		wp_safe_redirect(
-			add_query_arg(
-				array_merge( array( 'pgai-lang' => $language ), $result ),
-				menu_page_url( StringsPage::SLUG, false )
+			Redirect::to_page(
+				StringsPage::SLUG,
+				array_map( 'strval', array_merge( array( 'pgai-lang' => $language ), $result ) )
 			)
 		);
 		exit;

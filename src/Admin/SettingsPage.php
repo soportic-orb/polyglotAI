@@ -100,6 +100,21 @@ final class SettingsPage {
 
 		$values[ MenuLocations::OPTION_KEY ] = $this->submitted_menus();
 
+		// Los idiomas. LanguagesInput sanea cada campo y descarta las filas que
+		// romperían el enrutado, así que aquí solo se quita el slasheo.
+		$values['default_language'] = LanguagesInput::parse_default(
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Lo sanea LanguagesInput campo por campo.
+			wp_unslash( $_POST['default_language'] ?? array() ),
+			(array) $this->options->get( 'default_language', array() )
+		);
+
+		$values['languages'] = LanguagesInput::parse(
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Lo sanea LanguagesInput campo por campo.
+			wp_unslash( $_POST['languages'] ?? array() ),
+			(array) $this->options->get( 'languages', array() ),
+			(string) $values['default_language']['slug']
+		);
+
 		if ( ! in_array( $values['effort'], array( 'low', 'medium', 'high', 'xhigh', 'max' ), true ) ) {
 			$values['effort'] = 'low';
 		}
@@ -134,7 +149,7 @@ final class SettingsPage {
 		// Cambiar el modelo o el contexto invalida las traducciones cacheadas.
 		DictionaryFactory::invalidate();
 
-		wp_safe_redirect( add_query_arg( 'pgai-saved', '1', menu_page_url( self::SLUG, false ) ) );
+		wp_safe_redirect( Redirect::to_page( self::SLUG, array( 'pgai-saved' => '1' ) ) );
 		exit;
 	}
 
@@ -183,6 +198,147 @@ final class SettingsPage {
 	}
 
 	/**
+	 * Pinta la sección de idiomas.
+	 *
+	 * Se deja aquí y no en la plantilla de arriba porque es la única parte de
+	 * la pantalla con filas repetidas.
+	 *
+	 * @param array<string, mixed> $options Ajustes.
+	 */
+	private function render_languages( array $options ): void {
+		$default = $this->languages->default_language();
+
+		/** @var array<int, array<string, mixed>> $stored */
+		$stored = (array) ( $options['languages'] ?? array() );
+
+		?>
+		<h2><?php esc_html_e( 'Idiomas', 'polyglot-ai' ); ?></h2>
+
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label for="pgai-default-locale"><?php esc_html_e( 'Idioma por defecto', 'polyglot-ai' ); ?></label></th>
+				<td>
+					<input type="text" id="pgai-default-locale" name="default_language[locale]" class="small-text"
+						value="<?php echo esc_attr( $default->locale ); ?>" placeholder="es_ES">
+					<input type="text" name="default_language[slug]" class="small-text"
+						value="<?php echo esc_attr( $default->slug ); ?>" placeholder="es">
+					<input type="text" name="default_language[label]" class="regular-text"
+						value="<?php echo esc_attr( $default->label ); ?>" placeholder="<?php esc_attr_e( 'Español', 'polyglot-ai' ); ?>">
+					<p class="description">
+						<?php esc_html_e( 'Código, segmento de URL y nombre. Es el idioma en que está escrito el contenido: no se traduce, se traduce desde él.', 'polyglot-ai' ); ?>
+					</p>
+				</td>
+			</tr>
+		</table>
+
+		<h3><?php esc_html_e( 'Idiomas a los que se traduce', 'polyglot-ai' ); ?></h3>
+		<p class="description">
+			<?php esc_html_e( 'Rellena una fila vacía para añadir un idioma. Se guarda con el resto de los ajustes, al pulsar el botón del final.', 'polyglot-ai' ); ?>
+		</p>
+
+		<table class="widefat striped" style="max-width:60em;margin:1em 0;">
+			<thead>
+				<tr>
+					<th scope="col"><?php esc_html_e( 'Código', 'polyglot-ai' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'URL', 'polyglot-ai' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Nombre', 'polyglot-ai' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Tratamiento', 'polyglot-ai' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'RTL', 'polyglot-ai' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Visible', 'polyglot-ai' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Quitar', 'polyglot-ai' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php
+				$row = 0;
+
+				foreach ( $stored as $language ) {
+					if ( is_array( $language ) ) {
+						$this->render_language_row( $row, $language );
+
+						++$row;
+					}
+				}
+
+				// Tres filas vacías: añadir un idioma no puede exigir escribir
+				// nada en otro sitio ni recargar antes.
+				for ( $extra = 0; $extra < 3; $extra++ ) {
+					$this->render_language_row( $row + $extra, array() );
+				}
+				?>
+			</tbody>
+		</table>
+
+		<p class="description">
+			<?php esc_html_e( 'El código es el de WordPress (es_ES, en_US, pt_BR, ca). «URL» es el segmento con el que se sirve el idioma: /en/. «Visible» desmarcado deja el idioma en preparación, a la vista solo de quien puede traducir.', 'polyglot-ai' ); ?>
+		</p>
+
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><?php esc_html_e( 'URL del idioma por defecto', 'polyglot-ai' ); ?></th>
+				<td>
+					<label>
+						<input type="checkbox" name="prefix_default" <?php checked( (bool) ( $options['prefix_default'] ?? false ) ); ?>>
+						<?php esc_html_e( 'Usar también un subdirectorio para el idioma por defecto.', 'polyglot-ai' ); ?>
+					</label>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Pinta una fila de la tabla de idiomas.
+	 *
+	 * @param int                  $index    Posición en el formulario.
+	 * @param array<string, mixed> $language Idioma guardado, o vacío para una fila nueva.
+	 */
+	private function render_language_row( int $index, array $language ): void {
+		$locale    = (string) ( $language['locale'] ?? '' );
+		$name      = 'languages[' . $index . ']';
+		$formality = (string) ( $language['formality'] ?? 'neutral' );
+		$is_new    = '' === $locale;
+
+		?>
+		<tr>
+			<td>
+				<input type="text" name="<?php echo esc_attr( $name ); ?>[locale]" class="small-text"
+					value="<?php echo esc_attr( $locale ); ?>" placeholder="en_US">
+			</td>
+			<td>
+				<input type="text" name="<?php echo esc_attr( $name ); ?>[slug]" class="small-text"
+					value="<?php echo esc_attr( (string) ( $language['slug'] ?? '' ) ); ?>" placeholder="en">
+			</td>
+			<td>
+				<input type="text" name="<?php echo esc_attr( $name ); ?>[label]" class="regular-text"
+					value="<?php echo esc_attr( (string) ( $language['label'] ?? '' ) ); ?>" placeholder="English">
+			</td>
+			<td>
+				<select name="<?php echo esc_attr( $name ); ?>[formality]">
+					<option value="neutral" <?php selected( 'neutral', $formality ); ?>><?php esc_html_e( 'Neutro', 'polyglot-ai' ); ?></option>
+					<option value="informal" <?php selected( 'informal', $formality ); ?>><?php esc_html_e( 'Informal (tú)', 'polyglot-ai' ); ?></option>
+					<option value="formal" <?php selected( 'formal', $formality ); ?>><?php esc_html_e( 'Formal (usted)', 'polyglot-ai' ); ?></option>
+				</select>
+			</td>
+			<td>
+				<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[rtl]" <?php checked( (bool) ( $language['rtl'] ?? false ) ); ?>>
+			</td>
+			<td>
+				<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[published]" <?php checked( (bool) ( $language['published'] ?? true ) ); ?>>
+			</td>
+			<td>
+				<?php if ( $is_new ) : ?>
+					<span aria-hidden="true">&mdash;</span>
+				<?php else : ?>
+					<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[remove]"
+						aria-label="<?php echo esc_attr( sprintf( /* translators: %s: idioma. */ __( 'Quitar %s', 'polyglot-ai' ), $locale ) ); ?>">
+				<?php endif; ?>
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
 	 * Pinta la pantalla.
 	 */
 	public function render(): void {
@@ -212,47 +368,7 @@ final class SettingsPage {
 				<input type="hidden" name="action" value="pgai_save_settings">
 				<?php wp_nonce_field( 'pgai_save_settings' ); ?>
 
-				<h2><?php esc_html_e( 'Idiomas', 'polyglot-ai' ); ?></h2>
-				<table class="form-table" role="presentation">
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Idioma por defecto', 'polyglot-ai' ); ?></th>
-						<td><code><?php echo esc_html( $this->languages->default_language()->locale ); ?></code></td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Idiomas adicionales', 'polyglot-ai' ); ?></th>
-						<td>
-							<?php if ( array() === $this->languages->translatable() ) : ?>
-								<p class="description"><?php esc_html_e( 'Aún no hay idiomas adicionales.', 'polyglot-ai' ); ?></p>
-							<?php else : ?>
-								<ul>
-									<?php foreach ( $this->languages->translatable() as $language ) : ?>
-										<li>
-											<?php
-											printf(
-												'%s <code>/%s/</code>',
-												esc_html( $language->label ),
-												esc_html( $language->slug )
-											);
-											?>
-											<?php if ( ! $language->published ) : ?>
-												<em><?php esc_html_e( '(en preparación)', 'polyglot-ai' ); ?></em>
-											<?php endif; ?>
-										</li>
-									<?php endforeach; ?>
-								</ul>
-							<?php endif; ?>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'URL del idioma por defecto', 'polyglot-ai' ); ?></th>
-						<td>
-							<label>
-								<input type="checkbox" name="prefix_default" <?php checked( (bool) $options['prefix_default'] ); ?>>
-								<?php esc_html_e( 'Usar también un subdirectorio para el idioma por defecto.', 'polyglot-ai' ); ?>
-							</label>
-						</td>
-					</tr>
-				</table>
+				<?php $this->render_languages( $options ); ?>
 
 				<h2><?php esc_html_e( 'Motor de traducción', 'polyglot-ai' ); ?></h2>
 				<table class="form-table" role="presentation">
